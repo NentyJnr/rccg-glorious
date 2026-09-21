@@ -2317,7 +2317,6 @@ export default function App() {
                               <th className="py-3 px-4">Home Address</th>
                               <th className="py-3 px-4">Birthday</th>
                               <th className="py-3 px-4">Role & Dept</th>
-                              <th className="py-3 px-4">Status</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -2339,11 +2338,6 @@ export default function App() {
                                   <td className="py-3 px-4">
                                     <div className="font-bold text-slate-800">{m.role}</div>
                                     <div className="text-[11px] text-slate-500">{m.assignedDepartment || 'No Dept'}</div>
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">
-                                      {m.membershipStatus}
-                                    </span>
                                   </td>
                                 </tr>
                               ))}
