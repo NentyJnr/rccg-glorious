@@ -222,6 +222,15 @@ export default function App() {
   const [newDepartmentSchedule, setNewDepartmentSchedule] = useState('');
   const [newDepartmentDescription, setNewDepartmentDescription] = useState('');
 
+  // Department Edit & Delete State
+  const [editingDepartment, setEditingDepartment] = useState<DepartmentItem | null>(null);
+  const [editDepartmentName, setEditDepartmentName] = useState('');
+  const [editDepartmentCode, setEditDepartmentCode] = useState('');
+  const [editDepartmentHod, setEditDepartmentHod] = useState('');
+  const [editDepartmentSchedule, setEditDepartmentSchedule] = useState('');
+  const [editDepartmentDescription, setEditDepartmentDescription] = useState('');
+  const [isEditDepartmentModalOpen, setIsEditDepartmentModalOpen] = useState(false);
+
   const [users, setUsers] = useState<User[]>([
     { id: 'u1', fullName: 'John Doe (Admin)', email: 'admin@rccgvictory.org', phone: '+2348012345678', role: 'SystemAdmin', mustChangePassword: false, isActive: true },
     { id: 'u2', fullName: 'Grace Usang', email: 'grace@rccgvictory.org', phone: '+2348023456789', role: 'UsheringDepartment', mustChangePassword: true, isActive: true },
@@ -486,14 +495,65 @@ export default function App() {
       await fetch('http://localhost:5230/api/v1/Setup/departments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newDep.name,
-          code: newDep.code,
-          headOfDepartment: newDep.headOfDepartment,
-          description: newDep.description,
-          meetingSchedule: newDep.meetingSchedule,
-          isActive: true
-        })
+        body: JSON.stringify(newDep)
+      });
+    } catch {}
+  };
+
+  const handleStartEditDepartment = (dep: DepartmentItem) => {
+    setEditingDepartment(dep);
+    setEditDepartmentName(dep.name);
+    setEditDepartmentCode(dep.code);
+    setEditDepartmentHod(dep.headOfDepartment || '');
+    setEditDepartmentSchedule(dep.meetingSchedule || '');
+    setEditDepartmentDescription(dep.description || '');
+    setIsEditDepartmentModalOpen(true);
+  };
+
+  const handleUpdateDepartment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDepartment) return;
+    if (!editDepartmentName.trim()) {
+      showNotification('Department name is required.', 'error');
+      return;
+    }
+
+    const updatedCode = editDepartmentCode.trim() || editDepartmentName.trim().slice(0, 3).toUpperCase() + '-01';
+    const updatedItem: DepartmentItem = {
+      ...editingDepartment,
+      name: editDepartmentName.trim(),
+      code: updatedCode,
+      headOfDepartment: editDepartmentHod.trim() || 'Unassigned',
+      meetingSchedule: editDepartmentSchedule.trim() || 'To be scheduled',
+      description: editDepartmentDescription.trim() || 'Parish department unit.'
+    };
+
+    setDepartments((prev) =>
+      prev.map((item) => (item.id === editingDepartment.id ? updatedItem : item))
+    );
+
+    showNotification(`Department "${updatedItem.name}" updated successfully!`);
+    setIsEditDepartmentModalOpen(false);
+    setEditingDepartment(null);
+
+    try {
+      await fetch(`http://localhost:5230/api/v1/Setup/departments/${editingDepartment.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedItem)
+      });
+    } catch {}
+  };
+
+  const handleDeleteDepartment = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete the department "${name}"?`)) return;
+
+    setDepartments((prev) => prev.filter((item) => item.id !== id));
+    showNotification(`Department "${name}" deleted successfully.`);
+
+    try {
+      await fetch(`http://localhost:5230/api/v1/Setup/departments/${id}`, {
+        method: 'DELETE'
       });
     } catch {}
   };
@@ -1967,9 +2027,25 @@ export default function App() {
                               <span className="text-[11px] font-mono font-bold text-slate-500">Code: {dep.code}</span>
                             </div>
                           </div>
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            Active Unit
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              Active Unit
+                            </span>
+                            <button
+                              onClick={() => handleStartEditDepartment(dep)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition border border-transparent hover:border-blue-200 cursor-pointer"
+                              title="Edit Department"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDepartment(dep.id, dep.name)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200 cursor-pointer"
+                              title="Delete Department"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
 
                         {dep.description && (
@@ -2411,6 +2487,108 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => { setIsEditOfferingModalOpen(false); setEditingOfferingCategory(null); }}
+                  className="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* EDIT DEPARTMENT MODAL */}
+      {isEditDepartmentModalOpen && editingDepartment && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl relative animate-fadeIn">
+            <button
+              onClick={() => { setIsEditDepartmentModalOpen(false); setEditingDepartment(null); }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-blue-600" />
+                <span>Edit Parish Department</span>
+              </h3>
+              <p className="text-xs text-slate-500">Update department details, leadership assignment, and schedule.</p>
+            </div>
+
+            <form onSubmit={handleUpdateDepartment} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Department Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editDepartmentName}
+                    onChange={(e) => setEditDepartmentName(e.target.value)}
+                    placeholder="e.g. Media & Technical Unit"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Department Code</label>
+                  <input
+                    type="text"
+                    value={editDepartmentCode}
+                    onChange={(e) => setEditDepartmentCode(e.target.value)}
+                    placeholder="e.g. TEC-01"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Head of Department (HOD)</label>
+                  <select
+                    value={editDepartmentHod}
+                    onChange={(e) => setEditDepartmentHod(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
+                  >
+                    <option value="">-- Select HOD / Leader --</option>
+                    {ministers.map((m) => (
+                      <option key={m.id} value={m.fullName}>
+                        {m.fullName} ({m.title})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Meeting Schedule</label>
+                  <input
+                    type="text"
+                    value={editDepartmentSchedule}
+                    onChange={(e) => setEditDepartmentSchedule(e.target.value)}
+                    placeholder="e.g. Saturdays at 05:00 PM"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Brief Description / Mandate</label>
+                <textarea
+                  rows={2}
+                  value={editDepartmentDescription}
+                  onChange={(e) => setEditDepartmentDescription(e.target.value)}
+                  placeholder="Sanctuary protocol, guest reception, etc."
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditDepartmentModalOpen(false); setEditingDepartment(null); }}
                   className="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
                 >
                   Cancel
