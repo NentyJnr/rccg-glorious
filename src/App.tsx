@@ -2492,134 +2492,28 @@ export default function App() {
               </div>
             )}
 
-            {/* SUB-PANEL 1: PORTAL USERS & ACCESS ROLES */}
-            {userSubTab === 'portal-users' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Onboard User Form */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2 border-b pb-3">
-                    <UserPlus className="w-5 h-5 text-rccg-blue" />
-                    <span>Onboard New User</span>
-                  </h3>
-
-                  <form onSubmit={handleOnboardUser} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Sister Mercy Johnson"
-                        value={newUserName}
-                        onChange={(e) => setNewUserName(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
-                      <input
-                        type="email"
-                        placeholder="mercy@rccgvictory.org"
-                        value={newUserEmail}
-                        onChange={(e) => setNewUserEmail(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Phone Number</label>
-                      <input
-                        type="text"
-                        placeholder="+2348000000000"
-                        value={newUserPhone}
-                        onChange={(e) => setNewUserPhone(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Portal Role / Department</label>
-                      <select
-                        value={newUserRole}
-                        onChange={(e) => setNewUserRole(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
-                      >
-                        <option value="UsheringDepartment">Ushering Department</option>
-                        <option value="HouseFellowshipLeader">House Fellowship Leader</option>
-                        <option value="SystemAdmin">System Admin</option>
-                      </select>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full py-3 bg-rccg-blue hover:bg-rccg-navy text-white text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-2"
-                    >
-                      <Mail className="w-4 h-4" />
-                      <span>Send Onboarding Email</span>
-                    </button>
-                  </form>
-
-                  {createdTempCredentials && (
-                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-2">
-                      <div className="font-bold text-emerald-800 flex items-center space-x-1">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span>Temporary Pass Generated</span>
-                      </div>
-                      <div><span className="text-slate-500">Email:</span> {createdTempCredentials.email}</div>
-                      <div><span className="text-slate-500">Temp Pass:</span> <code className="bg-white px-2 py-0.5 rounded font-mono border text-emerald-900">{createdTempCredentials.tempPass}</code></div>
-                      <p className="text-[11px] text-slate-500 italic mt-1">User will be prompted to reset password upon initial login.</p>
-                    </div>
-                  )}
+            {/* SUB-PANEL 2: MINISTERS DIRECTORY */}
+            {userSubTab === 'ministers' && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Parish Ministers & Leadership Directory ({ministers.length})</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Ordained parish ministers, leaders, and officers assigned through role elevation.</p>
+                  </div>
                 </div>
 
-                {/* Registered Users List */}
-                <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                  <div className="p-6 border-b border-slate-100">
-                    <h3 className="text-lg font-bold text-slate-900">Parish Portal Users</h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-slate-600">
-                      <thead className="bg-slate-50 text-slate-700 uppercase text-xs font-bold tracking-wider">
-                        <tr>
-                          <th className="py-3.5 px-6">User & Role</th>
-                          <th className="py-3.5 px-6">Contact</th>
-                          <th className="py-3.5 px-6">Must Change Password</th>
-                          <th className="py-3.5 px-6">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {users.map((u) => (
-                          <tr key={u.id} className="hover:bg-slate-50/80">
-                            <td className="py-4 px-6 font-medium text-slate-900">
-                              <div>{u.fullName}</div>
-                              <span className="text-xs text-slate-400 font-normal">{u.role}</span>
-                            </td>
-                            <td className="py-4 px-6 text-xs text-slate-500">
-                              <div>{u.email}</div>
-                              <div>{u.phone}</div>
-                            </td>
-                            <td className="py-4 px-6">
-                              {u.mustChangePassword ? (
-                                <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
-                                  <Lock className="w-3 h-3" />
-                                  <span>Pending Reset</span>
-                                </span>
-                              ) : (
-                                <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
-                                  <ShieldCheck className="w-3 h-3" />
-                                  <span>Active & Verified</span>
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-4 px-6">
-                              <span className="text-xs font-semibold text-emerald-600">Active</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                  {ministers.map((m) => (
+                    <div key={m.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-rccg-blue text-white flex items-center justify-center font-bold text-sm shadow">
+                        {m.fullName.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-slate-900">{m.fullName}</div>
+                        <div className="text-xs text-slate-500 font-mono">{m.title}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
