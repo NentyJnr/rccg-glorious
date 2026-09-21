@@ -30,6 +30,7 @@ import {
   Plus,
   Upload,
   Trash2,
+  Pencil,
   Link,
   Globe
 } from 'lucide-react';
@@ -206,6 +207,12 @@ export default function App() {
   const [newOfferingName, setNewOfferingName] = useState('');
   const [newOfferingCode, setNewOfferingCode] = useState('');
 
+  // Offering Category Edit & Delete State
+  const [editingOfferingCategory, setEditingOfferingCategory] = useState<OfferingCategoryItem | null>(null);
+  const [editOfferingName, setEditOfferingName] = useState('');
+  const [editOfferingCode, setEditOfferingCode] = useState('');
+  const [isEditOfferingModalOpen, setIsEditOfferingModalOpen] = useState(false);
+
   const [newMinisterTitle, setNewMinisterTitle] = useState('Pastor');
   const [newMinisterName, setNewMinisterName] = useState('');
 
@@ -365,6 +372,58 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newItem.name, code: code, isActive: true })
+      });
+    } catch {}
+  };
+
+  const handleStartEditOfferingCategory = (oc: OfferingCategoryItem) => {
+    setEditingOfferingCategory(oc);
+    setEditOfferingName(oc.name);
+    setEditOfferingCode(oc.code);
+    setIsEditOfferingModalOpen(true);
+  };
+
+  const handleUpdateOfferingCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOfferingCategory) return;
+    if (!editOfferingName.trim()) {
+      showNotification('Offering category name is required.', 'error');
+      return;
+    }
+
+    const updatedCode = editOfferingCode.trim() || editOfferingName.trim().slice(0, 4).toUpperCase();
+    const updatedItem: OfferingCategoryItem = {
+      ...editingOfferingCategory,
+      name: editOfferingName.trim(),
+      code: updatedCode
+    };
+
+    setOfferingCategories((prev) =>
+      prev.map((item) => (item.id === editingOfferingCategory.id ? updatedItem : item))
+    );
+
+    showNotification(`Offering Category "${updatedItem.name}" updated successfully!`);
+    setIsEditOfferingModalOpen(false);
+    setEditingOfferingCategory(null);
+
+    try {
+      await fetch(`http://localhost:5230/api/v1/Setup/offering-categories/${editingOfferingCategory.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: updatedItem.name, code: updatedCode, isActive: true })
+      });
+    } catch {}
+  };
+
+  const handleDeleteOfferingCategory = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete the offering category "${name}"?`)) return;
+
+    setOfferingCategories((prev) => prev.filter((item) => item.id !== id));
+    showNotification(`Offering Category "${name}" deleted successfully.`);
+
+    try {
+      await fetch(`http://localhost:5230/api/v1/Setup/offering-categories/${id}`, {
+        method: 'DELETE'
       });
     } catch {}
   };
@@ -1764,7 +1823,7 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
                     {offeringCategories.map((oc) => (
-                      <div key={oc.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between">
+                      <div key={oc.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between group hover:border-emerald-300 transition">
                         <div className="flex items-center space-x-3">
                           <div className="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl">
                             <DollarSign className="w-5 h-5" />
@@ -1774,9 +1833,26 @@ export default function App() {
                             <span className="text-[11px] font-mono text-slate-500">Code: {oc.code}</span>
                           </div>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          Active
-                        </span>
+
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Active
+                          </span>
+                          <button
+                            onClick={() => handleStartEditOfferingCategory(oc)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition border border-transparent hover:border-blue-200 cursor-pointer"
+                            title="Edit Category"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOfferingCategory(oc.id, oc.name)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200 cursor-pointer"
+                            title="Delete Category"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -2281,6 +2357,69 @@ export default function App() {
                   className="px-5 py-2 bg-rccg-green text-white text-xs font-bold rounded-xl shadow"
                 >
                   Create Category
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT OFFERING CATEGORY MODAL */}
+      {isEditOfferingModalOpen && editingOfferingCategory && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl relative animate-fadeIn">
+            <button
+              onClick={() => { setIsEditOfferingModalOpen(false); setEditingOfferingCategory(null); }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-blue-600" />
+                <span>Edit Offering Category</span>
+              </h3>
+              <p className="text-xs text-slate-500">Update category title and classification code.</p>
+            </div>
+
+            <form onSubmit={handleUpdateOfferingCategory} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Category Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editOfferingName}
+                  onChange={(e) => setEditOfferingName(e.target.value)}
+                  placeholder="e.g. Welfare & Mercy Fund"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Category Code</label>
+                <input
+                  type="text"
+                  value={editOfferingCode}
+                  onChange={(e) => setEditOfferingCode(e.target.value)}
+                  placeholder="e.g. WLF-01"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditOfferingModalOpen(false); setEditingOfferingCategory(null); }}
+                  className="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition cursor-pointer"
+                >
+                  Save Changes
                 </button>
               </div>
             </form>
