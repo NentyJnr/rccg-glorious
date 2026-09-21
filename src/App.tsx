@@ -226,6 +226,24 @@ export default function App() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
 
+  // Service Category Edit & Delete State
+  const [editingServiceCategory, setEditingServiceCategory] = useState<ServiceCategoryItem | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editCategoryDescription, setEditCategoryDescription] = useState('');
+  const [isEditServiceCategoryModalOpen, setIsEditServiceCategoryModalOpen] = useState(false);
+
+  // Service Type Edit & Delete State
+  const [editingServiceType, setEditingServiceType] = useState<ServiceTypeItem | null>(null);
+  const [editServiceName, setEditServiceName] = useState('');
+  const [editServiceCategory, setEditServiceCategory] = useState('');
+  const [editServiceCode, setEditServiceCode] = useState('');
+  const [editServiceDay, setEditServiceDay] = useState('');
+  const [editServiceTime, setEditServiceTime] = useState('');
+  const [editServiceTrackAttendance, setEditServiceTrackAttendance] = useState(true);
+  const [editServiceTrackOfferings, setEditServiceTrackOfferings] = useState(true);
+  const [editServiceDescription, setEditServiceDescription] = useState('');
+  const [isEditServiceTypeModalOpen, setIsEditServiceTypeModalOpen] = useState(false);
+
   // Setup Inline Inputs
   const [showAddSetupForm, setShowAddSetupForm] = useState(false);
   
@@ -378,6 +396,102 @@ export default function App() {
     setNewCategoryName('');
     setNewCategoryDescription('');
     setIsAddCategoryModalOpen(false);
+  };
+
+  // --- Service Category Handlers ---
+  const handleStartEditServiceCategory = (cat: ServiceCategoryItem) => {
+    setEditingServiceCategory(cat);
+    setEditCategoryName(cat.name);
+    setEditCategoryDescription(cat.description || '');
+    setIsEditServiceCategoryModalOpen(true);
+  };
+
+  const handleUpdateServiceCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingServiceCategory) return;
+    if (!editCategoryName.trim()) {
+      showNotification('Category name is required.', 'error');
+      return;
+    }
+
+    const updated: ServiceCategoryItem = {
+      ...editingServiceCategory,
+      name: editCategoryName.trim(),
+      description: editCategoryDescription.trim() || 'Parish Service Category'
+    };
+
+    setServiceCategories((prev) => prev.map((item) => (item.id === editingServiceCategory.id ? updated : item)));
+    showNotification(`Service Category "${updated.name}" updated successfully!`);
+    setIsEditServiceCategoryModalOpen(false);
+    setEditingServiceCategory(null);
+  };
+
+  const handleDeleteServiceCategory = (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete the service category "${name}"?`)) return;
+    setServiceCategories((prev) => prev.filter((item) => item.id !== id));
+    showNotification(`Service Category "${name}" deleted.`);
+  };
+
+  // --- Service Type Handlers ---
+  const handleStartEditServiceType = (st: ServiceTypeItem) => {
+    setEditingServiceType(st);
+    setEditServiceName(st.name);
+    setEditServiceCategory(st.category);
+    setEditServiceCode(st.code || '');
+    setEditServiceDay(st.defaultDay || '');
+    setEditServiceTime(st.defaultTime || '');
+    setEditServiceTrackAttendance(st.trackAttendance);
+    setEditServiceTrackOfferings(st.trackOfferings);
+    setEditServiceDescription(st.description || '');
+    setIsEditServiceTypeModalOpen(true);
+  };
+
+  const handleUpdateServiceType = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingServiceType) return;
+    if (!editServiceName.trim()) {
+      showNotification('Service type name is required.', 'error');
+      return;
+    }
+
+    const updatedCode = editServiceCode.trim() || editServiceName.trim().slice(0, 3).toUpperCase() + '-01';
+    const updated: ServiceTypeItem = {
+      ...editingServiceType,
+      name: editServiceName.trim(),
+      category: editServiceCategory,
+      code: updatedCode,
+      defaultDay: editServiceDay.trim() || undefined,
+      defaultTime: editServiceTime.trim() || undefined,
+      trackAttendance: editServiceTrackAttendance,
+      trackOfferings: editServiceTrackOfferings,
+      description: editServiceDescription.trim() || undefined
+    };
+
+    setServiceTypes((prev) => prev.map((item) => (item.id === editingServiceType.id ? updated : item)));
+    showNotification(`Service Type "${updated.name}" updated successfully!`);
+    setIsEditServiceTypeModalOpen(false);
+    setEditingServiceType(null);
+
+    try {
+      await fetch(`http://localhost:5230/api/v1/Setup/service-types/${editingServiceType.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+    } catch {}
+  };
+
+  const handleDeleteServiceType = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete the service type "${name}"?`)) return;
+
+    setServiceTypes((prev) => prev.filter((item) => item.id !== id));
+    showNotification(`Service Type "${name}" deleted.`);
+
+    try {
+      await fetch(`http://localhost:5230/api/v1/Setup/service-types/${id}`, {
+        method: 'DELETE'
+      });
+    } catch {}
   };
 
   const handleAddOfferingCategory = async (e: React.FormEvent) => {
@@ -2123,12 +2237,29 @@ export default function App() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {serviceCategories.map((cat) => (
-                      <div key={cat.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-xs font-bold text-slate-900">{cat.name}</h4>
-                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <div key={cat.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition flex flex-col justify-between group">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="text-xs font-bold text-slate-900">{cat.name}</h4>
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={() => handleStartEditServiceCategory(cat)}
+                                className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                                title="Edit Category"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteServiceCategory(cat.id, cat.name)}
+                                className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                                title="Delete Category"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-slate-500 line-clamp-2">{cat.description}</p>
                         </div>
-                        <p className="text-[11px] text-slate-500 line-clamp-2">{cat.description}</p>
                       </div>
                     ))}
                   </div>
@@ -2199,6 +2330,20 @@ export default function App() {
                           <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
                             Active
                           </span>
+                          <button
+                            onClick={() => handleStartEditServiceType(st)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition border border-transparent hover:border-blue-200 cursor-pointer ml-1"
+                            title="Edit Service Type"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteServiceType(st.id, st.name)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200 cursor-pointer"
+                            title="Delete Service Type"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -2960,6 +3105,203 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => { setIsEditDepartmentModalOpen(false); setEditingDepartment(null); }}
+                  className="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* EDIT SERVICE CATEGORY MODAL */}
+      {isEditServiceCategoryModalOpen && editingServiceCategory && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl relative animate-fadeIn">
+            <button
+              onClick={() => { setIsEditServiceCategoryModalOpen(false); setEditingServiceCategory(null); }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-blue-600" />
+                <span>Edit Service Category</span>
+              </h3>
+              <p className="text-xs text-slate-500">Update category title and description.</p>
+            </div>
+
+            <form onSubmit={handleUpdateServiceCategory} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Category Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editCategoryName}
+                  onChange={(e) => setEditCategoryName(e.target.value)}
+                  placeholder="e.g. Sunday Service"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Category Description</label>
+                <textarea
+                  rows={2}
+                  value={editCategoryDescription}
+                  onChange={(e) => setEditCategoryDescription(e.target.value)}
+                  placeholder="Brief description..."
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditServiceCategoryModalOpen(false); setEditingServiceCategory(null); }}
+                  className="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT SERVICE TYPE MODAL */}
+      {isEditServiceTypeModalOpen && editingServiceType && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl relative animate-fadeIn">
+            <button
+              onClick={() => { setIsEditServiceTypeModalOpen(false); setEditingServiceType(null); }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-blue-600" />
+                <span>Edit Service Type Setup</span>
+              </h3>
+              <p className="text-xs text-slate-500">Configure parameters, default day, time, and tracking options.</p>
+            </div>
+
+            <form onSubmit={handleUpdateServiceType} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Service Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editServiceName}
+                    onChange={(e) => setEditServiceName(e.target.value)}
+                    placeholder="e.g. Sunday 1st Service"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Category *</label>
+                  <select
+                    value={editServiceCategory}
+                    onChange={(e) => setEditServiceCategory(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
+                  >
+                    {serviceCategories.map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Code</label>
+                  <input
+                    type="text"
+                    value={editServiceCode}
+                    onChange={(e) => setEditServiceCode(e.target.value)}
+                    placeholder="e.g. SUN-01"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Default Day</label>
+                  <input
+                    type="text"
+                    value={editServiceDay}
+                    onChange={(e) => setEditServiceDay(e.target.value)}
+                    placeholder="e.g. Sunday"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Default Time</label>
+                  <input
+                    type="text"
+                    value={editServiceTime}
+                    onChange={(e) => setEditServiceTime(e.target.value)}
+                    placeholder="e.g. 07:30 AM"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-6 pt-1">
+                <label className="flex items-center space-x-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={editServiceTrackAttendance}
+                    onChange={(e) => setEditServiceTrackAttendance(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-semibold text-slate-700">Track Attendance</span>
+                </label>
+
+                <label className="flex items-center space-x-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={editServiceTrackOfferings}
+                    onChange={(e) => setEditServiceTrackOfferings(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-semibold text-slate-700">Track Offerings</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Description / Notes</label>
+                <input
+                  type="text"
+                  value={editServiceDescription}
+                  onChange={(e) => setEditServiceDescription(e.target.value)}
+                  placeholder="Main Lord's Day Worship Services"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditServiceTypeModalOpen(false); setEditingServiceType(null); }}
                   className="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
                 >
                   Cancel
