@@ -32,7 +32,16 @@ import {
   Trash2,
   Pencil,
   Link,
-  Globe
+  Globe,
+  UserCheck,
+  Download,
+  FileSpreadsheet,
+  Eye,
+  Paperclip,
+  Check,
+  Search,
+  Award,
+  GraduationCap
 } from 'lucide-react';
 import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
@@ -58,6 +67,37 @@ interface User {
   role: string;
   mustChangePassword: boolean;
   isActive: boolean;
+}
+
+export interface Member {
+  id: string;
+  fullName: string;
+  gender: string;
+  phone: string;
+  email: string;
+  address: string;
+  membershipStatus: 'Full Member' | 'New Convert' | 'First Timer' | 'Under Follow-up';
+  dateJoined: string;
+}
+
+export interface WorkerRegistration {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  gender: string;
+  preferredDepartment: string;
+  submissionDate: string;
+  assignedMinisterId: string | null;
+  assignedMinisterName: string | null;
+  currentStage: 'Baptismal Class' | 'Believers Class' | 'Worker in Training' | 'Approved Worker';
+  stageStatus: 'Pending' | 'Enrolled' | 'Completed';
+  certificates: {
+    baptismCertName?: string | null;
+    believersCertName?: string | null;
+    witCertName?: string | null;
+  };
+  notes?: string;
 }
 
 interface OfferingItem {
@@ -157,8 +197,197 @@ export default function App() {
   });
 
   // --- SETUP & USER MANAGEMENT SUB-TABS & DATA COLLECTIONS ---
-  const [userSubTab, setUserSubTab] = useState<'portal-users' | 'ministers'>('portal-users');
+  const [userSubTab, setUserSubTab] = useState<'portal-users' | 'ministers' | 'member-upload' | 'workers-registration'>('portal-users');
   const [setupSubTab, setSetupSubTab] = useState<'service-types' | 'offering-categories' | 'departments' | 'branding'>('service-types');
+
+  // Members Directory & Bulk Upload State
+  const [members, setMembers] = useState<Member[]>([
+    { id: 'mem1', fullName: 'Brother Emmanuel Okon', gender: 'Male', phone: '+2348031112233', email: 'emmanuel@gmail.com', address: '12 Allen Avenue, Ikeja', membershipStatus: 'Full Member', dateJoined: '2025-01-15' },
+    { id: 'mem2', fullName: 'Sister Grace Blessing', gender: 'Female', phone: '+2348024445566', email: 'grace.b@yahoo.com', address: '45 Bode Thomas, Surulere', membershipStatus: 'Full Member', dateJoined: '2025-02-10' },
+    { id: 'mem3', fullName: 'Brother Chukwudi Eze', gender: 'Male', phone: '+2348098889900', email: 'chukwudi@hotmail.com', address: '8 Marina Road, Lagos Island', membershipStatus: 'Under Follow-up', dateJoined: '2025-08-01' },
+    { id: 'mem4', fullName: 'Sister Victoria Adams', gender: 'Female', phone: '+2348057776655', email: 'v.adams@gmail.com', address: '19 Isaac John, Ikeja GRA', membershipStatus: 'New Convert', dateJoined: '2025-09-12' },
+  ]);
+
+  const [bulkFileName, setBulkFileName] = useState<string | null>(null);
+  const [parsedPreviewMembers, setParsedPreviewMembers] = useState<Member[]>([]);
+  const [uploadSuccessBanner, setUploadSuccessBanner] = useState<string | null>(null);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+
+  // Worker Registrations State
+  const [workerRegistrations, setWorkerRegistrations] = useState<WorkerRegistration[]>([
+    {
+      id: 'wr1',
+      fullName: 'Sister Deborah Adebayo',
+      email: 'deborah.a@gmail.com',
+      phone: '+2348035556677',
+      gender: 'Female',
+      preferredDepartment: 'Choir & Praise Team',
+      submissionDate: '2025-09-18',
+      assignedMinisterId: 'm2',
+      assignedMinisterName: 'Pastor Oluwaseun Adeleke',
+      currentStage: 'Believers Class',
+      stageStatus: 'Enrolled',
+      certificates: {
+        baptismCertName: 'water_baptism_deborah.pdf',
+        believersCertName: null,
+        witCertName: null
+      },
+      notes: 'Transferred from RCCG Jesus House, completed water baptism in 2023.'
+    },
+    {
+      id: 'wr2',
+      fullName: 'Brother Kevin Nnamdi',
+      email: 'kevin.n@yahoo.com',
+      phone: '+2348123334455',
+      gender: 'Male',
+      preferredDepartment: 'Ushering & Protocol',
+      submissionDate: '2025-09-19',
+      assignedMinisterId: 'm3',
+      assignedMinisterName: 'Deaconess Mary Johnson',
+      currentStage: 'Baptismal Class',
+      stageStatus: 'Enrolled',
+      certificates: {
+        baptismCertName: null,
+        believersCertName: null,
+        witCertName: null
+      },
+      notes: 'Wants to serve in Ushering team. Needs water baptism enrollment.'
+    },
+    {
+      id: 'wr3',
+      fullName: 'Sister Hannah Peters',
+      email: 'hannah.peters@gmail.com',
+      phone: '+2348079998877',
+      gender: 'Female',
+      preferredDepartment: 'Media & Technical Broadcast',
+      submissionDate: '2025-09-20',
+      assignedMinisterId: null,
+      assignedMinisterName: null,
+      currentStage: 'Worker in Training',
+      stageStatus: 'Completed',
+      certificates: {
+        baptismCertName: 'baptism_cert_hannah.pdf',
+        believersCertName: 'believers_class_hannah.png',
+        witCertName: 'wit_certificate_hannah.pdf'
+      },
+      notes: 'Has completed all required training modules. Ready for final pastoral approval.'
+    }
+  ]);
+
+  // Sync website submissions from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('rccg_workforce_applications');
+      if (saved) {
+        const parsed: WorkerRegistration[] = JSON.parse(saved);
+        setWorkerRegistrations(prev => {
+          const existingIds = new Set(prev.map(w => w.id));
+          const newItems = parsed.filter(item => !existingIds.has(item.id));
+          return [...newItems, ...prev];
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [userSubTab]);
+
+  // Modals for Worker Follow-up & Certificates
+  const [assignModalCandidate, setAssignModalCandidate] = useState<WorkerRegistration | null>(null);
+  const [selectedMinisterIdToAssign, setSelectedMinisterIdToAssign] = useState<string>('');
+
+  const [certModalCandidate, setCertModalCandidate] = useState<WorkerRegistration | null>(null);
+  const [newCertType, setNewCertType] = useState<'baptismCertName' | 'believersCertName' | 'witCertName'>('baptismCertName');
+  const [newCertFileName, setNewCertFileName] = useState('');
+
+  // Bulk Upload CSV Handlers
+  const handleDownloadCSVTemplate = () => {
+    const csvContent = "Full Name,Gender,Phone,Email,Address,Membership Status\n" +
+                       "Brother Samuel King,Male,+2348011223344,samuel@example.com,10 Mission Road Lagos,Full Member\n" +
+                       "Sister Joy Chidinma,Female,+2348055667788,joy@example.com,25 Victoria Island Lagos,New Convert\n";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'RCCG_Parish_Members_Upload_Template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileSelectForMemberUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBulkFileName(file.name);
+    const mockParsed: Member[] = [
+      { id: 'up1_' + Date.now(), fullName: 'Brother Felix Vance', gender: 'Male', phone: '+2348039990011', email: 'felix.v@gmail.com', address: '14 Toyin Street Ikeja', membershipStatus: 'Full Member', dateJoined: new Date().toISOString().split('T')[0] },
+      { id: 'up2_' + Date.now(), fullName: 'Sister Abigail Benson', gender: 'Female', phone: '+2348028881122', email: 'abigail.b@yahoo.com', address: '50 Adeniran Ogunsanya Surulere', membershipStatus: 'New Convert', dateJoined: new Date().toISOString().split('T')[0] },
+      { id: 'up3_' + Date.now(), fullName: 'Brother Timothy Dare', gender: 'Male', phone: '+2348097772233', email: 'timothy.d@gmail.com', address: '7 Commercial Avenue Yaba', membershipStatus: 'Under Follow-up', dateJoined: new Date().toISOString().split('T')[0] },
+    ];
+    setParsedPreviewMembers(mockParsed);
+  };
+
+  const handleProcessMemberBatchImport = () => {
+    if (parsedPreviewMembers.length === 0) return;
+    setMembers(prev => [...parsedPreviewMembers, ...prev]);
+    setUploadSuccessBanner(`Successfully imported ${parsedPreviewMembers.length} parish members into directory!`);
+    setParsedPreviewMembers([]);
+    setBulkFileName(null);
+    setTimeout(() => setUploadSuccessBanner(null), 6000);
+  };
+
+  // Worker Application Action Handlers
+  const handleConfirmAssignMinister = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignModalCandidate || !selectedMinisterIdToAssign) return;
+    const ministerObj = ministers.find(m => m.id === selectedMinisterIdToAssign);
+    const ministerName = ministerObj ? `${ministerObj.title} ${ministerObj.fullName}` : 'Assigned Minister';
+
+    setWorkerRegistrations(prev => prev.map(w => {
+      if (w.id === assignModalCandidate.id) {
+        return {
+          ...w,
+          assignedMinisterId: selectedMinisterIdToAssign,
+          assignedMinisterName: ministerName
+        };
+      }
+      return w;
+    }));
+
+    setAssignModalCandidate(null);
+    setSelectedMinisterIdToAssign('');
+  };
+
+  const handleAdvanceWorkerStage = (workerId: string, nextStage: WorkerRegistration['currentStage'], nextStatus: WorkerRegistration['stageStatus']) => {
+    setWorkerRegistrations(prev => prev.map(w => {
+      if (w.id === workerId) {
+        return {
+          ...w,
+          currentStage: nextStage,
+          stageStatus: nextStatus
+        };
+      }
+      return w;
+    }));
+  };
+
+  const handleUploadCandidateCert = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!certModalCandidate || !newCertFileName) return;
+    setWorkerRegistrations(prev => prev.map(w => {
+      if (w.id === certModalCandidate.id) {
+        return {
+          ...w,
+          certificates: {
+            ...w.certificates,
+            [newCertType]: newCertFileName
+          }
+        };
+      }
+      return w;
+    }));
+    setCertModalCandidate(null);
+    setNewCertFileName('');
+  };
 
   // Configured Service Categories
   const [serviceCategories, setServiceCategories] = useState<ServiceCategoryItem[]>([
@@ -1594,7 +1823,7 @@ export default function App() {
             <div className="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
               <button
                 onClick={() => setUserSubTab('portal-users')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
                   userSubTab === 'portal-users' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
@@ -1604,12 +1833,32 @@ export default function App() {
 
               <button
                 onClick={() => setUserSubTab('ministers')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
                   userSubTab === 'ministers' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Ministers Directory ({ministers.length})</span>
+              </button>
+
+              <button
+                onClick={() => setUserSubTab('member-upload')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  userSubTab === 'member-upload' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <Upload className="w-4 h-4" />
+                <span>Bulk Member Upload ({members.length})</span>
+              </button>
+
+              <button
+                onClick={() => setUserSubTab('workers-registration')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  userSubTab === 'workers-registration' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <UserCheck className="w-4 h-4" />
+                <span>Workers Registration Applications ({workerRegistrations.length})</span>
               </button>
             </div>
 
@@ -1804,6 +2053,397 @@ export default function App() {
                           <div className="text-sm font-bold text-slate-900">{m.fullName}</div>
                           <div className="text-xs text-slate-500 font-mono">{m.title}</div>
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-PANEL 3: BULK MEMBER UPLOAD */}
+            {userSubTab === 'member-upload' && (
+              <div className="space-y-6">
+                {uploadSuccessBanner && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    <span>{uploadSuccessBanner}</span>
+                  </div>
+                )}
+
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <Upload className="w-5 h-5 text-rccg-blue" />
+                        <span>Bulk Member Import & Directory Management</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Upload member lists from Excel/CSV files directly into parish records.</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleDownloadCSVTemplate}
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center space-x-2 cursor-pointer w-max"
+                    >
+                      <Download className="w-4 h-4 text-rccg-blue" />
+                      <span>Download CSV Template</span>
+                    </button>
+                  </div>
+
+                  {/* DROPZONE */}
+                  <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center bg-slate-50/50 hover:bg-slate-50 transition relative">
+                    <input
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      onChange={handleFileSelectForMemberUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    />
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <div className="p-4 rounded-2xl bg-blue-50 text-rccg-blue border border-blue-100">
+                        <FileSpreadsheet className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-slate-800">
+                          {bulkFileName ? `Selected: ${bulkFileName}` : 'Drag & Drop CSV / Excel File Here'}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">Or click anywhere to browse local files (.csv, .xlsx)</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PARSED PREVIEW TABLE */}
+                  {parsedPreviewMembers.length > 0 && (
+                    <div className="space-y-4 pt-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <span>Parsed Preview ({parsedPreviewMembers.length} records ready for import)</span>
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={handleProcessMemberBatchImport}
+                          className="px-6 py-2.5 rounded-xl bg-rccg-green hover:bg-emerald-700 text-white text-xs font-bold shadow transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                          <span>Process Batch Import Now</span>
+                        </button>
+                      </div>
+
+                      <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table className="w-full text-left text-xs text-slate-600">
+                          <thead className="bg-slate-100 text-slate-700 font-bold uppercase">
+                            <tr>
+                              <th className="py-2.5 px-4">Member Name</th>
+                              <th className="py-2.5 px-4">Gender</th>
+                              <th className="py-2.5 px-4">Phone</th>
+                              <th className="py-2.5 px-4">Email</th>
+                              <th className="py-2.5 px-4">Membership Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 bg-white">
+                            {parsedPreviewMembers.map((pm) => (
+                              <tr key={pm.id}>
+                                <td className="py-2.5 px-4 font-bold text-slate-900">{pm.fullName}</td>
+                                <td className="py-2.5 px-4">{pm.gender}</td>
+                                <td className="py-2.5 px-4 font-mono">{pm.phone}</td>
+                                <td className="py-2.5 px-4">{pm.email}</td>
+                                <td className="py-2.5 px-4">
+                                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">
+                                    {pm.membershipStatus}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* MEMBERS DIRECTORY */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h3 className="text-base font-bold text-slate-900">Parish Members Directory ({members.length})</h3>
+                    <div className="relative w-full sm:w-64">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="Search member name or phone..."
+                        value={memberSearchQuery}
+                        onChange={(e) => setMemberSearchQuery(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-rccg-blue"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-600">
+                      <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
+                        <tr>
+                          <th className="py-3 px-4">Member Name</th>
+                          <th className="py-3 px-4">Gender</th>
+                          <th className="py-3 px-4">Contact</th>
+                          <th className="py-3 px-4">Address</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4">Date Joined</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {members
+                          .filter(m => m.fullName.toLowerCase().includes(memberSearchQuery.toLowerCase()) || m.phone.includes(memberSearchQuery))
+                          .map((m) => (
+                            <tr key={m.id} className="hover:bg-slate-50">
+                              <td className="py-3 px-4 font-bold text-slate-900">{m.fullName}</td>
+                              <td className="py-3 px-4">{m.gender}</td>
+                              <td className="py-3 px-4 font-mono">
+                                <div>{m.phone}</div>
+                                <div className="text-[11px] text-slate-400 font-sans">{m.email}</div>
+                              </td>
+                              <td className="py-3 px-4 text-slate-500">{m.address}</td>
+                              <td className="py-3 px-4">
+                                <span className="bg-blue-100 text-rccg-blue font-bold px-2 py-0.5 rounded">
+                                  {m.membershipStatus}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-slate-400 font-mono">{m.dateJoined}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-PANEL 4: WORKERS REGISTRATION APPLICATIONS */}
+            {userSubTab === 'workers-registration' && (
+              <div className="space-y-6">
+                {/* PIPELINE STATS SUMMARY */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Workforce Submissions</div>
+                    <div className="text-2xl font-black text-slate-900">{workerRegistrations.length}</div>
+                    <div className="text-[11px] text-emerald-600 font-semibold">Website & Portal Forms</div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Minister Follow-up</div>
+                    <div className="text-2xl font-black text-amber-600">
+                      {workerRegistrations.filter(w => !w.assignedMinisterId).length}
+                    </div>
+                    <div className="text-[11px] text-amber-600 font-semibold">Requires Minister Assignment</div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active In Training</div>
+                    <div className="text-2xl font-black text-rccg-blue">
+                      {workerRegistrations.filter(w => w.currentStage !== 'Approved Worker').length}
+                    </div>
+                    <div className="text-[11px] text-rccg-blue font-semibold">Baptism / Believers / WIT</div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Approved Full Workers</div>
+                    <div className="text-2xl font-black text-emerald-600">
+                      {workerRegistrations.filter(w => w.currentStage === 'Approved Worker').length}
+                    </div>
+                    <div className="text-[11px] text-emerald-600 font-semibold">Graduated & Active</div>
+                  </div>
+                </div>
+
+                {/* WORKER APPLICATIONS LIST */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <UserCheck className="w-5 h-5 text-rccg-blue" />
+                        <span>Workforce Application Pipeline & Class Progression</span>
+                      </h3>
+                      <p className="text-xs text-slate-500">Track website applicants, assign follow-up ministers, and manage training progression.</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    {workerRegistrations.map((worker) => (
+                      <div key={worker.id} className="p-6 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition space-y-4">
+                        
+                        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-200 pb-4">
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <h4 className="text-base font-bold text-slate-900">{worker.fullName}</h4>
+                              <span className="bg-blue-100 text-rccg-blue font-bold text-[11px] px-2.5 py-0.5 rounded-full">
+                                {worker.preferredDepartment}
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-500 flex flex-wrap items-center gap-3 mt-1 font-medium">
+                              <span>📧 {worker.email}</span>
+                              <span>📞 {worker.phone}</span>
+                              <span>📅 Submitted: {worker.submissionDate}</span>
+                            </div>
+                          </div>
+
+                          {/* ASSIGNED MINISTER BADGE & ACTION */}
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">Follow-up Minister</div>
+                              <div className={`text-xs font-bold ${worker.assignedMinisterName ? 'text-slate-800' : 'text-amber-600'}`}>
+                                {worker.assignedMinisterName || '⚠️ Unassigned'}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAssignModalCandidate(worker);
+                                setSelectedMinisterIdToAssign(worker.assignedMinisterId || '');
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 transition shadow-sm cursor-pointer"
+                            >
+                              Assign Minister
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* CLASS PROGRESSION STEPPER */}
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                          {/* 1. BAPTISMAL CLASS */}
+                          <div className={`p-3 rounded-xl border text-xs space-y-1 ${
+                            worker.currentStage === 'Baptismal Class' 
+                              ? 'bg-blue-50 border-rccg-blue text-slate-900 font-bold'
+                              : 'bg-white border-slate-200 text-slate-600'
+                          }`}>
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold">1. Baptismal Class</span>
+                              {worker.currentStage === 'Baptismal Class' && <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded">Active</span>}
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-normal">Water & Spirit Baptism foundation</p>
+                          </div>
+
+                          {/* 2. BELIEVERS CLASS */}
+                          <div className={`p-3 rounded-xl border text-xs space-y-1 ${
+                            worker.currentStage === 'Believers Class' 
+                              ? 'bg-blue-50 border-rccg-blue text-slate-900 font-bold'
+                              : 'bg-white border-slate-200 text-slate-600'
+                          }`}>
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold">2. Believer's Class</span>
+                              {worker.currentStage === 'Believers Class' && <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded">Active</span>}
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-normal">Christian doctrine & church roots</p>
+                          </div>
+
+                          {/* 3. WORKER IN TRAINING */}
+                          <div className={`p-3 rounded-xl border text-xs space-y-1 ${
+                            worker.currentStage === 'Worker in Training' 
+                              ? 'bg-blue-50 border-rccg-blue text-slate-900 font-bold'
+                              : 'bg-white border-slate-200 text-slate-600'
+                          }`}>
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold">3. Worker in Training</span>
+                              {worker.currentStage === 'Worker in Training' && <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded">Active</span>}
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-normal">Workforce ethics & service rules</p>
+                          </div>
+
+                          {/* 4. APPROVED WORKER */}
+                          <div className={`p-3 rounded-xl border text-xs space-y-1 ${
+                            worker.currentStage === 'Approved Worker' 
+                              ? 'bg-emerald-50 border-emerald-500 text-emerald-900 font-bold'
+                              : 'bg-white border-slate-200 text-slate-600'
+                          }`}>
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold">4. Full Worker</span>
+                              {worker.currentStage === 'Approved Worker' && <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded">Graduated</span>}
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-normal">Assigned to active department</p>
+                          </div>
+                        </div>
+
+                        {/* CERTIFICATES & ADVANCE ACTION BAR */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-3.5 rounded-xl border border-slate-200">
+                          
+                          {/* CERTIFICATE BADGES */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Certificates:</span>
+                            
+                            {/* BAPTISM CERT */}
+                            <span className={`text-[11px] px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 ${
+                              worker.certificates.baptismCertName ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              <Paperclip className="w-3 h-3" />
+                              <span>Baptism: {worker.certificates.baptismCertName ? worker.certificates.baptismCertName : 'Not Provided'}</span>
+                            </span>
+
+                            {/* BELIEVERS CERT */}
+                            <span className={`text-[11px] px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 ${
+                              worker.certificates.believersCertName ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              <Paperclip className="w-3 h-3" />
+                              <span>Believer's: {worker.certificates.believersCertName ? worker.certificates.believersCertName : 'Not Provided'}</span>
+                            </span>
+
+                            {/* WIT CERT */}
+                            <span className={`text-[11px] px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 ${
+                              worker.certificates.witCertName ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              <Paperclip className="w-3 h-3" />
+                              <span>WIT: {worker.certificates.witCertName ? worker.certificates.witCertName : 'Not Provided'}</span>
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => setCertModalCandidate(worker)}
+                              className="text-[11px] text-rccg-blue font-bold hover:underline ml-1 cursor-pointer"
+                            >
+                              Manage Certs
+                            </button>
+                          </div>
+
+                          {/* ADVANCE CLASS BUTTONS */}
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            {worker.currentStage === 'Baptismal Class' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAdvanceWorkerStage(worker.id, 'Believers Class', 'Enrolled')}
+                                className="px-3.5 py-1.5 rounded-xl bg-rccg-blue text-white text-xs font-bold shadow hover:bg-rccg-navy transition cursor-pointer"
+                              >
+                                Advance to Believer's Class →
+                              </button>
+                            )}
+
+                            {worker.currentStage === 'Believers Class' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAdvanceWorkerStage(worker.id, 'Worker in Training', 'Enrolled')}
+                                className="px-3.5 py-1.5 rounded-xl bg-rccg-blue text-white text-xs font-bold shadow hover:bg-rccg-navy transition cursor-pointer"
+                              >
+                                Advance to Worker in Training →
+                              </button>
+                            )}
+
+                            {worker.currentStage === 'Worker in Training' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAdvanceWorkerStage(worker.id, 'Approved Worker', 'Completed')}
+                                className="px-3.5 py-1.5 rounded-xl bg-rccg-green text-white text-xs font-bold shadow hover:bg-emerald-700 transition cursor-pointer"
+                              >
+                                Approve as Full Worker ✓
+                              </button>
+                            )}
+
+                            {worker.currentStage === 'Approved Worker' && (
+                              <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-xl">
+                                Active Full Worker
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {worker.notes && (
+                          <div className="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200 italic">
+                            <span className="font-bold not-italic text-slate-800">Applicant Notes:</span> "{worker.notes}"
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -3314,6 +3954,188 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- MODAL: ASSIGN FOLLOW-UP MINISTER ---------------- */}
+      {assignModalCandidate && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden">
+            <div className="bg-rccg-blue text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-emerald-300" />
+                <span>Assign Follow-up Minister</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setAssignModalCandidate(null)}
+                className="text-slate-300 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmAssignMinister} className="p-6 space-y-4">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="text-xs text-slate-500">Applicant Name</div>
+                <div className="text-sm font-bold text-slate-900">{assignModalCandidate.fullName}</div>
+                <div className="text-xs text-rccg-blue font-semibold mt-0.5">{assignModalCandidate.preferredDepartment}</div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Select Minister for Follow-up *</label>
+                <select
+                  required
+                  value={selectedMinisterIdToAssign}
+                  onChange={(e) => setSelectedMinisterIdToAssign(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                >
+                  <option value="">-- Choose Minister --</option>
+                  {ministers.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.title} {m.fullName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAssignModalCandidate(null)}
+                  className="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2.5 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white font-bold text-xs uppercase tracking-wider shadow-md transition"
+                >
+                  Save Assignment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- MODAL: MANAGE & UPLOAD CANDIDATE CERTIFICATES ---------------- */}
+      {certModalCandidate && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden">
+            <div className="bg-rccg-blue text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Paperclip className="w-4 h-4 text-emerald-300" />
+                <span>Verification Certificates - {certModalCandidate.fullName}</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setCertModalCandidate(null)}
+                className="text-slate-300 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* CURRENT CERTIFICATES STATUS */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Uploaded Documents Status</h4>
+                
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="font-bold text-slate-800">Water Baptism Certificate:</span>
+                    <span className="ml-2 font-mono text-slate-600">
+                      {certModalCandidate.certificates.baptismCertName || 'Not Provided (Nullable)'}
+                    </span>
+                  </div>
+                  {certModalCandidate.certificates.baptismCertName ? (
+                    <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">Uploaded ✓</span>
+                  ) : (
+                    <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded">Pending</span>
+                  )}
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="font-bold text-slate-800">Believer's Class Certificate:</span>
+                    <span className="ml-2 font-mono text-slate-600">
+                      {certModalCandidate.certificates.believersCertName || 'Not Provided (Nullable)'}
+                    </span>
+                  </div>
+                  {certModalCandidate.certificates.believersCertName ? (
+                    <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">Uploaded ✓</span>
+                  ) : (
+                    <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded">Pending</span>
+                  )}
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="font-bold text-slate-800">Worker in Training Certificate:</span>
+                    <span className="ml-2 font-mono text-slate-600">
+                      {certModalCandidate.certificates.witCertName || 'Not Provided (Nullable)'}
+                    </span>
+                  </div>
+                  {certModalCandidate.certificates.witCertName ? (
+                    <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">Uploaded ✓</span>
+                  ) : (
+                    <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded">Pending</span>
+                  )}
+                </div>
+              </div>
+
+              {/* UPLOAD / UPDATE FORM FOR ADMIN */}
+              <form onSubmit={handleUploadCandidateCert} className="border-t pt-4 space-y-4">
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Upload / Replace Certificate Document</h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Certificate Type</label>
+                    <select
+                      value={newCertType}
+                      onChange={(e) => setNewCertType(e.target.value as any)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                    >
+                      <option value="baptismCertName">Water Baptism Certificate</option>
+                      <option value="believersCertName">Believer's Class Certificate</option>
+                      <option value="witCertName">Worker in Training Certificate</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Select File</label>
+                    <input
+                      type="file"
+                      required
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setNewCertFileName(file.name);
+                      }}
+                      className="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-100 file:text-rccg-blue hover:file:bg-blue-200"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCertModalCandidate(null)}
+                    className="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider transition"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-1/2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition"
+                  >
+                    Save Certificate
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

@@ -28,7 +28,8 @@ import {
   UserCheck,
   CheckCircle2,
   Share2,
-  Info
+  Info,
+  FileText
 } from 'lucide-react';
 
 interface ChurchWebsiteProps {
@@ -84,7 +85,10 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
     email: '',
     department: 'Ushering & Protocol',
     status: 'Baptized Member',
-    notes: ''
+    notes: '',
+    baptismCertName: '',
+    believersCertName: '',
+    witCertName: ''
   });
 
   const handleWorkforceSubmit = (e: React.FormEvent) => {
@@ -93,9 +97,47 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
       alert('Please fill in your Full Name and Phone Number.');
       return;
     }
+
+    const newApp = {
+      id: 'wr_' + Date.now(),
+      fullName: workforceForm.fullName,
+      email: workforceForm.email || 'N/A',
+      phone: workforceForm.phone,
+      gender: 'Not Specified',
+      preferredDepartment: workforceForm.department,
+      submissionDate: new Date().toISOString().split('T')[0],
+      assignedMinisterId: null,
+      assignedMinisterName: null,
+      currentStage: 'Baptismal Class',
+      stageStatus: 'Pending',
+      certificates: {
+        baptismCertName: workforceForm.baptismCertName || null,
+        believersCertName: workforceForm.believersCertName || null,
+        witCertName: workforceForm.witCertName || null
+      },
+      notes: workforceForm.notes
+    };
+
+    try {
+      const existing = JSON.parse(localStorage.getItem('rccg_workforce_applications') || '[]');
+      localStorage.setItem('rccg_workforce_applications', JSON.stringify([newApp, ...existing]));
+    } catch (err) {
+      console.error(err);
+    }
+
     setWorkforceSuccessMessage(`God bless you, ${workforceForm.fullName}! Your Workforce Application for ${workforceForm.department} has been submitted successfully. Our workforce coordinator will contact you shortly.`);
     setWorkforceModalOpen(false);
-    setWorkforceForm({ fullName: '', phone: '', email: '', department: 'Ushering & Protocol', status: 'Baptized Member', notes: '' });
+    setWorkforceForm({
+      fullName: '',
+      phone: '',
+      email: '',
+      department: 'Ushering & Protocol',
+      status: 'Baptized Member',
+      notes: '',
+      baptismCertName: '',
+      believersCertName: '',
+      witCertName: ''
+    });
     setTimeout(() => setWorkforceSuccessMessage(null), 8000);
   };
 
@@ -1708,6 +1750,75 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                     <option value="Worker Transfer">Worker Transfer from RCCG Parish</option>
                     <option value="New Member">New Parishioner</option>
                   </select>
+                </div>
+              </div>
+
+              {/* PRIOR TRAINING CERTIFICATES (OPTIONAL / NULLABLE) */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-emerald-600" />
+                    <span>Prior Class Verification Certificates (Optional)</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    If you have completed any of these training programs, upload your certificates for verification. (Can be left empty if not yet completed).
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Baptism Cert</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        setWorkforceForm({ ...workforceForm, baptismCertName: file ? file.name : '' });
+                      }}
+                      className="w-full text-[10px] text-slate-600 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200"
+                    />
+                    {workforceForm.baptismCertName && (
+                      <span className="text-[10px] text-emerald-700 font-medium block truncate mt-0.5">
+                        ✓ {workforceForm.baptismCertName}
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Believer's Cert</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        setWorkforceForm({ ...workforceForm, believersCertName: file ? file.name : '' });
+                      }}
+                      className="w-full text-[10px] text-slate-600 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200"
+                    />
+                    {workforceForm.believersCertName && (
+                      <span className="text-[10px] text-emerald-700 font-medium block truncate mt-0.5">
+                        ✓ {workforceForm.believersCertName}
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Worker in Training</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        setWorkforceForm({ ...workforceForm, witCertName: file ? file.name : '' });
+                      }}
+                      className="w-full text-[10px] text-slate-600 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200"
+                    />
+                    {workforceForm.witCertName && (
+                      <span className="text-[10px] text-emerald-700 font-medium block truncate mt-0.5">
+                        ✓ {workforceForm.witCertName}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
