@@ -2339,32 +2339,16 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
-                          <select
-                            value={regGender}
-                            onChange={(e) => setRegGender(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-                          >
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
-                          <select
-                            value={regStatus}
-                            onChange={(e) => setRegStatus(e.target.value as any)}
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-                          >
-                            <option value="Full Member">Full Member</option>
-                            <option value="New Convert">New Convert</option>
-                            <option value="First Timer">First Timer</option>
-                            <option value="Under Follow-up">Under Follow-up</option>
-                          </select>
-                        </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
+                        <select
+                          value={regGender}
+                          onChange={(e) => setRegGender(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                        >
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                        </select>
                       </div>
 
                       <button
