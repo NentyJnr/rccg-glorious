@@ -81,6 +81,31 @@ interface ServiceReport {
   totalOffering: number;
 }
 
+export interface HouseFellowshipReportItem {
+  id: string;
+  centerName: string;
+  reportDate: string;
+  menCount: number;
+  womenCount: number;
+  childrenCount: number;
+  totalAttendance: number;
+  offeringAmount: number;
+  studyTopic: string;
+  leaderName?: string;
+}
+
+export interface OutreachReportItem {
+  id: string;
+  locationName: string;
+  reportDate: string;
+  menReached: number;
+  womenReached: number;
+  childrenReached: number;
+  totalReached: number;
+  soulsWonCount: number;
+  leaderName?: string;
+}
+
 interface ServiceCategoryItem {
   id: string;
   name: string;
@@ -656,11 +681,149 @@ export default function App() {
     setNewUserPhone('');
   };
 
-  // --- Fellowship / Outreach Form State ---
-  const [outreachLocation, setOutreachLocation] = useState('Market Square Outreach');
-  const [outreachSouls, setOutreachSouls] = useState(14);
+  // --- Fellowship & Outreach Sub-tab State ---
+  const [fellowshipSubTab, setFellowshipSubTab] = useState<'house-fellowship' | 'outreach'>('house-fellowship');
+
+  // House Fellowship Form & Reports State
   const [fellowshipCenter, setFellowshipCenter] = useState('Grace Center - Victoria Island');
-  const [fellowshipOffering, setFellowshipOffering] = useState(25000);
+  const [fellowshipMen, setFellowshipMen] = useState<number>(8);
+  const [fellowshipWomen, setFellowshipWomen] = useState<number>(12);
+  const [fellowshipChildren, setFellowshipChildren] = useState<number>(5);
+  const [fellowshipOffering, setFellowshipOffering] = useState<number>(25000);
+  const [fellowshipTopic, setFellowshipTopic] = useState('Living a Life of Holiness');
+
+  const [houseFellowshipReports, setHouseFellowshipReports] = useState<HouseFellowshipReportItem[]>([
+    {
+      id: 'hfr_1',
+      centerName: 'Grace Center - Victoria Island',
+      reportDate: '2026-09-20',
+      menCount: 8,
+      womenCount: 12,
+      childrenCount: 5,
+      totalAttendance: 25,
+      offeringAmount: 25000,
+      studyTopic: 'Living a Life of Holiness',
+      leaderName: 'Brother Samuel'
+    },
+    {
+      id: 'hfr_2',
+      centerName: 'Faith Fellowship Center - Lekki Phase 1',
+      reportDate: '2026-09-13',
+      menCount: 12,
+      womenCount: 15,
+      childrenCount: 8,
+      totalAttendance: 35,
+      offeringAmount: 42000,
+      studyTopic: 'Walking in Divine Favor',
+      leaderName: 'Deaconess Mary Johnson'
+    },
+    {
+      id: 'hfr_3',
+      centerName: 'Victory Center - Ikoyi',
+      reportDate: '2026-09-06',
+      menCount: 10,
+      womenCount: 14,
+      childrenCount: 6,
+      totalAttendance: 30,
+      offeringAmount: 35000,
+      studyTopic: 'The Power of Prevailing Prayer',
+      leaderName: 'Sister Grace Usang'
+    }
+  ]);
+
+  // Outreach Form & Reports State
+  const [outreachLocation, setOutreachLocation] = useState('Market Square Outreach');
+  const [outreachMen, setOutreachMen] = useState<number>(25);
+  const [outreachWomen, setOutreachWomen] = useState<number>(30);
+  const [outreachChildren, setOutreachChildren] = useState<number>(15);
+  const [outreachSouls, setOutreachSouls] = useState<number>(14);
+
+  const [outreachReports, setOutreachReports] = useState<OutreachReportItem[]>([
+    {
+      id: 'out_1',
+      locationName: 'Market Square Outreach',
+      reportDate: '2026-09-19',
+      menReached: 25,
+      womenReached: 30,
+      childrenReached: 15,
+      totalReached: 70,
+      soulsWonCount: 14,
+      leaderName: 'Minister David Okafor'
+    },
+    {
+      id: 'out_2',
+      locationName: 'Bus Terminal Evangelism Crusade',
+      reportDate: '2026-09-12',
+      menReached: 40,
+      womenReached: 45,
+      childrenReached: 20,
+      totalReached: 105,
+      soulsWonCount: 22,
+      leaderName: 'Evang. Oluwaseun Adeleke'
+    },
+    {
+      id: 'out_3',
+      locationName: 'Community Medical & Gospel Outreach',
+      reportDate: '2026-09-05',
+      menReached: 60,
+      womenReached: 75,
+      childrenReached: 30,
+      totalReached: 165,
+      soulsWonCount: 31,
+      leaderName: 'Deaconess Mary Johnson'
+    }
+  ]);
+
+  const handleHouseFellowshipSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fellowshipCenter.trim()) {
+      showNotification('Center location name is required.', 'error');
+      return;
+    }
+
+    const totalAtt = Number(fellowshipMen || 0) + Number(fellowshipWomen || 0) + Number(fellowshipChildren || 0);
+
+    const newReport: HouseFellowshipReportItem = {
+      id: 'hfr_' + Date.now(),
+      centerName: fellowshipCenter.trim(),
+      reportDate: new Date().toISOString().split('T')[0],
+      menCount: Number(fellowshipMen || 0),
+      womenCount: Number(fellowshipWomen || 0),
+      childrenCount: Number(fellowshipChildren || 0),
+      totalAttendance: totalAtt,
+      offeringAmount: Number(fellowshipOffering || 0),
+      studyTopic: fellowshipTopic.trim() || 'Holiness & Grace',
+      leaderName: 'Brother Samuel'
+    };
+
+    setHouseFellowshipReports([newReport, ...houseFellowshipReports]);
+    showNotification(`House Fellowship report for "${newReport.centerName}" submitted successfully!`);
+  };
+
+  const handleOutreachSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!outreachLocation.trim()) {
+      showNotification('Outreach location is required.', 'error');
+      return;
+    }
+
+    const totalR = Number(outreachMen || 0) + Number(outreachWomen || 0) + Number(outreachChildren || 0);
+
+    const newReport: OutreachReportItem = {
+      id: 'out_' + Date.now(),
+      locationName: outreachLocation.trim(),
+      reportDate: new Date().toISOString().split('T')[0],
+      menReached: Number(outreachMen || 0),
+      womenReached: Number(outreachWomen || 0),
+      childrenReached: Number(outreachChildren || 0),
+      totalReached: totalR,
+      soulsWonCount: Number(outreachSouls || 0),
+      leaderName: 'Evangelism Team'
+    };
+
+    setOutreachReports([newReport, ...outreachReports]);
+    showNotification(`Outreach report for "${newReport.locationName}" (${newReport.soulsWonCount} souls won) submitted successfully!`);
+  };
 
   // Current Authenticated User Session
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -1538,119 +1701,327 @@ export default function App() {
 
         {/* HOUSE FELLOWSHIP & OUTREACH TAB */}
         {activeTab === 'fellowship' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* House Fellowship Report Card */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-              <div className="flex items-center space-x-3 border-b pb-4">
-                <div className="p-2.5 bg-rccg-blue/10 rounded-xl text-rccg-blue">
-                  <Building2 className="w-6 h-6" />
-                </div>
+          <div className="space-y-6">
+            
+            {/* SUB-TABS NAVIGATION HEADER */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center space-x-2">
+                <Building2 className="w-6 h-6 text-rccg-blue" />
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">House Fellowship Weekly Report</h3>
-                  <p className="text-xs text-slate-500">For Center Leaders and Ushering Admin oversight.</p>
+                  <h2 className="text-xl font-bold text-slate-900">Parish Fellowship & Outreach Reports</h2>
+                  <p className="text-xs text-slate-500">Record weekly house fellowship attendance & street evangelism souls won.</p>
                 </div>
               </div>
 
-              <form onSubmit={(e) => { e.preventDefault(); showNotification('House Fellowship report recorded!'); }} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Center / Location Name</label>
-                  <input
-                    type="text"
-                    value={fellowshipCenter}
-                    onChange={(e) => setFellowshipCenter(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Men</label>
-                    <input type="number" defaultValue="8" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Women</label>
-                    <input type="number" defaultValue="12" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Children</label>
-                    <input type="number" defaultValue="5" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Offering Amount ({org.baseCurrency})</label>
-                  <input
-                    type="number"
-                    value={fellowshipOffering}
-                    onChange={(e) => setFellowshipOffering(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Study Topic / Manual Title</label>
-                  <input type="text" defaultValue="Living a Life of Holiness" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm" />
-                </div>
-
-                <button type="submit" className="w-full py-3 bg-rccg-blue text-white font-bold text-sm rounded-xl shadow-md">
-                  Submit House Fellowship Report
+              <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                <button
+                  onClick={() => setFellowshipSubTab('house-fellowship')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
+                    fellowshipSubTab === 'house-fellowship'
+                      ? 'bg-rccg-blue text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                  }`}
+                >
+                  <Building2 className="w-4 h-4" />
+                  <span>House Fellowship ({houseFellowshipReports.length})</span>
                 </button>
-              </form>
+
+                <button
+                  onClick={() => setFellowshipSubTab('outreach')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
+                    fellowshipSubTab === 'outreach'
+                      ? 'bg-rccg-red text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                  }`}
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span>Church on the Street Outreach ({outreachReports.length})</span>
+                </button>
+              </div>
             </div>
 
-            {/* Church on the Street (Outreach) Card */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-              <div className="flex items-center space-x-3 border-b pb-4">
-                <div className="p-2.5 bg-rccg-red/10 rounded-xl text-rccg-red">
-                  <MapPin className="w-6 h-6" />
+            {/* SUB-TAB 1: HOUSE FELLOWSHIP REPORTS */}
+            {fellowshipSubTab === 'house-fellowship' && (
+              <div className="space-y-6">
+                {/* 1. TOP FORM */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2.5 bg-rccg-blue/10 rounded-xl text-rccg-blue">
+                        <Building2 className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900">Submit House Fellowship Weekly Report</h3>
+                        <p className="text-xs text-slate-500">For Center Leaders and Ushering Admin oversight.</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-blue-50 text-rccg-blue rounded-full text-xs font-bold font-mono border border-blue-200">
+                      Weekly Entry
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleHouseFellowshipSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Center / Location Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={fellowshipCenter}
+                          onChange={(e) => setFellowshipCenter(e.target.value)}
+                          placeholder="e.g. Grace Center - Victoria Island"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Study Topic / Manual Title</label>
+                        <input
+                          type="text"
+                          value={fellowshipTopic}
+                          onChange={(e) => setFellowshipTopic(e.target.value)}
+                          placeholder="e.g. Living a Life of Holiness"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Men Count</label>
+                        <input
+                          type="number"
+                          value={fellowshipMen}
+                          onChange={(e) => setFellowshipMen(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Women Count</label>
+                        <input
+                          type="number"
+                          value={fellowshipWomen}
+                          onChange={(e) => setFellowshipWomen(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Children Count</label>
+                        <input
+                          type="number"
+                          value={fellowshipChildren}
+                          onChange={(e) => setFellowshipChildren(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Offering Amount ({org.baseCurrency})</label>
+                        <input
+                          type="number"
+                          value={fellowshipOffering}
+                          onChange={(e) => setFellowshipOffering(parseFloat(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-bold text-emerald-700"
+                        />
+                      </div>
+                    </div>
+
+                    <button type="submit" className="w-full py-3 bg-rccg-blue hover:bg-blue-900 text-white font-extrabold text-sm rounded-xl shadow-md transition cursor-pointer">
+                      Submit House Fellowship Report
+                    </button>
+                  </form>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Church on the Street (Outreach)</h3>
-                  <p className="text-xs text-slate-500">Record outreach souls won & street attendance.</p>
+
+                {/* 2. GET ALL BELOW SORTED BY MOST RECENT */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden space-y-4 p-6">
+                  <div className="flex justify-between items-center border-b pb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-rccg-blue" />
+                        <span>Submitted House Fellowship Reports</span>
+                      </h3>
+                      <p className="text-xs text-slate-500">Sorted by most recent entry date.</p>
+                    </div>
+                    <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold font-mono">
+                      {houseFellowshipReports.length} Reports Logged
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          <th className="py-3 px-4">Date</th>
+                          <th className="py-3 px-4">Center / Location</th>
+                          <th className="py-3 px-4">Study Topic</th>
+                          <th className="py-3 px-4 text-center">Attendance (M/W/C)</th>
+                          <th className="py-3 px-4 text-center">Total Att.</th>
+                          <th className="py-3 px-4 text-right">Offering ({org.baseCurrency})</th>
+                          <th className="py-3 px-4">Center Leader</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs font-medium">
+                        {houseFellowshipReports
+                          .sort((a, b) => new Date(b.reportDate).getTime() - new Date(a.reportDate).getTime())
+                          .map((rep) => (
+                            <tr key={rep.id} className="hover:bg-slate-50/80 transition">
+                              <td className="py-3 px-4 font-mono font-bold text-slate-900">{rep.reportDate}</td>
+                              <td className="py-3 px-4 font-bold text-rccg-blue">{rep.centerName}</td>
+                              <td className="py-3 px-4 text-slate-700">{rep.studyTopic}</td>
+                              <td className="py-3 px-4 text-center font-mono text-slate-600">
+                                {rep.menCount} / {rep.womenCount} / {rep.childrenCount}
+                              </td>
+                              <td className="py-3 px-4 text-center font-bold text-slate-900">
+                                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-rccg-blue border border-blue-200 font-mono">
+                                  {rep.totalAttendance}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right font-bold text-emerald-700 font-mono">
+                                {rep.offeringAmount.toLocaleString()}
+                              </td>
+                              <td className="py-3 px-4 text-slate-600 font-semibold">{rep.leaderName || 'Center Leader'}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
+            )}
 
-              <form onSubmit={(e) => { e.preventDefault(); showNotification('Church on the Street outreach report saved!'); }} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Outreach Street / Location</label>
-                  <input
-                    type="text"
-                    value={outreachLocation}
-                    onChange={(e) => setOutreachLocation(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium"
-                  />
+            {/* SUB-TAB 2: CHURCH ON THE STREET (OUTREACH) */}
+            {fellowshipSubTab === 'outreach' && (
+              <div className="space-y-6">
+                {/* 1. TOP FORM */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2.5 bg-rccg-red/10 rounded-xl text-rccg-red">
+                        <MapPin className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900">Church on the Street (Outreach Report)</h3>
+                        <p className="text-xs text-slate-500">Record outreach souls won & street attendance.</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-red-50 text-rccg-red rounded-full text-xs font-bold font-mono border border-red-200">
+                      Evangelism Log
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleOutreachSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Outreach Street / Location *</label>
+                      <input
+                        type="text"
+                        required
+                        value={outreachLocation}
+                        onChange={(e) => setOutreachLocation(e.target.value)}
+                        placeholder="e.g. Market Square Outreach"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-rccg-red focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Men Reached</label>
+                        <input
+                          type="number"
+                          value={outreachMen}
+                          onChange={(e) => setOutreachMen(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Women Reached</label>
+                        <input
+                          type="number"
+                          value={outreachWomen}
+                          onChange={(e) => setOutreachWomen(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Children Reached</label>
+                        <input
+                          type="number"
+                          value={outreachChildren}
+                          onChange={(e) => setOutreachChildren(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-rccg-red mb-1">Souls Won (Converts)</label>
+                        <input
+                          type="number"
+                          value={outreachSouls}
+                          onChange={(e) => setOutreachSouls(parseInt(e.target.value) || 0)}
+                          className="w-full bg-red-50 border border-red-300 rounded-xl px-4 py-2 text-sm font-black text-rccg-red focus:ring-2 focus:ring-red-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <button type="submit" className="w-full py-3 bg-rccg-red hover:bg-red-700 text-white font-extrabold text-sm rounded-xl shadow-md transition cursor-pointer">
+                      Submit Outreach Report
+                    </button>
+                  </form>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Men Reached</label>
-                    <input type="number" defaultValue="25" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm" />
+                {/* 2. GET ALL BELOW SORTED BY MOST RECENT */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden space-y-4 p-6">
+                  <div className="flex justify-between items-center border-b pb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-rccg-red" />
+                        <span>Submitted Church on the Street Outreach Logs</span>
+                      </h3>
+                      <p className="text-xs text-slate-500">Sorted by most recent outreach date.</p>
+                    </div>
+                    <span className="px-3 py-1 bg-red-50 text-rccg-red rounded-full text-xs font-bold font-mono border border-red-200">
+                      {outreachReports.length} Outreaches Logged
+                    </span>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Women Reached</label>
-                    <input type="number" defaultValue="30" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Children Reached</label>
-                    <input type="number" defaultValue="15" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm" />
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          <th className="py-3 px-4">Date</th>
+                          <th className="py-3 px-4">Outreach Street / Location</th>
+                          <th className="py-3 px-4 text-center">People Reached (M/W/C)</th>
+                          <th className="py-3 px-4 text-center">Total Reached</th>
+                          <th className="py-3 px-4 text-center font-bold text-rccg-red">Souls Won (Converts)</th>
+                          <th className="py-3 px-4">Evangelism Leader</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs font-medium">
+                        {outreachReports
+                          .sort((a, b) => new Date(b.reportDate).getTime() - new Date(a.reportDate).getTime())
+                          .map((rep) => (
+                            <tr key={rep.id} className="hover:bg-slate-50/80 transition">
+                              <td className="py-3 px-4 font-mono font-bold text-slate-900">{rep.reportDate}</td>
+                              <td className="py-3 px-4 font-bold text-slate-900">{rep.locationName}</td>
+                              <td className="py-3 px-4 text-center font-mono text-slate-600">
+                                {rep.menReached} / {rep.womenReached} / {rep.childrenReached}
+                              </td>
+                              <td className="py-3 px-4 text-center font-bold text-slate-900">
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200 font-mono">
+                                  {rep.totalReached}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className="px-3 py-1 rounded-full bg-red-100 text-rccg-red font-black text-xs border border-red-200 font-mono shadow-2xs">
+                                  ✨ {rep.soulsWonCount} Souls
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-slate-600 font-semibold">{rep.leaderName || 'Evangelism Team'}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-rccg-red mb-1">Souls Won (New Converts)</label>
-                  <input
-                    type="number"
-                    value={outreachSouls}
-                    onChange={(e) => setOutreachSouls(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-extrabold text-rccg-red"
-                  />
-                </div>
-
-                <button type="submit" className="w-full py-3 bg-rccg-red text-white font-bold text-sm rounded-xl shadow-md">
-                  Submit Outreach Report
-                </button>
-              </form>
-            </div>
+              </div>
+            )}
           </div>
         )}
 
