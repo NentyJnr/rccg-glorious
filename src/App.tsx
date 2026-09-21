@@ -1980,7 +1980,7 @@ export default function App() {
                 }`}
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>Portal System Users ({users.length})</span>
+                <span>Portal System Users & Members ({users.length + members.length})</span>
               </button>
 
               <button
@@ -1991,16 +1991,6 @@ export default function App() {
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Ministers Directory ({ministers.length})</span>
-              </button>
-
-              <button
-                onClick={() => setUserSubTab('member-upload')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-                  userSubTab === 'member-upload' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <Upload className="w-4 h-4" />
-                <span>Register & Bulk Upload Members ({members.length})</span>
               </button>
 
               <button
@@ -2024,206 +2014,8 @@ export default function App() {
               </button>
             </div>
 
-            {/* SUB-PANEL 1: PORTAL USERS & ACCESS ROLES */}
+            {/* SUB-PANEL 1: PORTAL SYSTEM USERS & MEMBERS */}
             {userSubTab === 'portal-users' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Onboard User Form */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2 border-b pb-3">
-                    <UserPlus className="w-5 h-5 text-rccg-blue" />
-                    <span>Onboard New User</span>
-                  </h3>
-
-                  <form onSubmit={handleOnboardUser} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Sister Mercy Johnson"
-                        value={newUserName}
-                        onChange={(e) => setNewUserName(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
-                      <input
-                        type="email"
-                        placeholder="mercy@rccgvictory.org"
-                        value={newUserEmail}
-                        onChange={(e) => setNewUserEmail(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Phone Number</label>
-                      <input
-                        type="text"
-                        placeholder="+2348000000000"
-                        value={newUserPhone}
-                        onChange={(e) => setNewUserPhone(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Portal Role / Department</label>
-                      <select
-                        value={newUserRole}
-                        onChange={(e) => setNewUserRole(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
-                      >
-                        <option value="UsheringDepartment">Ushering Department</option>
-                        <option value="HouseFellowshipLeader">House Fellowship Leader</option>
-                        <option value="SystemAdmin">System Admin</option>
-                      </select>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full py-3 bg-rccg-blue hover:bg-rccg-navy text-white text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-2"
-                    >
-                      <Mail className="w-4 h-4" />
-                      <span>Send Onboarding Email</span>
-                    </button>
-                  </form>
-
-                  {createdTempCredentials && (
-                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-2">
-                      <div className="font-bold text-emerald-800 flex items-center space-x-1">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span>Temporary Pass Generated</span>
-                      </div>
-                      <div><span className="text-slate-500">Email:</span> {createdTempCredentials.email}</div>
-                      <div><span className="text-slate-500">Temp Pass:</span> <code className="bg-white px-2 py-0.5 rounded font-mono border text-emerald-900">{createdTempCredentials.tempPass}</code></div>
-                      <p className="text-[11px] text-slate-500 italic mt-1">User will be prompted to reset password upon initial login.</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Registered Users List */}
-                <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                  <div className="p-6 border-b border-slate-100">
-                    <h3 className="text-lg font-bold text-slate-900">Parish Portal Users</h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-slate-600">
-                      <thead className="bg-slate-50 text-slate-700 uppercase text-xs font-bold tracking-wider">
-                        <tr>
-                          <th className="py-3.5 px-6">User & Role</th>
-                          <th className="py-3.5 px-6">Contact</th>
-                          <th className="py-3.5 px-6">Must Change Password</th>
-                          <th className="py-3.5 px-6">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {users.map((u) => (
-                          <tr key={u.id} className="hover:bg-slate-50/80">
-                            <td className="py-4 px-6 font-medium text-slate-900">
-                              <div>{u.fullName}</div>
-                              <span className="text-xs text-slate-400 font-normal">{u.role}</span>
-                            </td>
-                            <td className="py-4 px-6 text-xs text-slate-500">
-                              <div>{u.email}</div>
-                              <div>{u.phone}</div>
-                            </td>
-                            <td className="py-4 px-6">
-                              {u.mustChangePassword ? (
-                                <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
-                                  <Lock className="w-3 h-3" />
-                                  <span>Pending Reset</span>
-                                </span>
-                              ) : (
-                                <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
-                                  <ShieldCheck className="w-3 h-3" />
-                                  <span>Active & Verified</span>
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-4 px-6">
-                              <span className="text-xs font-semibold text-emerald-600">Active</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* SUB-PANEL 2: MINISTERS DIRECTORY */}
-            {userSubTab === 'ministers' && (
-              <div className="space-y-6">
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <PlusCircle className="w-5 h-5 text-rccg-blue" />
-                    <span>Register New Minister / Preacher / Leader</span>
-                  </h3>
-                  <form onSubmit={handleAddMinister} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Ecclesiastical Title</label>
-                      <select
-                        value={newMinisterTitle}
-                        onChange={(e) => setNewMinisterTitle(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-bold text-slate-800"
-                      >
-                        <option value="Pastor">Pastor</option>
-                        <option value="Minister">Minister</option>
-                        <option value="Deacon">Deacon</option>
-                        <option value="Deaconess">Deaconess</option>
-                        <option value="Evangelist">Evangelist</option>
-                        <option value="Brother">Brother</option>
-                        <option value="Sister">Sister</option>
-                        <option value="Mummy">Mummy</option>
-                        <option value="Daddy">Daddy</option>
-                        <option value="Guest Preacher">Guest Preacher</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={newMinisterName}
-                        onChange={(e) => setNewMinisterName(e.target.value)}
-                        placeholder="e.g. Oluwaseun Adeleke"
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <button type="submit" className="w-full py-2.5 bg-rccg-green text-white font-bold text-sm rounded-xl shadow hover:bg-emerald-700 transition">
-                        Save Minister
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Parish Ministers & Leadership Directory</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {ministers.map((m) => (
-                      <div key={m.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-rccg-blue text-white flex items-center justify-center font-bold text-sm shadow">
-                          {m.fullName.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-slate-900">{m.fullName}</div>
-                          <div className="text-xs text-slate-500 font-mono">{m.title}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* SUB-PANEL 3: REGISTER & BULK MEMBER UPLOAD */}
-            {userSubTab === 'member-upload' && (
               <div className="space-y-6">
                 {uploadSuccessBanner && (
                   <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 font-bold flex items-center gap-2">
@@ -2233,136 +2025,218 @@ export default function App() {
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* SINGLE MEMBER REGISTRATION FORM */}
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                    <div className="border-b border-slate-100 pb-3">
-                      <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <UserPlus className="w-5 h-5 text-rccg-blue" />
-                        <span>Register New Parishioner</span>
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">Register individual member details into parish database.</p>
-                    </div>
-
-                    <form onSubmit={handleRegisterSingleMember} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Surname *</label>
-                          <input
-                            type="text"
-                            required
-                            value={regSurname}
-                            onChange={(e) => setRegSurname(e.target.value)}
-                            placeholder="e.g. Okon"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Firstname *</label>
-                          <input
-                            type="text"
-                            required
-                            value={regFirstname}
-                            onChange={(e) => setRegFirstname(e.target.value)}
-                            placeholder="e.g. Emmanuel"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
-                          />
-                        </div>
+                  {/* Left Column Forms */}
+                  <div className="space-y-6">
+                    {/* SINGLE MEMBER REGISTRATION FORM */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                      <div className="border-b border-slate-100 pb-3">
+                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                          <UserPlus className="w-5 h-5 text-rccg-blue" />
+                          <span>Register New Parishioner</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Register individual member details into parish database.</p>
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">Whatsapp Number *</label>
-                        <input
-                          type="tel"
-                          required
-                          value={regWhatsapp}
-                          onChange={(e) => setRegWhatsapp(e.target.value)}
-                          placeholder="e.g. +2348031112233"
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
-                        <input
-                          type="email"
-                          value={regEmail}
-                          onChange={(e) => setRegEmail(e.target.value)}
-                          placeholder="name@example.com"
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">Home Address</label>
-                        <input
-                          type="text"
-                          value={regAddress}
-                          onChange={(e) => setRegAddress(e.target.value)}
-                          placeholder="12 Allen Avenue, Ikeja, Lagos"
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
-                        />
-                      </div>
-
-                      {/* DATE OF BIRTH (DAY & MONTH FOR BIRTHDAY CELEBRATION ALERTS) */}
-                      <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl space-y-2">
-                        <label className="block text-xs font-bold text-rccg-blue flex items-center gap-1">
-                          <span>🎂 Date of Birth (Day & Month)</span>
-                        </label>
-                        <p className="text-[11px] text-slate-500 font-medium">Used to send automated birthday greetings & announcements.</p>
+                      <form onSubmit={handleRegisterSingleMember} className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Day</label>
-                            <select
-                              value={regDobDay}
-                              onChange={(e) => setRegDobDay(parseInt(e.target.value) || 1)}
-                              className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
-                            >
-                              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                                <option key={day} value={day}>Day {day}</option>
-                              ))}
-                            </select>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Surname *</label>
+                            <input
+                              type="text"
+                              required
+                              value={regSurname}
+                              onChange={(e) => setRegSurname(e.target.value)}
+                              placeholder="e.g. Okon"
+                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
+                            />
                           </div>
 
                           <div>
-                            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Month</label>
-                            <select
-                              value={regDobMonth}
-                              onChange={(e) => setRegDobMonth(e.target.value)}
-                              className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
-                            >
-                              {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                                <option key={m} value={m}>{m}</option>
-                              ))}
-                            </select>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Firstname *</label>
+                            <input
+                              type="text"
+                              required
+                              value={regFirstname}
+                              onChange={(e) => setRegFirstname(e.target.value)}
+                              placeholder="e.g. Emmanuel"
+                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
+                            />
                           </div>
                         </div>
-                      </div>
 
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
-                        <select
-                          value={regGender}
-                          onChange={(e) => setRegGender(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Whatsapp Number *</label>
+                          <input
+                            type="tel"
+                            required
+                            value={regWhatsapp}
+                            onChange={(e) => setRegWhatsapp(e.target.value)}
+                            placeholder="e.g. +2348031112233"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                          <input
+                            type="email"
+                            value={regEmail}
+                            onChange={(e) => setRegEmail(e.target.value)}
+                            placeholder="name@example.com"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Home Address</label>
+                          <input
+                            type="text"
+                            value={regAddress}
+                            onChange={(e) => setRegAddress(e.target.value)}
+                            placeholder="12 Allen Avenue, Ikeja, Lagos"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
+                          />
+                        </div>
+
+                        {/* DATE OF BIRTH */}
+                        <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl space-y-2">
+                          <label className="block text-xs font-bold text-rccg-blue flex items-center gap-1">
+                            <span>🎂 Date of Birth (Day & Month)</span>
+                          </label>
+                          <p className="text-[11px] text-slate-500 font-medium">Used to send automated birthday greetings & announcements.</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Day</label>
+                              <select
+                                value={regDobDay}
+                                onChange={(e) => setRegDobDay(parseInt(e.target.value) || 1)}
+                                className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
+                              >
+                                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                  <option key={day} value={day}>Day {day}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Month</label>
+                              <select
+                                value={regDobMonth}
+                                onChange={(e) => setRegDobMonth(e.target.value)}
+                                className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
+                              >
+                                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                                  <option key={m} value={m}>{m}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
+                          <select
+                            value={regGender}
+                            onChange={(e) => setRegGender(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                          >
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                          </select>
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="w-full py-3 bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer"
                         >
-                          <option value="Male">Male</option>
-                          <option value="Female">Female</option>
-                        </select>
-                      </div>
+                          <UserPlus className="w-4 h-4" />
+                          <span>Save Member Profile</span>
+                        </button>
+                      </form>
+                    </div>
 
-                      <button
-                        type="submit"
-                        className="w-full py-3 bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        <span>Save Member Profile</span>
-                      </button>
-                    </form>
+                    {/* Onboard User Form */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                      <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2 border-b pb-3">
+                        <ShieldCheck className="w-5 h-5 text-rccg-blue" />
+                        <span>Onboard System User</span>
+                      </h3>
+
+                      <form onSubmit={handleOnboardUser} className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Sister Mercy Johnson"
+                            value={newUserName}
+                            onChange={(e) => setNewUserName(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
+                          <input
+                            type="email"
+                            placeholder="mercy@rccgvictory.org"
+                            value={newUserEmail}
+                            onChange={(e) => setNewUserEmail(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">Phone Number</label>
+                          <input
+                            type="text"
+                            placeholder="+2348000000000"
+                            value={newUserPhone}
+                            onChange={(e) => setNewUserPhone(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">Portal Role / Department</label>
+                          <select
+                            value={newUserRole}
+                            onChange={(e) => setNewUserRole(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm"
+                          >
+                            <option value="UsheringDepartment">Ushering Department</option>
+                            <option value="HouseFellowshipLeader">House Fellowship Leader</option>
+                            <option value="SystemAdmin">System Admin</option>
+                          </select>
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="w-full py-3 bg-rccg-blue hover:bg-rccg-navy text-white text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-2"
+                        >
+                          <Mail className="w-4 h-4" />
+                          <span>Send Onboarding Email</span>
+                        </button>
+                      </form>
+
+                      {createdTempCredentials && (
+                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-2">
+                          <div className="font-bold text-emerald-800 flex items-center space-x-1">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span>Temporary Pass Generated</span>
+                          </div>
+                          <div><span className="text-slate-500">Email:</span> {createdTempCredentials.email}</div>
+                          <div><span className="text-slate-500">Temp Pass:</span> <code className="bg-white px-2 py-0.5 rounded font-mono border text-emerald-900">{createdTempCredentials.tempPass}</code></div>
+                          <p className="text-[11px] text-slate-500 italic mt-1">User will be prompted to reset password upon initial login.</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* BULK IMPORT & ROSTER DIRECTORY */}
+                  {/* Right Column Directories */}
                   <div className="lg:col-span-2 space-y-6">
+                    {/* BULK MEMBER IMPORT */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
                         <div>
@@ -2418,7 +2292,7 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* DIRECTORY TABLE */}
+                    {/* REGISTERED PARISH MEMBERS DIRECTORY TABLE */}
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <h3 className="text-base font-bold text-slate-900">Registered Parish Members ({members.length})</h3>
@@ -2473,6 +2347,55 @@ export default function App() {
                                   </td>
                                 </tr>
                               ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Registered Portal Users List */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                      <div className="p-6 border-b border-slate-100">
+                        <h3 className="text-base font-bold text-slate-900">Parish Portal System Users ({users.length})</h3>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm text-slate-600">
+                          <thead className="bg-slate-50 text-slate-700 uppercase text-xs font-bold tracking-wider">
+                            <tr>
+                              <th className="py-3.5 px-6">User & Role</th>
+                              <th className="py-3.5 px-6">Contact</th>
+                              <th className="py-3.5 px-6">Must Change Password</th>
+                              <th className="py-3.5 px-6">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {users.map((u) => (
+                              <tr key={u.id} className="hover:bg-slate-50/80">
+                                <td className="py-4 px-6 font-medium text-slate-900">
+                                  <div>{u.fullName}</div>
+                                  <span className="text-xs text-slate-400 font-normal">{u.role}</span>
+                                </td>
+                                <td className="py-4 px-6 text-xs text-slate-500">
+                                  <div>{u.email}</div>
+                                  <div>{u.phone}</div>
+                                </td>
+                                <td className="py-4 px-6">
+                                  {u.mustChangePassword ? (
+                                    <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
+                                      <Lock className="w-3 h-3" />
+                                      <span>Pending Reset</span>
+                                    </span>
+                                  ) : (
+                                    <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
+                                      <ShieldCheck className="w-3 h-3" />
+                                      <span>Active & Verified</span>
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-4 px-6">
+                                  <span className="text-xs font-semibold text-emerald-600">Active</span>
+                                </td>
+                              </tr>
+                            ))}
                           </tbody>
                         </table>
                       </div>
