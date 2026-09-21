@@ -245,7 +245,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
       {/* 1. FLOATING OVERLAY NAVIGATION HEADER ON HERO IMAGE           */}
       {/* ------------------------------------------------------------- */}
       <header className="absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-slate-950/85 via-slate-950/40 to-transparent border-b border-white/10">
-        <div className="max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32">
           <div className="flex items-center justify-between h-28 sm:h-32">
             
             {/* BRANDING: ENLARGED DUAL LOGOS DIRECTLY ON HERO BACKGROUND */}
@@ -437,7 +437,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
         </div>
 
         {/* HERO CONTENT WRAPPER - MATCHING CONTAINER MARGINS OF IMAGE 2 */}
-        <div className="max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 relative z-10 w-full my-auto">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32 relative z-10 w-full my-auto">
           
           <div className="w-full">
             
@@ -512,7 +512,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
       {/* 4. WORKFORCE & MINISTRY CALLING BANNER                       */}
       {/* ------------------------------------------------------------- */}
       <section className="bg-gradient-to-r from-blue-900 via-blue-800 to-emerald-950 text-white py-10 shadow-md">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32">
           
           {workforceSuccessMessage && (
             <div className="mb-6 bg-emerald-950/90 border border-emerald-400/60 p-4 rounded-2xl text-emerald-200 text-xs font-bold text-center animate-fadeIn shadow-xl">
@@ -550,7 +550,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
       {/* 7. SALVATION & FAITH DECISION ACCORDION                       */}
       {/* ------------------------------------------------------------- */}
       <section id="salvation" className="py-20 bg-white border-b border-slate-200">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32">
           
           <div className="text-center space-y-3 mb-12">
             <span className="inline-flex items-center px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-mono uppercase tracking-wider font-bold border border-emerald-200">
@@ -648,7 +648,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
           <div className="absolute inset-0 bg-grid-subtle opacity-25"></div>
         </div>
 
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 relative z-10 space-y-12">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32 relative z-10 space-y-12">
           
           <div className="text-center max-w-3xl mx-auto space-y-3">
             <span className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-900/60 text-emerald-300 text-xs font-mono uppercase tracking-wider font-extrabold border border-emerald-500/40 backdrop-blur-md">
@@ -686,7 +686,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
       {/* 8. PASTORAL LEADERSHIP & SPIRITUAL OVERSIGHT                 */}
       {/* ------------------------------------------------------------- */}
       <section className="py-20 bg-slate-50 border-b border-slate-200">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 space-y-12">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32 space-y-12">
           
           {/* SECTION HEADER */}
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -820,7 +820,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
       {/* 9. PARISH SERVICE SCHEDULE & CONTACT SECTION                  */}
       {/* ------------------------------------------------------------- */}
       <section id="contact" className="py-20 bg-white border-b border-slate-200">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             
             {/* SERVICE SCHEDULE COLUMN */}
@@ -1012,7 +1012,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
           <div className="absolute inset-0 bg-grid-subtle opacity-25"></div>
         </div>
 
-        <div className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             
             {/* BRAND COL */}
