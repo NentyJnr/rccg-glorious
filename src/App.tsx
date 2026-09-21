@@ -335,9 +335,9 @@ export default function App() {
 
   // Bulk Upload CSV Handlers
   const handleDownloadCSVTemplate = () => {
-    const csvContent = "Surname,Firstname,Whatsapp Number,EmailAddress,Home Address,DOB Day,DOB Month,Gender,Membership Status\n" +
-                       "King,Samuel,+2348011223344,samuel@example.com,10 Mission Road Lagos,15,May,Male,Full Member\n" +
-                       "Chidinma,Joy,+2348055667788,joy@example.com,25 Victoria Island Lagos,20,October,Female,New Convert\n";
+    const csvContent = "Surname,Firstname,Whatsapp Number,EmailAddress,Home Address,DOB Day,DOB Month,Gender\n" +
+                       "King,Samuel,+2348011223344,samuel@example.com,10 Mission Road Lagos,15,May,Male\n" +
+                       "Chidinma,Joy,+2348055667788,joy@example.com,25 Victoria Island Lagos,20,October,Female\n";
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
