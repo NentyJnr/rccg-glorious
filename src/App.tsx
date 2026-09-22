@@ -1382,6 +1382,285 @@ export default function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  // Standalone Public Member Registration Form (when share link ?register=member is opened or previewed)
+  if (showPublicMemberForm) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 py-8 animate-fadeIn">
+        <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden my-auto">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-rccg-navy via-rccg-blue to-purple-900 text-white p-6 sm:p-8 relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowPublicMemberForm(false);
+                setPublicFormSuccess(false);
+              }}
+              className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full text-slate-200 hover:text-white transition cursor-pointer"
+              title="Return to Main Website"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-3">
+              <img src={org.logoUrl} alt="Logo" className="w-10 h-10 object-contain bg-white rounded-full p-1 shadow" />
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">{org.parishName}</span>
+            </div>
+
+            <h2 className="text-base sm:text-lg font-extrabold leading-snug">
+              "I love this family of God, Lets get to Know and Celebrate with You as a Member of Glorious Family"
+            </h2>
+
+            <p className="text-xs text-blue-100 italic mt-3 pt-3 border-t border-white/20">
+              1 John 4:7-8 — "Beloved, let us love one another, for love is of God; and everyone who loves is born of God and knows God."
+            </p>
+          </div>
+
+          {/* Form Body or Success State */}
+          {publicFormSuccess ? (
+            <div className="p-8 text-center space-y-4">
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <CheckCircle2 className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Welcome to the Glorious Family!</h3>
+              <p className="text-sm text-slate-600 max-w-md mx-auto">
+                Thank you for submitting your details. You are now registered in our parish directory. We look forward to celebrating and growing together in Christ!
+              </p>
+              <div className="pt-4 flex justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPublicFormSuccess(false);
+                    setRegSurname('');
+                    setRegFirstname('');
+                    setRegWhatsapp('');
+                    setRegEmail('');
+                    setRegAddress('');
+                    setRegDobDay(1);
+                    setRegDobMonth('January');
+                    setRegGender('Male');
+                    setRegMaritalStatus('Single');
+                    setRegProfileImageUrl(null);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+                >
+                  Register Another Member
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPublicMemberForm(false);
+                    setPublicFormSuccess(false);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold shadow cursor-pointer"
+                >
+                  Continue to Website
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!regSurname || !regFirstname || !regWhatsapp) {
+                  alert('Please fill in Surname, Firstname, and Whatsapp Number.');
+                  return;
+                }
+                const newMember: Member = {
+                  id: 'mem_' + Date.now(),
+                  surname: regSurname,
+                  firstname: regFirstname,
+                  fullName: `${regSurname} ${regFirstname}`,
+                  whatsappNumber: regWhatsapp,
+                  email: regEmail || 'N/A',
+                  homeAddress: regAddress || 'N/A',
+                  dobDay: regDobDay,
+                  dobMonth: regDobMonth,
+                  gender: regGender,
+                  maritalStatus: regMaritalStatus,
+                  profileImageUrl: regProfileImageUrl,
+                  membershipStatus: 'Full Member',
+                  assignedDepartment: null,
+                  role: 'Member',
+                  dateJoined: new Date().toISOString().split('T')[0]
+                };
+                setMembers(prev => [newMember, ...prev]);
+                setPublicFormSuccess(true);
+              }}
+              className="p-6 sm:p-8 space-y-5"
+            >
+              {/* PROFILE PHOTO UPLOAD */}
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <div className="relative group">
+                  <div className="w-24 h-24 rounded-full bg-slate-100 border-2 border-rccg-blue/30 overflow-hidden flex items-center justify-center shadow-inner">
+                    {regProfileImageUrl ? (
+                      <img src={regProfileImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-10 h-10 text-slate-400" />
+                    )}
+                  </div>
+                  <label className="absolute bottom-0 right-0 bg-rccg-blue text-white p-2 rounded-full shadow hover:bg-rccg-navy transition cursor-pointer">
+                    <Camera className="w-4 h-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setRegProfileImageUrl(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <span className="text-[11px] font-bold text-slate-500">Upload Profile Photo (Optional)</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Surname *</label>
+                  <input
+                    type="text"
+                    required
+                    value={regSurname}
+                    onChange={(e) => setRegSurname(e.target.value)}
+                    placeholder="e.g. Okon"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Firstname *</label>
+                  <input
+                    type="text"
+                    required
+                    value={regFirstname}
+                    onChange={(e) => setRegFirstname(e.target.value)}
+                    placeholder="e.g. Emmanuel"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Whatsapp Number *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={regWhatsapp}
+                    onChange={(e) => setRegWhatsapp(e.target.value)}
+                    placeholder="e.g. +2348031112233"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Home Address</label>
+                <input
+                  type="text"
+                  value={regAddress}
+                  onChange={(e) => setRegAddress(e.target.value)}
+                  placeholder="12 Allen Avenue, Ikeja, Lagos"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                />
+              </div>
+
+              {/* DATE OF BIRTH */}
+              <div className="p-3.5 bg-blue-50/70 border border-blue-100 rounded-2xl space-y-2">
+                <label className="block text-xs font-bold text-rccg-blue flex items-center gap-1.5">
+                  <span>🎂 Date of Birth (Day & Month)</span>
+                </label>
+                <p className="text-[11px] text-slate-500 font-medium">Used to send automated birthday greetings & announcements.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Day</label>
+                    <select
+                      value={regDobDay}
+                      onChange={(e) => setRegDobDay(parseInt(e.target.value) || 1)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                    >
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                        <option key={day} value={day}>Day {day}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Month</label>
+                    <select
+                      value={regDobMonth}
+                      onChange={(e) => setRegDobMonth(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                    >
+                      {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
+                  <select
+                    value={regGender}
+                    onChange={(e) => setRegGender(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800"
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Marital Status</label>
+                  <select
+                    value={regMaritalStatus}
+                    onChange={(e) => setRegMaritalStatus(e.target.value as any)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800"
+                  >
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                    <option value="Engaged">Engaged</option>
+                    <option value="Widowed">Widowed</option>
+                    <option value="Divorced">Divorced</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold uppercase tracking-wider rounded-2xl shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Submit Member Profile</span>
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (viewMode === 'website') {
     return (
       <ChurchWebsite
@@ -4854,281 +5133,6 @@ export default function App() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-      {/* ---------------- PUBLIC MEMBER REGISTRATION FORM OVERLAY / MODAL ---------------- */}
-      {showPublicMemberForm && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 overflow-y-auto flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden my-8">
-            {/* Header Banner */}
-            <div className="bg-gradient-to-r from-rccg-navy via-rccg-blue to-purple-900 text-white p-6 sm:p-8 relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPublicMemberForm(false);
-                  setPublicFormSuccess(false);
-                }}
-                className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full text-slate-200 hover:text-white transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-3 mb-3">
-                <img src={org.logoUrl} alt="Logo" className="w-10 h-10 object-contain bg-white rounded-full p-1 shadow" />
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">{org.parishName}</span>
-              </div>
-
-              <h2 className="text-base sm:text-lg font-extrabold leading-snug">
-                "I love this family of God, Lets get to Know and Celebrate with You as a Member of Glorious Family"
-              </h2>
-
-              <p className="text-xs text-blue-100 italic mt-3 pt-3 border-t border-white/20">
-                1 John 4:7-8 — "Beloved, let us love one another, for love is of God; and everyone who loves is born of God and knows God."
-              </p>
-            </div>
-
-            {/* Form Body or Success State */}
-            {publicFormSuccess ? (
-              <div className="p-8 text-center space-y-4">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
-                  <CheckCircle2 className="w-10 h-10" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">Welcome to the Glorious Family!</h3>
-                <p className="text-sm text-slate-600 max-w-md mx-auto">
-                  Thank you for submitting your details. You are now registered in our parish directory. We look forward to celebrating and growing together in Christ!
-                </p>
-                <div className="pt-4 flex justify-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPublicFormSuccess(false);
-                      setRegSurname('');
-                      setRegFirstname('');
-                      setRegWhatsapp('');
-                      setRegEmail('');
-                      setRegAddress('');
-                      setRegDobDay(1);
-                      setRegDobMonth('January');
-                      setRegGender('Male');
-                      setRegMaritalStatus('Single');
-                      setRegProfileImageUrl(null);
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
-                  >
-                    Register Another Member
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPublicMemberForm(false);
-                      setPublicFormSuccess(false);
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold shadow cursor-pointer"
-                  >
-                    Close Form
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!regSurname || !regFirstname || !regWhatsapp) {
-                    alert('Please fill in Surname, Firstname, and Whatsapp Number.');
-                    return;
-                  }
-                  const newMember: Member = {
-                    id: 'mem_' + Date.now(),
-                    surname: regSurname,
-                    firstname: regFirstname,
-                    fullName: `${regSurname} ${regFirstname}`,
-                    whatsappNumber: regWhatsapp,
-                    email: regEmail || 'N/A',
-                    homeAddress: regAddress || 'N/A',
-                    dobDay: regDobDay,
-                    dobMonth: regDobMonth,
-                    gender: regGender,
-                    maritalStatus: regMaritalStatus,
-                    profileImageUrl: regProfileImageUrl,
-                    membershipStatus: 'Full Member',
-                    assignedDepartment: null,
-                    role: 'Member',
-                    dateJoined: new Date().toISOString().split('T')[0]
-                  };
-                  setMembers(prev => [newMember, ...prev]);
-                  setPublicFormSuccess(true);
-                }}
-                className="p-6 sm:p-8 space-y-5"
-              >
-                {/* PROFILE PHOTO UPLOAD */}
-                <div className="flex flex-col items-center justify-center space-y-2">
-                  <div className="relative group">
-                    <div className="w-24 h-24 rounded-full bg-slate-100 border-2 border-rccg-blue/30 overflow-hidden flex items-center justify-center shadow-inner">
-                      {regProfileImageUrl ? (
-                        <img src={regProfileImageUrl} alt="Preview" className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-10 h-10 text-slate-400" />
-                      )}
-                    </div>
-                    <label className="absolute bottom-0 right-0 bg-rccg-blue text-white p-2 rounded-full shadow hover:bg-rccg-navy transition cursor-pointer">
-                      <Camera className="w-4 h-4" />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setRegProfileImageUrl(reader.result as string);
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                    </label>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-500">Upload Profile Photo (Optional)</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Surname *</label>
-                    <input
-                      type="text"
-                      required
-                      value={regSurname}
-                      onChange={(e) => setRegSurname(e.target.value)}
-                      placeholder="e.g. Okon"
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Firstname *</label>
-                    <input
-                      type="text"
-                      required
-                      value={regFirstname}
-                      onChange={(e) => setRegFirstname(e.target.value)}
-                      placeholder="e.g. Emmanuel"
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Whatsapp Number *</label>
-                    <input
-                      type="tel"
-                      required
-                      value={regWhatsapp}
-                      onChange={(e) => setRegWhatsapp(e.target.value)}
-                      placeholder="e.g. +2348031112233"
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      value={regEmail}
-                      onChange={(e) => setRegEmail(e.target.value)}
-                      placeholder="name@example.com"
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Home Address</label>
-                  <input
-                    type="text"
-                    value={regAddress}
-                    onChange={(e) => setRegAddress(e.target.value)}
-                    placeholder="12 Allen Avenue, Ikeja, Lagos"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
-                  />
-                </div>
-
-                {/* DATE OF BIRTH */}
-                <div className="p-3.5 bg-blue-50/70 border border-blue-100 rounded-2xl space-y-2">
-                  <label className="block text-xs font-bold text-rccg-blue flex items-center gap-1.5">
-                    <span>🎂 Date of Birth (Day & Month)</span>
-                  </label>
-                  <p className="text-[11px] text-slate-500 font-medium">Used to send automated birthday greetings & announcements.</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Day</label>
-                      <select
-                        value={regDobDay}
-                        onChange={(e) => setRegDobDay(parseInt(e.target.value) || 1)}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-                      >
-                        {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                          <option key={day} value={day}>Day {day}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Month</label>
-                      <select
-                        value={regDobMonth}
-                        onChange={(e) => setRegDobMonth(e.target.value)}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-                      >
-                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
-                    <select
-                      value={regGender}
-                      onChange={(e) => setRegGender(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800"
-                    >
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Marital Status</label>
-                    <select
-                      value={regMaritalStatus}
-                      onChange={(e) => setRegMaritalStatus(e.target.value as any)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800"
-                    >
-                      <option value="Single">Single</option>
-                      <option value="Married">Married</option>
-                      <option value="Engaged">Engaged</option>
-                      <option value="Widowed">Widowed</option>
-                      <option value="Divorced">Divorced</option>
-                    </select>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3.5 bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold uppercase tracking-wider rounded-2xl shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>Submit Member Profile</span>
-                </button>
-              </form>
-            )}
           </div>
         </div>
       )}
