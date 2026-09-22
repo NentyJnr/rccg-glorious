@@ -300,10 +300,24 @@ export default function App() {
   const [showPublicMemberForm, setShowPublicMemberForm] = useState(false);
   const [publicFormSuccess, setPublicFormSuccess] = useState(false);
 
+  // Shareable Public House Fellowship State
+  const [showPublicFellowshipForm, setShowPublicFellowshipForm] = useState(false);
+  const [publicFellowshipSuccess, setPublicFellowshipSuccess] = useState(false);
+  const [pubFellowshipCenter, setPubFellowshipCenter] = useState('Grace Center - Victoria Island');
+  const [pubFellowshipLeader, setPubFellowshipLeader] = useState('Brother Samuel');
+  const [pubFellowshipTopic, setPubFellowshipTopic] = useState('Living a Life of Holiness');
+  const [pubFellowshipMen, setPubFellowshipMen] = useState<number>(8);
+  const [pubFellowshipWomen, setPubFellowshipWomen] = useState<number>(12);
+  const [pubFellowshipChildren, setPubFellowshipChildren] = useState<number>(5);
+  const [pubFellowshipOffering, setPubFellowshipOffering] = useState<number>(25000);
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('register') === 'member') {
       setShowPublicMemberForm(true);
+    }
+    if (urlParams.get('report') === 'fellowship') {
+      setShowPublicFellowshipForm(true);
     }
   }, []);
 
@@ -1381,6 +1395,213 @@ export default function App() {
   // Sidebar Layout State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Standalone Public House Fellowship Report Form (when share link ?report=fellowship is opened or previewed)
+  if (showPublicFellowshipForm) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 py-8 animate-fadeIn">
+        <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden my-auto">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-b from-slate-950 via-rccg-navy to-purple-950 text-white p-6 sm:p-8 relative text-center flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setShowPublicFellowshipForm(false);
+                setPublicFellowshipSuccess(false);
+              }}
+              className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full text-slate-200 hover:text-white transition cursor-pointer"
+              title="Return to Main Website"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Centralized & Bigger Logo */}
+            <div className="mb-3">
+              <img src={org.logoUrl} alt="RCCG Logo" className="w-24 h-24 object-contain mx-auto drop-shadow-xl" />
+            </div>
+
+            <span className="text-xs font-extrabold uppercase tracking-widest text-amber-400 mb-2.5 block">
+              {org.parishName}
+            </span>
+
+            <h2 className="text-base sm:text-lg font-extrabold leading-snug max-w-lg mx-auto text-white">
+              RCCG House Fellowship Weekly Entry
+            </h2>
+
+            <p className="text-xs text-blue-100 italic mt-3 pt-3 border-t border-white/20 max-w-md mx-auto">
+              Acts 2:46 — "And continuing daily with one accord in the temple, and breaking bread from house to house, they ate their food with gladness and simplicity of heart..."
+            </p>
+          </div>
+
+          {/* Form Body or Success State */}
+          {publicFellowshipSuccess ? (
+            <div className="p-8 text-center space-y-4">
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <CheckCircle2 className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">House Fellowship Report Logged!</h3>
+              <p className="text-sm text-slate-600 max-w-md mx-auto">
+                Glory to God! The weekly report for your House Fellowship center has been successfully submitted and captured in the parish database.
+              </p>
+              <div className="pt-4 flex justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPublicFellowshipSuccess(false);
+                    setPubFellowshipCenter('');
+                    setPubFellowshipLeader('');
+                    setPubFellowshipTopic('');
+                    setPubFellowshipMen(0);
+                    setPubFellowshipWomen(0);
+                    setPubFellowshipChildren(0);
+                    setPubFellowshipOffering(0);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+                >
+                  Submit Another Center Report
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPublicFellowshipForm(false);
+                    setPublicFellowshipSuccess(false);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold shadow cursor-pointer"
+                >
+                  Continue to Website
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!pubFellowshipCenter.trim()) {
+                  alert('Please enter Center / Location Name.');
+                  return;
+                }
+                const totalAtt = Number(pubFellowshipMen || 0) + Number(pubFellowshipWomen || 0) + Number(pubFellowshipChildren || 0);
+                const newReport: HouseFellowshipReportItem = {
+                  id: 'hfr_' + Date.now(),
+                  centerName: pubFellowshipCenter.trim(),
+                  reportDate: new Date().toISOString().split('T')[0],
+                  menCount: Number(pubFellowshipMen || 0),
+                  womenCount: Number(pubFellowshipWomen || 0),
+                  childrenCount: Number(pubFellowshipChildren || 0),
+                  totalAttendance: totalAtt,
+                  offeringAmount: Number(pubFellowshipOffering || 0),
+                  studyTopic: pubFellowshipTopic.trim() || 'Living a Life of Holiness',
+                  leaderName: pubFellowshipLeader.trim() || 'Center Leader'
+                };
+                setHouseFellowshipReports(prev => [newReport, ...prev]);
+                setPublicFellowshipSuccess(true);
+              }}
+              className="p-6 sm:p-8 space-y-5"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Center / Location Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={pubFellowshipCenter}
+                    onChange={(e) => setPubFellowshipCenter(e.target.value)}
+                    placeholder="e.g. Grace Center - Victoria Island"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Center Leader Name</label>
+                  <input
+                    type="text"
+                    value={pubFellowshipLeader}
+                    onChange={(e) => setPubFellowshipLeader(e.target.value)}
+                    placeholder="e.g. Brother Samuel / Deaconess Mary"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Study Topic / Manual Title</label>
+                <input
+                  type="text"
+                  value={pubFellowshipTopic}
+                  onChange={(e) => setPubFellowshipTopic(e.target.value)}
+                  placeholder="e.g. Living a Life of Holiness"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                />
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block">Attendance Breakdown</span>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Men Count</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={pubFellowshipMen}
+                      onChange={(e) => setPubFellowshipMen(parseInt(e.target.value) || 0)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Women Count</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={pubFellowshipWomen}
+                      onChange={(e) => setPubFellowshipWomen(parseInt(e.target.value) || 0)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Children Count</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={pubFellowshipChildren}
+                      onChange={(e) => setPubFellowshipChildren(parseInt(e.target.value) || 0)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                    />
+                  </div>
+                </div>
+                <div className="pt-2 flex justify-between items-center text-xs font-bold text-slate-700 border-t border-slate-200">
+                  <span>Calculated Total Attendance:</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-rccg-blue font-bold">
+                    {Number(pubFellowshipMen || 0) + Number(pubFellowshipWomen || 0) + Number(pubFellowshipChildren || 0)} Members
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Offering Amount ({org.baseCurrency})</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={pubFellowshipOffering}
+                  onChange={(e) => setPubFellowshipOffering(parseFloat(e.target.value) || 0)}
+                  placeholder="e.g. 25000"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-emerald-700"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold uppercase tracking-wider rounded-2xl shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <Building2 className="w-4 h-4" />
+                <span>Submit House Fellowship Weekly Report</span>
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Standalone Public Member Registration Form (when share link ?register=member is opened or previewed)
   if (showPublicMemberForm) {
@@ -3276,6 +3497,42 @@ export default function App() {
             {/* SUB-TAB 1: HOUSE FELLOWSHIP REPORTS */}
             {fellowshipSubTab === 'house-fellowship' && (
               <div className="space-y-6">
+                {/* SHAREABLE HOUSE FELLOWSHIP REPORT LINK BANNER */}
+                <div className="bg-gradient-to-r from-rccg-blue via-rccg-navy to-purple-950 p-5 rounded-2xl text-white shadow-md space-y-3">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold flex items-center gap-2">
+                        <Share2 className="w-4 h-4 text-emerald-300" />
+                        <span>Shareable House Fellowship Report Link</span>
+                      </h3>
+                      <p className="text-xs text-blue-100 mt-0.5">Share this link on WhatsApp groups for House Fellowship Center Leaders to log weekly reports directly.</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const shareableUrl = `${window.location.origin}${window.location.pathname}?report=fellowship`;
+                          navigator.clipboard.writeText(shareableUrl);
+                          showNotification("House Fellowship report link copied to clipboard! Share on WhatsApp.");
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy WhatsApp Link</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowPublicFellowshipForm(true)}
+                        className="px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Preview Form</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 1. TOP FORM */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
                   <div className="flex items-center justify-between border-b pb-4">
