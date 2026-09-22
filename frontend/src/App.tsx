@@ -3771,7 +3771,9 @@ export default function App() {
                 </h2>
                 <p className="text-slate-500 text-sm mt-1">
                   {currentUser?.role === 'HOD' 
-                    ? `View personnel directory for ${getHodDepartment(currentUser)} and assign members to monthly service duty rosters.` 
+                    ? (getHodDepartment(currentUser) === 'Follow-up & Welfare'
+                        ? `View personnel directory for ${getHodDepartment(currentUser)}.`
+                        : `View personnel directory for ${getHodDepartment(currentUser)} and assign members to monthly service duty rosters.`)
                     : "Manage portal access credentials, departmental access roles, and monthly service duty rosters."}
                 </p>
               </div>
@@ -3784,22 +3786,24 @@ export default function App() {
                   <button
                     onClick={() => setUserSubTab('portal-users')}
                     className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-                      userSubTab === 'portal-users' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                      userSubTab === 'portal-users' || getHodDepartment(currentUser) === 'Follow-up & Welfare' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                     }`}
                   >
                     <Users className="w-4 h-4" />
                     <span>Department Members ({members.filter(m => m.assignedDepartment === getHodDepartment(currentUser)).length})</span>
                   </button>
 
-                  <button
-                    onClick={() => setUserSubTab('assignment')}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-                      userSubTab === 'assignment' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                  >
-                    <Calendar className="w-4 h-4" />
-                    <span>Assignment (Duty Roster)</span>
-                  </button>
+                  {getHodDepartment(currentUser) !== 'Follow-up & Welfare' && (
+                    <button
+                      onClick={() => setUserSubTab('assignment')}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                        userSubTab === 'assignment' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                      }`}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      <span>Assignment (Duty Roster)</span>
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
@@ -4827,7 +4831,7 @@ export default function App() {
             )}
 
             {/* SUB-PANEL 5: DUTY ROSTER ASSIGNMENTS */}
-            {userSubTab === 'assignment' && (
+            {userSubTab === 'assignment' && (currentUser?.role !== 'HOD' || getHodDepartment(currentUser) !== 'Follow-up & Welfare') && (
               <div className="space-y-6">
                 
                 {/* SUCCESS ALERT TOAST */}
