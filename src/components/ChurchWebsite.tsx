@@ -27,6 +27,7 @@ import {
   X,
   UserCheck,
   CheckCircle2,
+  AlertCircle,
   Share2,
   Info,
   FileText
@@ -91,10 +92,16 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
     witCertName: ''
   });
 
+  const [siteToast, setSiteToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const showSiteToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setSiteToast({ message, type });
+    setTimeout(() => setSiteToast(null), 5000);
+  };
+
   const handleWorkforceSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!workforceForm.fullName || !workforceForm.phone) {
-      alert('Please fill in your Full Name and Phone Number.');
+      showSiteToast('Please fill in your Full Name and Phone Number.', 'error');
       return;
     }
 
@@ -196,7 +203,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
   const handleSaveTestimony = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!testimonyForm.fullName || !testimonyForm.content) {
-      alert('Please enter your Name and Testimony details.');
+      showSiteToast('Please enter your Name and Testimony details.', 'error');
       return;
     }
 
@@ -966,7 +973,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                 <p className="text-xs text-slate-500 mt-1 font-medium">Send us your prayer requests, testimonies, or parish enquiries.</p>
               </div>
 
-              <form onSubmit={(e) => { e.preventDefault(); alert('Thank you! Your prayer request/message has been received.'); }} className="space-y-4">
+              <form onSubmit={(e) => { e.preventDefault(); showSiteToast('Thank you! Your prayer request/message has been received.', 'success'); }} className="space-y-4">
                 <div>
                   <label className="block text-xs font-mono uppercase text-slate-500 mb-1 font-bold">Your Full Name</label>
                   <input
@@ -1857,6 +1864,20 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
         </div>
       )}
 
+      {/* FLOATING WEBSITE TOAST NOTIFICATION */}
+      {siteToast && (
+        <div className="fixed top-5 right-5 z-[250] max-w-md animate-slideIn">
+          <div className={`py-3.5 px-5 rounded-2xl shadow-2xl text-white text-xs font-bold flex items-center space-x-3 border border-white/20 backdrop-blur-md ${
+            siteToast.type === 'success' ? 'bg-emerald-600/95' : 'bg-red-600/95'
+          }`}>
+            {siteToast.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-200 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-200 shrink-0" />}
+            <span className="flex-1 leading-snug">{siteToast.message}</span>
+            <button type="button" onClick={() => setSiteToast(null)} className="p-1 hover:bg-white/20 rounded-lg text-white/80 hover:text-white transition cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

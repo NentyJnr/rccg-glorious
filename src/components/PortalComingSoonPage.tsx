@@ -31,12 +31,15 @@ export const PortalComingSoonPage: React.FC<PortalComingSoonPageProps> = ({
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState<string | null>(null);
 
+  const [emailError, setEmailError] = useState<string | null>(null);
+
   const handleNotifySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes('@')) {
-      alert('Please enter a valid email address.');
+      setEmailError('Please enter a valid email address.');
       return;
     }
+    setEmailError(null);
     setNotifySuccess(true);
     setEmail('');
     setTimeout(() => setNotifySuccess(false), 8000);

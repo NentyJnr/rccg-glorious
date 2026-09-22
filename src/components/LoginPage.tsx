@@ -249,7 +249,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, availableU
               </label>
               <a
                 href="#forgot"
-                onClick={(e) => { e.preventDefault(); alert('Please contact system administrator to reset password.'); }}
+                onClick={(e) => { e.preventDefault(); setErrorMessage('Please contact your System Administrator / IT Officer to reset your password.'); }}
                 className="text-xs text-emerald-700 hover:text-emerald-800 font-bold transition text-[11px]"
               >
                 Forgot Password?

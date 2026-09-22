@@ -12,6 +12,7 @@ import {
   PlusCircle, 
   CheckCircle2, 
   AlertCircle,
+  AlertTriangle,
   Building2,
   Sparkles,
   FileText,
@@ -377,7 +378,7 @@ export default function App() {
   const handleRegisterSingleMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!regSurname || !regFirstname || !regWhatsapp) {
-      alert('Please fill in Surname, Firstname, and Whatsapp Number.');
+      showNotification('Please fill in Surname, Firstname, and Whatsapp Number.', 'error');
       return;
     }
 
@@ -781,6 +782,48 @@ export default function App() {
     setTimeout(() => setNotification(null), 5000);
   };
 
+  // Reusable Modern Confirmation Alert Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    type?: 'danger' | 'warning' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+
+  const askConfirmation = ({
+    title = 'Confirm Action',
+    message,
+    confirmText = 'Confirm',
+    cancelText = 'Cancel',
+    type = 'danger',
+    onConfirm
+  }: {
+    title?: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    type?: 'danger' | 'warning' | 'info';
+    onConfirm: () => void;
+  }) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      type,
+      onConfirm
+    });
+  };
+
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -890,9 +933,16 @@ export default function App() {
   };
 
   const handleDeleteServiceCategory = (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete the service category "${name}"?`)) return;
-    setServiceCategories((prev) => prev.filter((item) => item.id !== id));
-    showNotification(`Service Category "${name}" deleted.`);
+    askConfirmation({
+      title: 'Delete Service Category',
+      message: `Are you sure you want to delete the service category "${name}"?`,
+      confirmText: 'Yes, Delete',
+      type: 'danger',
+      onConfirm: () => {
+        setServiceCategories((prev) => prev.filter((item) => item.id !== id));
+        showNotification(`Service Category "${name}" deleted.`);
+      }
+    });
   };
 
   // --- Service Type Handlers ---
@@ -945,16 +995,22 @@ export default function App() {
   };
 
   const handleDeleteServiceType = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete the service type "${name}"?`)) return;
+    askConfirmation({
+      title: 'Delete Service Type',
+      message: `Are you sure you want to delete the service type "${name}"?`,
+      confirmText: 'Yes, Delete',
+      type: 'danger',
+      onConfirm: async () => {
+        setServiceTypes((prev) => prev.filter((item) => item.id !== id));
+        showNotification(`Service Type "${name}" deleted.`);
 
-    setServiceTypes((prev) => prev.filter((item) => item.id !== id));
-    showNotification(`Service Type "${name}" deleted.`);
-
-    try {
-      await fetch(`http://localhost:5230/api/v1/Setup/service-types/${id}`, {
-        method: 'DELETE'
-      });
-    } catch {}
+        try {
+          await fetch(`http://localhost:5230/api/v1/Setup/service-types/${id}`, {
+            method: 'DELETE'
+          });
+        } catch {}
+      }
+    });
   };
 
   const handleAddOfferingCategory = async (e: React.FormEvent) => {
@@ -1027,16 +1083,22 @@ export default function App() {
   };
 
   const handleDeleteOfferingCategory = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete the offering category "${name}"?`)) return;
+    askConfirmation({
+      title: 'Delete Offering Category',
+      message: `Are you sure you want to delete the offering category "${name}"?`,
+      confirmText: 'Yes, Delete',
+      type: 'danger',
+      onConfirm: async () => {
+        setOfferingCategories((prev) => prev.filter((item) => item.id !== id));
+        showNotification(`Offering Category "${name}" deleted successfully.`);
 
-    setOfferingCategories((prev) => prev.filter((item) => item.id !== id));
-    showNotification(`Offering Category "${name}" deleted successfully.`);
-
-    try {
-      await fetch(`http://localhost:5230/api/v1/Setup/offering-categories/${id}`, {
-        method: 'DELETE'
-      });
-    } catch {}
+        try {
+          await fetch(`http://localhost:5230/api/v1/Setup/offering-categories/${id}`, {
+            method: 'DELETE'
+          });
+        } catch {}
+      }
+    });
   };
 
   const handleAddMinister = async (e: React.FormEvent) => {
@@ -1148,16 +1210,22 @@ export default function App() {
   };
 
   const handleDeleteDepartment = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete the department "${name}"?`)) return;
+    askConfirmation({
+      title: 'Delete Department',
+      message: `Are you sure you want to delete the department "${name}"?`,
+      confirmText: 'Yes, Delete',
+      type: 'danger',
+      onConfirm: async () => {
+        setDepartments((prev) => prev.filter((item) => item.id !== id));
+        showNotification(`Department "${name}" deleted successfully.`);
 
-    setDepartments((prev) => prev.filter((item) => item.id !== id));
-    showNotification(`Department "${name}" deleted successfully.`);
-
-    try {
-      await fetch(`http://localhost:5230/api/v1/Setup/departments/${id}`, {
-        method: 'DELETE'
-      });
-    } catch {}
+        try {
+          await fetch(`http://localhost:5230/api/v1/Setup/departments/${id}`, {
+            method: 'DELETE'
+          });
+        } catch {}
+      }
+    });
   };
 
   // --- Dynamic Service Report Form State ---
@@ -1491,7 +1559,7 @@ export default function App() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!pubFellowshipCenter.trim()) {
-                  alert('Please enter Center / Location Name.');
+                  showNotification('Please enter Center / Location Name.', 'error');
                   return;
                 }
                 const totalAtt = Number(pubFellowshipMen || 0) + Number(pubFellowshipWomen || 0) + Number(pubFellowshipChildren || 0);
@@ -1697,7 +1765,7 @@ export default function App() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!pubOutreachLocation.trim()) {
-                  alert('Please enter Outreach Street / Location.');
+                  showNotification('Please enter Outreach Street / Location.', 'error');
                   return;
                 }
                 const totalR = Number(pubOutreachMen || 0) + Number(pubOutreachWomen || 0) + Number(pubOutreachChildren || 0);
@@ -1897,7 +1965,7 @@ export default function App() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!regSurname || !regFirstname || !regWhatsapp) {
-                  alert('Please fill in Surname, Firstname, and Whatsapp Number.');
+                  showNotification('Please fill in Surname, Firstname, and Whatsapp Number.', 'error');
                   return;
                 }
                 const newMember: Member = {
@@ -5639,6 +5707,87 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* GLOBAL FLOATING TOAST NOTIFICATION */}
+      {notification && (
+        <div className="fixed top-5 right-5 z-[250] max-w-md animate-slideIn">
+          <div className={`py-3.5 px-5 rounded-2xl shadow-2xl text-white text-xs font-bold flex items-center space-x-3 border border-white/20 backdrop-blur-md ${
+            notification.type === 'success' ? 'bg-emerald-600/95' : 'bg-red-600/95'
+          }`}>
+            {notification.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-200 shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-200 shrink-0" />
+            )}
+            <span className="flex-1 leading-snug">{notification.message}</span>
+            <button 
+              type="button"
+              onClick={() => setNotification(null)}
+              className="p-1 hover:bg-white/20 rounded-lg text-white/80 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* REUSABLE CUSTOM CONFIRMATION ALERT MODAL */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[300] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden transform transition-all scale-100 my-auto">
+            {/* Header / Accent Bar */}
+            <div className={`p-6 text-center border-b flex flex-col items-center ${
+              confirmModal.type === 'danger' ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'
+            }`}>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-sm ${
+                confirmModal.type === 'danger' ? 'bg-red-100 text-rccg-red' : 'bg-amber-100 text-amber-700'
+              }`}>
+                {confirmModal.type === 'danger' ? (
+                  <AlertTriangle className="w-7 h-7 text-rccg-red" />
+                ) : (
+                  <AlertCircle className="w-7 h-7 text-amber-700" />
+                )}
+              </div>
+              <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+                {confirmModal.title}
+              </h3>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 text-center">
+              <p className="text-xs sm:text-sm font-medium text-slate-600 leading-relaxed">
+                {confirmModal.message}
+              </p>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 font-bold text-xs uppercase tracking-wider transition cursor-pointer shadow-sm"
+              >
+                {confirmModal.cancelText || 'Cancel'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const action = confirmModal.onConfirm;
+                  setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                  if (action) action();
+                }}
+                className={`px-5 py-2.5 rounded-xl text-white font-extrabold text-xs uppercase tracking-wider shadow-md transition flex items-center space-x-2 cursor-pointer ${
+                  confirmModal.type === 'danger' 
+                    ? 'bg-rccg-red hover:bg-red-800 focus:ring-2 focus:ring-red-500' 
+                    : 'bg-rccg-blue hover:bg-rccg-navy'
+                }`}
+              >
+                <span>{confirmModal.confirmText || 'Confirm'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
