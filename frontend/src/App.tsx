@@ -224,6 +224,17 @@ interface DepartmentItem {
   isActive: boolean;
 }
 
+const getHodDepartment = (user: User | null): string => {
+  if (!user) return 'Choir & Praise Team';
+  if (user.assignedDepartment) return user.assignedDepartment;
+  const text = ((user.fullName || '') + ' ' + (user.email || '')).toLowerCase();
+  if (text.includes('ushering') || text.includes('grace usang')) return 'Ushering & Protocol';
+  if (text.includes('choir') || text.includes('david okafor')) return 'Choir & Praise Team';
+  if (text.includes('fellowship') || text.includes('samuel adebayo')) return 'Follow-up & Welfare';
+  if (text.includes('outreach') || text.includes('peter king')) return 'Evangelism & Outreach';
+  return 'Choir & Praise Team';
+};
+
 export default function App() {
   const [viewMode, setViewMode] = useState<'website' | 'portal'>('website');
   const [showDraftLogin, setShowDraftLogin] = useState(false);
@@ -375,8 +386,8 @@ export default function App() {
       dobMonth: 'November',
       gender: 'Male',
       membershipStatus: 'Under Follow-up',
-      assignedDepartment: null,
-      role: 'Member',
+      assignedDepartment: 'Choir & Praise Team',
+      role: 'Workforce',
       dateJoined: '2025-08-01'
     },
     {
@@ -390,9 +401,9 @@ export default function App() {
       dobDay: 19,
       dobMonth: 'December',
       gender: 'Female',
-      membershipStatus: 'New Convert',
-      assignedDepartment: null,
-      role: 'Member',
+      membershipStatus: 'Full Member',
+      assignedDepartment: 'Ushering & Protocol',
+      role: 'Workforce',
       dateJoined: '2025-09-12'
     }
   ]);
@@ -3673,12 +3684,12 @@ export default function App() {
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">
                   {currentUser?.role === 'HOD' 
-                    ? `My Department (${currentUser?.assignedDepartment || 'Choir & Praise Team'})` 
+                    ? `My Department (${getHodDepartment(currentUser)})` 
                     : "User Management & Department Rosters"}
                 </h2>
                 <p className="text-slate-500 text-sm mt-1">
                   {currentUser?.role === 'HOD' 
-                    ? "View department personnel directory and assign members to monthly service duty rosters." 
+                    ? `View personnel directory for ${getHodDepartment(currentUser)} and assign members to monthly service duty rosters.` 
                     : "Manage portal access credentials, departmental access roles, and monthly service duty rosters."}
                 </p>
               </div>
@@ -3695,7 +3706,7 @@ export default function App() {
                     }`}
                   >
                     <Users className="w-4 h-4" />
-                    <span>Department Members</span>
+                    <span>Department Members ({members.filter(m => m.assignedDepartment === getHodDepartment(currentUser)).length})</span>
                   </button>
 
                   <button
@@ -3773,522 +3784,612 @@ export default function App() {
                   </div>
                 )}
 
-                {/* SHAREABLE MEMBER REGISTRATION LINK BANNER */}
-                <div className="bg-gradient-to-r from-rccg-blue via-rccg-navy to-purple-950 p-5 rounded-2xl text-white shadow-md space-y-3">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div>
-                      <h3 className="text-sm font-bold flex items-center gap-2">
-                        <Share2 className="w-4 h-4 text-emerald-300" />
-                        <span>Shareable Member Registration Link</span>
-                      </h3>
-                      <p className="text-xs text-blue-100 mt-0.5">Share this link with members or post on WhatsApp groups for parish self-registration.</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const shareableUrl = `${window.location.origin}${window.location.pathname}?register=member`;
-                          navigator.clipboard.writeText(shareableUrl);
-                          setUploadSuccessBanner("Shareable registration link copied to clipboard! You can now paste it into WhatsApp groups.");
-                          setTimeout(() => setUploadSuccessBanner(null), 6000);
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy WhatsApp Link</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowPublicMemberForm(true)}
-                        className="px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span>Preview Public Form</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* INNER SUB-TABS: Members vs Department & Leadership */}
-                <div className="flex space-x-2 bg-slate-100 p-1.5 rounded-2xl w-max border border-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => setMembersInnerTab('members-list')}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
-                      membersInnerTab === 'members-list'
-                        ? 'bg-rccg-blue text-white shadow'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                    }`}
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    <span>Members</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMembersInnerTab('dept-leadership')}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
-                      membersInnerTab === 'dept-leadership'
-                        ? 'bg-rccg-blue text-white shadow'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                    }`}
-                  >
-                    <Sliders className="w-4 h-4" />
-                    <span>Department & Leadership</span>
-                  </button>
-                </div>
-
-                {/* TAB 1: MEMBERS */}
-                {membersInnerTab === 'members-list' && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column Forms */}
-                    <div className="space-y-6">
-                      {/* SINGLE MEMBER REGISTRATION FORM */}
-                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                        <div className="border-b border-slate-100 pb-3">
-                          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                            <UserPlus className="w-5 h-5 text-rccg-blue" />
-                            <span>Register New Parishioner</span>
-                          </h3>
-                          <p className="text-xs text-slate-500 mt-0.5">Register individual member details into parish database.</p>
-                        </div>
-
-                        <form onSubmit={handleRegisterSingleMember} className="space-y-4">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Surname *</label>
-                              <input
-                                type="text"
-                                required
-                                value={regSurname}
-                                onChange={(e) => setRegSurname(e.target.value)}
-                                placeholder="e.g. Okon"
-                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Firstname *</label>
-                              <input
-                                type="text"
-                                required
-                                value={regFirstname}
-                                onChange={(e) => setRegFirstname(e.target.value)}
-                                placeholder="e.g. Emmanuel"
-                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">Whatsapp Number *</label>
-                            <input
-                              type="tel"
-                              required
-                              value={regWhatsapp}
-                              onChange={(e) => setRegWhatsapp(e.target.value)}
-                              placeholder="e.g. +2348031112233"
-                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
-                            <input
-                              type="email"
-                              value={regEmail}
-                              onChange={(e) => setRegEmail(e.target.value)}
-                              placeholder="name@example.com"
-                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">Home Address</label>
-                            <input
-                              type="text"
-                              value={regAddress}
-                              onChange={(e) => setRegAddress(e.target.value)}
-                              placeholder="12 Allen Avenue, Ikeja, Lagos"
-                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
-                            />
-                          </div>
-
-                          {/* DATE OF BIRTH */}
-                          <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl space-y-2">
-                            <label className="block text-xs font-bold text-rccg-blue flex items-center gap-1">
-                              <span>🎂 Date of Birth (Day & Month)</span>
-                            </label>
-                            <p className="text-[11px] text-slate-500 font-medium">Used to send automated birthday greetings & announcements.</p>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Day</label>
-                                <select
-                                  value={regDobDay}
-                                  onChange={(e) => setRegDobDay(parseInt(e.target.value) || 1)}
-                                  className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
-                                >
-                                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                                    <option key={day} value={day}>Day {day}</option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div>
-                                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Month</label>
-                                <select
-                                  value={regDobMonth}
-                                  onChange={(e) => setRegDobMonth(e.target.value)}
-                                  className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
-                                >
-                                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                                    <option key={m} value={m}>{m}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* PROFILE PHOTO UPLOAD */}
-                          <div className="flex items-center space-x-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                            <div className="w-12 h-12 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center shrink-0 border border-slate-300">
-                              {regProfileImageUrl ? (
-                                <img src={regProfileImageUrl} alt="Preview" className="w-full h-full object-cover" />
-                              ) : (
-                                <User className="w-6 h-6 text-slate-400" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <label className="block text-[11px] font-bold text-slate-700 mb-1">Profile Photo (Optional)</label>
-                              <label className="px-3 py-1.5 rounded-lg bg-rccg-blue text-white text-xs font-bold hover:bg-rccg-navy transition cursor-pointer inline-flex items-center space-x-1">
-                                <Camera className="w-3.5 h-3.5" />
-                                <span>{regProfileImageUrl ? 'Change Image' : 'Upload Image'}</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onloadend = () => {
-                                        setRegProfileImageUrl(reader.result as string);
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }
-                                  }}
-                                />
-                              </label>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
-                              <select
-                                value={regGender}
-                                onChange={(e) => setRegGender(e.target.value)}
-                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-                              >
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Marital Status</label>
-                              <select
-                                value={regMaritalStatus}
-                                onChange={(e) => setRegMaritalStatus(e.target.value as any)}
-                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-                              >
-                                <option value="Single">Single</option>
-                                <option value="Married">Married</option>
-                                <option value="Engaged">Engaged</option>
-                                <option value="Widowed">Widowed</option>
-                                <option value="Divorced">Divorced</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          <button
-                            type="submit"
-                            className="w-full py-3 bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer"
-                          >
-                            <UserPlus className="w-4 h-4" />
-                            <span>Save Member Profile</span>
-                          </button>
-                        </form>
+                {currentUser?.role === 'HOD' ? (
+                  /* HOD DEDICATED DEPARTMENT PERSONNEL DIRECTORY */
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                          <Users className="w-5 h-5 text-rccg-blue" />
+                          <span>Department Personnel Directory ({members.filter(m => m.assignedDepartment === getHodDepartment(currentUser)).length})</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Active workforce members assigned to <strong>{getHodDepartment(currentUser)}</strong>.
+                        </p>
+                      </div>
+                      <div className="relative w-full sm:w-72">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          placeholder="Search department members..."
+                          value={memberSearchQuery}
+                          onChange={(e) => setMemberSearchQuery(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-rccg-blue"
+                        />
                       </div>
                     </div>
 
-                    {/* Right Column Directories */}
-                    <div className="lg:col-span-2 space-y-6">
-                      {/* BULK MEMBER IMPORT */}
-                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
-                          <div>
-                            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                              <Upload className="w-5 h-5 text-rccg-blue" />
-                              <span>Bulk Member CSV / Excel Import</span>
-                            </h3>
-                            <p className="text-xs text-slate-500 mt-0.5">Upload member roster files with Surname, Firstname, Whatsapp & DOB.</p>
+                    {(() => {
+                      const hodDept = getHodDepartment(currentUser);
+                      const deptMembersList = members
+                        .filter(m => m.assignedDepartment === hodDept)
+                        .filter(m => m.fullName.toLowerCase().includes(memberSearchQuery.toLowerCase()) || m.whatsappNumber.includes(memberSearchQuery));
+
+                      if (deptMembersList.length === 0) {
+                        return (
+                          <div className="p-10 text-center bg-slate-50/80 rounded-2xl border border-dashed border-slate-200 space-y-3">
+                            <Users className="w-12 h-12 text-slate-300 mx-auto" />
+                            <div className="text-sm font-bold text-slate-700">No personnel currently assigned to {hodDept}</div>
+                            <p className="text-xs text-slate-500 max-w-md mx-auto">
+                              Workers assigned to your department by System Admin or Pastor will automatically appear here for monthly duty roster assignments.
+                            </p>
                           </div>
+                        );
+                      }
 
-                          <button
-                            type="button"
-                            onClick={handleDownloadCSVTemplate}
-                            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center space-x-1.5 cursor-pointer w-max"
-                          >
-                            <Download className="w-3.5 h-3.5 text-rccg-blue" />
-                            <span>CSV Template</span>
-                          </button>
-                        </div>
-
-                        {/* DROPZONE */}
-                        <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 transition relative">
-                          <input
-                            type="file"
-                            accept=".csv,.xlsx,.xls"
-                            onChange={handleFileSelectForMemberUpload}
-                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                          />
-                          <div className="flex flex-col items-center justify-center space-y-2">
-                            <FileSpreadsheet className="w-7 h-7 text-rccg-blue" />
-                            <div className="text-xs font-bold text-slate-800">
-                              {bulkFileName ? `Selected: ${bulkFileName}` : 'Drag & Drop Member Spreadsheet Here'}
-                            </div>
-                            <p className="text-[11px] text-slate-500">Or click to select CSV file from your computer</p>
-                          </div>
-                        </div>
-
-                        {parsedPreviewMembers.length > 0 && (
-                          <div className="space-y-3 pt-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-slate-800">
-                                Parsed Preview ({parsedPreviewMembers.length} records ready)
-                              </span>
-                              <button
-                                type="button"
-                                onClick={handleProcessMemberBatchImport}
-                                className="px-4 py-2 rounded-xl bg-rccg-green hover:bg-emerald-700 text-white text-xs font-bold shadow transition cursor-pointer"
-                              >
-                                Confirm Batch Import
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* REGISTERED PARISH MEMBERS DIRECTORY TABLE */}
-                      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                          <h3 className="text-base font-bold text-slate-900">Registered Parish Members ({members.length})</h3>
-                          <div className="relative w-full sm:w-64">
-                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                            <input
-                              type="text"
-                              placeholder="Search by surname or whatsapp..."
-                              value={memberSearchQuery}
-                              onChange={(e) => setMemberSearchQuery(e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-rccg-blue"
-                            />
-                          </div>
-                        </div>
-
+                      return (
                         <div className="overflow-x-auto">
                           <table className="w-full text-left text-xs text-slate-600">
                             <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
                               <tr>
-                                <th className="py-3 px-4">Member Name</th>
-                                <th className="py-3 px-4">Whatsapp</th>
-                                <th className="py-3 px-4">Home Address</th>
-                                <th className="py-3 px-4">Birthday</th>
-                                <th className="py-3 px-4">Role & Dept</th>
+                                <th className="py-3.5 px-4">Member Name</th>
+                                <th className="py-3.5 px-4">Whatsapp</th>
+                                <th className="py-3.5 px-4">Home Address</th>
+                                <th className="py-3.5 px-4">Birthday</th>
+                                <th className="py-3.5 px-4">Role & Dept</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                              {members
-                                .filter(m => m.fullName.toLowerCase().includes(memberSearchQuery.toLowerCase()) || m.whatsappNumber.includes(memberSearchQuery))
-                                .map((m) => (
-                                  <tr key={m.id} className="hover:bg-slate-50">
-                                    <td className="py-3 px-4 font-bold text-slate-900">
-                                      <div className="flex items-center space-x-2.5">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 overflow-hidden flex items-center justify-center shrink-0 text-rccg-blue font-bold text-xs">
-                                          {m.profileImageUrl ? (
-                                            <img src={m.profileImageUrl} alt={m.fullName} className="w-full h-full object-cover" />
-                                          ) : (
-                                            <span>{m.surname[0]}{m.firstname[0]}</span>
-                                          )}
-                                        </div>
-                                        <div>
-                                          <div>{m.surname}, {m.firstname}</div>
-                                          <div className="text-[11px] text-slate-400 font-normal flex items-center gap-1.5">
-                                            <span>{m.email}</span>
-                                            {m.maritalStatus && (
-                                              <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-slate-200">
-                                                {m.maritalStatus}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
+                              {deptMembersList.map((member) => (
+                                <tr key={member.id} className="hover:bg-slate-50/80 transition">
+                                  <td className="py-3.5 px-4 font-bold text-slate-900">
+                                    <div className="flex items-center space-x-2.5">
+                                      <div className="w-8 h-8 rounded-full bg-rccg-blue/10 text-rccg-blue flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                        {member.firstname.charAt(0)}{member.surname.charAt(0)}
                                       </div>
-                                    </td>
-                                    <td className="py-3 px-4 font-mono font-bold text-rccg-blue">{m.whatsappNumber}</td>
-                                    <td className="py-3 px-4 text-slate-600">{m.homeAddress}</td>
-                                    <td className="py-3 px-4">
-                                      <span className="bg-blue-50 text-rccg-blue font-bold px-2 py-0.5 rounded text-[11px]">
-                                        🎂 {m.dobMonth} {m.dobDay}
-                                      </span>
-                                    </td>
-                                    <td className="py-3 px-4">
-                                      <div className="font-bold text-slate-800">{m.role}</div>
-                                      <div className="text-[11px] text-slate-500">{m.assignedDepartment || 'No Dept'}</div>
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* Registered Portal Users List */}
-                      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="p-6 border-b border-slate-100">
-                          <h3 className="text-base font-bold text-slate-900">Parish Portal System Users ({users.length})</h3>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left text-sm text-slate-600">
-                            <thead className="bg-slate-50 text-slate-700 uppercase text-xs font-bold tracking-wider">
-                              <tr>
-                                <th className="py-3.5 px-6">User & Role</th>
-                                <th className="py-3.5 px-6">Contact</th>
-                                <th className="py-3.5 px-6">Must Change Password</th>
-                                <th className="py-3.5 px-6">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {users.map((u) => (
-                                <tr key={u.id} className="hover:bg-slate-50/80">
-                                  <td className="py-4 px-6 font-medium text-slate-900">
-                                    <div>{u.fullName}</div>
-                                    <span className="text-xs text-slate-400 font-normal">{u.role}</span>
+                                      <div>
+                                        <div>{member.surname}, {member.firstname}</div>
+                                        <div className="text-[10px] text-slate-400 font-mono">{member.email || 'No email provided'}</div>
+                                      </div>
+                                    </div>
                                   </td>
-                                  <td className="py-4 px-6 text-xs text-slate-500">
-                                    <div>{u.email}</div>
-                                    <div>{u.phone}</div>
-                                  </td>
-                                  <td className="py-4 px-6">
-                                    {u.mustChangePassword ? (
-                                      <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
-                                        <Lock className="w-3 h-3" />
-                                        <span>Pending Reset</span>
-                                      </span>
-                                    ) : (
-                                      <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
-                                        <ShieldCheck className="w-3 h-3" />
-                                        <span>Active & Verified</span>
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="py-4 px-6">
-                                    <span className="text-xs font-semibold text-emerald-600">Active</span>
+                                  <td className="py-3.5 px-4 font-mono font-bold text-rccg-blue">{member.whatsappNumber}</td>
+                                  <td className="py-3.5 px-4">{member.homeAddress || 'N/A'}</td>
+                                  <td className="py-3.5 px-4 font-bold text-slate-700">🎂 {member.dobMonth} {member.dobDay}</td>
+                                  <td className="py-3.5 px-4">
+                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-blue-100 text-blue-800">
+                                      {member.assignedDepartment}
+                                    </span>
                                   </td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
-                )}
+                ) : (
+                  /* SYSTEM ADMIN / PASTOR PARISH-WIDE VIEW WITH REGISTRATION FORMS */
+                  <>
+                    {/* SHAREABLE MEMBER REGISTRATION LINK BANNER */}
+                    <div className="bg-gradient-to-r from-rccg-blue via-rccg-navy to-purple-950 p-5 rounded-2xl text-white shadow-md space-y-3">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                          <h3 className="text-sm font-bold flex items-center gap-2">
+                            <Share2 className="w-4 h-4 text-emerald-300" />
+                            <span>Shareable Member Registration Link</span>
+                          </h3>
+                          <p className="text-xs text-blue-100 mt-0.5">Share this link with members or post on WhatsApp groups for parish self-registration.</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const shareableUrl = `${window.location.origin}${window.location.pathname}?register=member`;
+                              navigator.clipboard.writeText(shareableUrl);
+                              setUploadSuccessBanner("Shareable registration link copied to clipboard! You can now paste it into WhatsApp groups.");
+                              setTimeout(() => setUploadSuccessBanner(null), 6000);
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy WhatsApp Link</span>
+                          </button>
 
-                {/* TAB 2: DEPARTMENT & LEADERSHIP */}
-                {membersInnerTab === 'dept-leadership' && (
-                  <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                          <Sliders className="w-5 h-5 text-rccg-blue" />
-                          <span>Department & Leadership Allocation</span>
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-0.5">Assign members to active parish departments and designate Head of Department (HOD) leaders.</p>
+                          <button
+                            type="button"
+                            onClick={() => setShowPublicMemberForm(true)}
+                            className="px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Preview Public Form</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-600">
-                          <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
-                            <tr>
-                              <th className="py-3 px-4">Member Name</th>
-                              <th className="py-3 px-4">Whatsapp / Email</th>
-                              <th className="py-3 px-4">Current Role</th>
-                              <th className="py-3 px-4">Assigned Department</th>
-                              <th className="py-3 px-4">Leadership / HOD</th>
-                              <th className="py-3 px-4 text-right">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {members.map((m) => (
-                              <tr key={m.id} className="hover:bg-slate-50">
-                                <td className="py-4 px-4 font-bold text-slate-900">
-                                  <div>{m.surname}, {m.firstname}</div>
-                                  <div className="text-[11px] text-slate-400 font-normal">Joined: {m.dateJoined}</div>
-                                </td>
-                                <td className="py-4 px-4 text-slate-600">
-                                  <div className="font-mono font-bold text-rccg-blue">{m.whatsappNumber}</div>
-                                  <div className="text-[11px] text-slate-500">{m.email}</div>
-                                </td>
-                                <td className="py-4 px-4 font-bold text-slate-800">
-                                  <span className={`px-2.5 py-1 rounded-full text-[11px] ${
-                                    m.role === 'Minister' ? 'bg-purple-100 text-purple-800' :
-                                    m.role === 'Workforce' ? 'bg-blue-100 text-blue-800' :
-                                    'bg-slate-100 text-slate-700'
-                                  }`}>
-                                    {m.role}
+                    {/* INNER SUB-TABS: Members vs Department & Leadership */}
+                    <div className="flex space-x-2 bg-slate-100 p-1.5 rounded-2xl w-max border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setMembersInnerTab('members-list')}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
+                          membersInnerTab === 'members-list'
+                            ? 'bg-rccg-blue text-white shadow'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                        }`}
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        <span>Members</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setMembersInnerTab('dept-leadership')}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
+                          membersInnerTab === 'dept-leadership'
+                            ? 'bg-rccg-blue text-white shadow'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                        }`}
+                      >
+                        <Sliders className="w-4 h-4" />
+                        <span>Department & Leadership</span>
+                      </button>
+                    </div>
+
+                    {/* TAB 1: MEMBERS */}
+                    {membersInnerTab === 'members-list' && (
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Left Column Forms */}
+                        <div className="space-y-6">
+                          {/* SINGLE MEMBER REGISTRATION FORM */}
+                          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                            <div className="border-b border-slate-100 pb-3">
+                              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <UserPlus className="w-5 h-5 text-rccg-blue" />
+                                <span>Register New Parishioner</span>
+                              </h3>
+                              <p className="text-xs text-slate-500 mt-0.5">Register individual member details into parish database.</p>
+                            </div>
+
+                            <form onSubmit={handleRegisterSingleMember} className="space-y-4">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-700 mb-1">Surname *</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    value={regSurname}
+                                    onChange={(e) => setRegSurname(e.target.value)}
+                                    placeholder="e.g. Okon"
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-700 mb-1">Firstname *</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    value={regFirstname}
+                                    onChange={(e) => setRegFirstname(e.target.value)}
+                                    placeholder="e.g. Emmanuel"
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Whatsapp Number *</label>
+                                <input
+                                  type="tel"
+                                  required
+                                  value={regWhatsapp}
+                                  onChange={(e) => setRegWhatsapp(e.target.value)}
+                                  placeholder="e.g. +2348031112233"
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                                <input
+                                  type="email"
+                                  value={regEmail}
+                                  onChange={(e) => setRegEmail(e.target.value)}
+                                  placeholder="name@example.com"
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Home Address</label>
+                                <input
+                                  type="text"
+                                  value={regAddress}
+                                  onChange={(e) => setRegAddress(e.target.value)}
+                                  placeholder="12 Allen Avenue, Ikeja, Lagos"
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
+                                />
+                              </div>
+
+                              {/* DATE OF BIRTH */}
+                              <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl space-y-2">
+                                <label className="block text-xs font-bold text-rccg-blue flex items-center gap-1">
+                                  <span>🎂 Date of Birth (Day & Month)</span>
+                                </label>
+                                <p className="text-[11px] text-slate-500 font-medium">Used to send automated birthday greetings & announcements.</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Day</label>
+                                    <select
+                                      value={regDobDay}
+                                      onChange={(e) => setRegDobDay(parseInt(e.target.value) || 1)}
+                                      className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
+                                    >
+                                      {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                        <option key={day} value={day}>Day {day}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Month</label>
+                                    <select
+                                      value={regDobMonth}
+                                      onChange={(e) => setRegDobMonth(e.target.value)}
+                                      className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
+                                    >
+                                      {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* PROFILE PHOTO UPLOAD */}
+                              <div className="flex items-center space-x-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="w-12 h-12 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center shrink-0 border border-slate-300">
+                                  {regProfileImageUrl ? (
+                                    <img src={regProfileImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <User className="w-6 h-6 text-slate-400" />
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Profile Photo (Optional)</label>
+                                  <label className="px-3 py-1.5 rounded-lg bg-rccg-blue text-white text-xs font-bold hover:bg-rccg-navy transition cursor-pointer inline-flex items-center space-x-1">
+                                    <Camera className="w-3.5 h-3.5" />
+                                    <span>{regProfileImageUrl ? 'Change Image' : 'Upload Image'}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          const reader = new FileReader();
+                                          reader.onloadend = () => {
+                                            setRegProfileImageUrl(reader.result as string);
+                                          };
+                                          reader.readAsDataURL(file);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
+                                  <select
+                                    value={regGender}
+                                    onChange={(e) => setRegGender(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                                  >
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-700 mb-1">Marital Status</label>
+                                  <select
+                                    value={regMaritalStatus}
+                                    onChange={(e) => setRegMaritalStatus(e.target.value as any)}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                                  >
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Engaged">Engaged</option>
+                                    <option value="Widowed">Widowed</option>
+                                    <option value="Divorced">Divorced</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <button
+                                type="submit"
+                                className="w-full py-3 bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                                <span>Save Member Profile</span>
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+
+                        {/* Right Column Directories */}
+                        <div className="lg:col-span-2 space-y-6">
+                          {/* BULK MEMBER IMPORT */}
+                          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+                              <div>
+                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                  <Upload className="w-5 h-5 text-rccg-blue" />
+                                  <span>Bulk Member CSV / Excel Import</span>
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Upload member roster files with Surname, Firstname, Whatsapp & DOB.</p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={handleDownloadCSVTemplate}
+                                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center space-x-1.5 cursor-pointer w-max"
+                              >
+                                <Download className="w-3.5 h-3.5 text-rccg-blue" />
+                                <span>CSV Template</span>
+                              </button>
+                            </div>
+
+                            {/* DROPZONE */}
+                            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 transition relative">
+                              <input
+                                type="file"
+                                accept=".csv,.xlsx,.xls"
+                                onChange={handleFileSelectForMemberUpload}
+                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                              />
+                              <div className="flex flex-col items-center justify-center space-y-2">
+                                <FileSpreadsheet className="w-7 h-7 text-rccg-blue" />
+                                <div className="text-xs font-bold text-slate-800">
+                                  {bulkFileName ? `Selected: ${bulkFileName}` : 'Drag & Drop Member Spreadsheet Here'}
+                                </div>
+                                <p className="text-[11px] text-slate-500">Or click to select CSV file from your computer</p>
+                              </div>
+                            </div>
+
+                            {parsedPreviewMembers.length > 0 && (
+                              <div className="space-y-3 pt-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-slate-800">
+                                    Parsed Preview ({parsedPreviewMembers.length} records ready)
                                   </span>
-                                </td>
-                                <td className="py-4 px-4 font-bold text-slate-800">
-                                  {m.assignedDepartment ? (
-                                    <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                                      {m.assignedDepartment}
-                                    </span>
-                                  ) : (
-                                    <span className="text-slate-400 italic">Unassigned</span>
-                                  )}
-                                </td>
-                                <td className="py-4 px-4">
-                                  {m.isHod ? (
-                                    <span className="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-2.5 py-1 rounded-full flex items-center w-max gap-1">
-                                      <span>👑 HOD</span>
-                                    </span>
-                                  ) : (
-                                    <span className="text-slate-400 text-xs">—</span>
-                                  )}
-                                </td>
-                                <td className="py-4 px-4 text-right">
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setDeptAssignModalMember(m);
-                                      setSelectedDept(m.assignedDepartment || 'Ushering & Protocol');
-                                      setIsHodToggle(!!m.isHod);
-                                    }}
-                                    className="px-4 py-2 rounded-xl bg-rccg-blue text-white text-xs font-bold shadow hover:bg-rccg-navy transition cursor-pointer"
+                                    onClick={handleProcessMemberBatchImport}
+                                    className="px-4 py-2 rounded-xl bg-rccg-green hover:bg-emerald-700 text-white text-xs font-bold shadow transition cursor-pointer"
                                   >
-                                    Assign
+                                    Confirm Batch Import
                                   </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* REGISTERED PARISH MEMBERS DIRECTORY TABLE */}
+                          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                              <h3 className="text-base font-bold text-slate-900">Registered Parish Members ({members.length})</h3>
+                              <div className="relative w-full sm:w-64">
+                                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                                <input
+                                  type="text"
+                                  placeholder="Search by surname or whatsapp..."
+                                  value={memberSearchQuery}
+                                  onChange={(e) => setMemberSearchQuery(e.target.value)}
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-rccg-blue"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs text-slate-600">
+                                <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
+                                  <tr>
+                                    <th className="py-3 px-4">Member Name</th>
+                                    <th className="py-3 px-4">Whatsapp</th>
+                                    <th className="py-3 px-4">Home Address</th>
+                                    <th className="py-3 px-4">Birthday</th>
+                                    <th className="py-3 px-4">Role & Dept</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {members
+                                    .filter(m => m.fullName.toLowerCase().includes(memberSearchQuery.toLowerCase()) || m.whatsappNumber.includes(memberSearchQuery))
+                                    .map((m) => (
+                                      <tr key={m.id} className="hover:bg-slate-50">
+                                        <td className="py-3 px-4 font-bold text-slate-900">
+                                          <div className="flex items-center space-x-2.5">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 overflow-hidden flex items-center justify-center shrink-0 text-rccg-blue font-bold text-xs">
+                                              {m.profileImageUrl ? (
+                                                <img src={m.profileImageUrl} alt={m.fullName} className="w-full h-full object-cover" />
+                                              ) : (
+                                                <span>{m.surname[0]}{m.firstname[0]}</span>
+                                              )}
+                                            </div>
+                                            <div>
+                                              <div>{m.surname}, {m.firstname}</div>
+                                              <div className="text-[11px] text-slate-400 font-normal flex items-center gap-1.5">
+                                                <span>{m.email}</span>
+                                                {m.maritalStatus && (
+                                                  <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-slate-200">
+                                                    {m.maritalStatus}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-4 font-mono font-bold text-rccg-blue">{m.whatsappNumber}</td>
+                                        <td className="py-3 px-4 text-slate-600">{m.homeAddress}</td>
+                                        <td className="py-3 px-4">
+                                          <span className="bg-blue-50 text-rccg-blue font-bold px-2 py-0.5 rounded text-[11px]">
+                                            🎂 {m.dobMonth} {m.dobDay}
+                                          </span>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                          <div className="font-bold text-slate-800">{m.role}</div>
+                                          <div className="text-[11px] text-slate-500">{m.assignedDepartment || 'No Dept'}</div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* Registered Portal Users List */}
+                          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100">
+                              <h3 className="text-base font-bold text-slate-900">Parish Portal System Users ({users.length})</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-sm text-slate-600">
+                                <thead className="bg-slate-50 text-slate-700 uppercase text-xs font-bold tracking-wider">
+                                  <tr>
+                                    <th className="py-3.5 px-6">User & Role</th>
+                                    <th className="py-3.5 px-6">Contact</th>
+                                    <th className="py-3.5 px-6">Must Change Password</th>
+                                    <th className="py-3.5 px-6">Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {users.map((u) => (
+                                    <tr key={u.id} className="hover:bg-slate-50/80">
+                                      <td className="py-4 px-6 font-medium text-slate-900">
+                                        <div>{u.fullName}</div>
+                                        <span className="text-xs text-slate-400 font-normal">{u.role}</span>
+                                      </td>
+                                      <td className="py-4 px-6 text-xs text-slate-500">
+                                        <div>{u.email}</div>
+                                        <div>{u.phone}</div>
+                                      </td>
+                                      <td className="py-4 px-6">
+                                        {u.mustChangePassword ? (
+                                          <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
+                                            <Lock className="w-3 h-3" />
+                                            <span>Pending Reset</span>
+                                          </span>
+                                        ) : (
+                                          <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
+                                            <ShieldCheck className="w-3 h-3" />
+                                            <span>Active & Verified</span>
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="py-4 px-6">
+                                        <span className="text-xs font-semibold text-emerald-600">Active</span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    )}
+
+                    {/* TAB 2: DEPARTMENT & LEADERSHIP */}
+                    {membersInnerTab === 'dept-leadership' && (
+                      <div className="space-y-6">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                              <Sliders className="w-5 h-5 text-rccg-blue" />
+                              <span>Department & Leadership Allocation</span>
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">Assign members to active parish departments and designate Head of Department (HOD) leaders.</p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs text-slate-600">
+                              <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
+                                <tr>
+                                  <th className="py-3 px-4">Member Name</th>
+                                  <th className="py-3 px-4">Whatsapp / Email</th>
+                                  <th className="py-3 px-4">Current Role</th>
+                                  <th className="py-3 px-4">Assigned Department</th>
+                                  <th className="py-3 px-4">Leadership / HOD</th>
+                                  <th className="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {members.map((m) => (
+                                  <tr key={m.id} className="hover:bg-slate-50">
+                                    <td className="py-4 px-4 font-bold text-slate-900">
+                                      <div>{m.surname}, {m.firstname}</div>
+                                      <div className="text-[11px] text-slate-400 font-normal">Joined: {m.dateJoined}</div>
+                                    </td>
+                                    <td className="py-4 px-4 text-slate-600">
+                                      <div className="font-mono font-bold text-rccg-blue">{m.whatsappNumber}</div>
+                                      <div className="text-[11px] text-slate-500">{m.email}</div>
+                                    </td>
+                                    <td className="py-4 px-4 font-bold text-slate-800">
+                                      <span className={`px-2.5 py-1 rounded-full text-[11px] ${
+                                        m.role === 'Minister' ? 'bg-purple-100 text-purple-800' :
+                                        m.role === 'Workforce' ? 'bg-blue-100 text-blue-800' :
+                                        'bg-slate-100 text-slate-700'
+                                      }`}>
+                                        {m.role}
+                                      </span>
+                                    </td>
+                                    <td className="py-4 px-4 font-bold text-slate-800">
+                                      {m.assignedDepartment ? (
+                                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                                          {m.assignedDepartment}
+                                        </span>
+                                      ) : (
+                                        <span className="text-slate-400 italic">Unassigned</span>
+                                      )}
+                                    </td>
+                                    <td className="py-4 px-4">
+                                      {m.isHod ? (
+                                        <span className="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-2.5 py-1 rounded-full flex items-center w-max gap-1">
+                                          <span>👑 HOD</span>
+                                        </span>
+                                      ) : (
+                                        <span className="text-slate-400 text-xs">—</span>
+                                      )}
+                                    </td>
+                                    <td className="py-4 px-4 text-right">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setDeptAssignModalMember(m);
+                                          setSelectedDept(m.assignedDepartment || 'Ushering & Protocol');
+                                          setIsHodToggle(!!m.isHod);
+                                        }}
+                                        className="px-4 py-2 rounded-xl bg-rccg-blue text-white text-xs font-bold shadow hover:bg-rccg-navy transition cursor-pointer"
+                                      >
+                                        Assign
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
