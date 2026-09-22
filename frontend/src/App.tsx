@@ -1872,6 +1872,21 @@ export default function App() {
   // Current Authenticated User Session
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
+  useEffect(() => {
+    if (currentUser?.role === 'HOD') {
+      const dept = getHodDepartment(currentUser);
+      if (activeTab === 'service-report' && dept !== 'Ushering & Protocol') {
+        setActiveTab('users');
+      }
+      if (activeTab === 'fellowship' && dept !== 'Follow-up & Welfare' && dept !== 'Evangelism & Outreach') {
+        setActiveTab('users');
+      }
+      if (activeTab === 'setup') {
+        setActiveTab('users');
+      }
+    }
+  }, [currentUser, activeTab]);
+
   // Sidebar Layout State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -2659,24 +2674,31 @@ export default function App() {
             {!isSidebarCollapsed && <span>Dashboard</span>}
           </button>
 
-          {/* SERVICE REPORTS */}
-          <button
-            onClick={() => { setActiveTab('service-report'); setMobileSidebarOpen(false); }}
-            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
-              activeTab === 'service-report' 
-                ? 'bg-emerald-500/20 text-white border border-emerald-400/40 shadow-inner' 
-                : 'text-slate-200 hover:bg-white/10'
-            }`}
-            title="Service Reports"
-          >
-            <FileText className="w-5 h-5 text-emerald-300 flex-shrink-0" />
-            {!isSidebarCollapsed && (
-              <div className="flex-1 flex items-center justify-between">
-                <span>Service Reports</span>
-                <span className="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-400 text-slate-950 rounded">New</span>
-              </div>
-            )}
-          </button>
+          {/* SERVICE REPORTS - SUPERADMIN, PASTOR, & HOD USHERING ONLY */}
+          {(currentUser?.role === 'SuperAdmin' || 
+            currentUser?.role === 'Pastor' || 
+            currentUser?.role === 'SystemAdmin' || 
+            currentUser?.role === 'Admin' || 
+            currentUser?.role === 'ServiceCoordinator' || 
+            (currentUser?.role === 'HOD' && getHodDepartment(currentUser) === 'Ushering & Protocol')) && (
+            <button
+              onClick={() => { setActiveTab('service-report'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+                activeTab === 'service-report' 
+                  ? 'bg-emerald-500/20 text-white border border-emerald-400/40 shadow-inner' 
+                  : 'text-slate-200 hover:bg-white/10'
+              }`}
+              title="Service Reports"
+            >
+              <FileText className="w-5 h-5 text-emerald-300 flex-shrink-0" />
+              {!isSidebarCollapsed && (
+                <div className="flex-1 flex items-center justify-between">
+                  <span>Service Reports</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-400 text-slate-950 rounded">New</span>
+                </div>
+              )}
+            </button>
+          )}
 
           {/* USER MANAGEMENT / DEPARTMENT */}
           <button
@@ -2692,19 +2714,25 @@ export default function App() {
             {!isSidebarCollapsed && <span>{currentUser?.role === 'HOD' ? "Department" : "User Management"}</span>}
           </button>
 
-          {/* FELLOWSHIP & OUTREACH */}
-          <button
-            onClick={() => { setActiveTab('fellowship'); setMobileSidebarOpen(false); }}
-            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
-              activeTab === 'fellowship' 
-                ? 'bg-teal-500/20 text-white border border-teal-400/40 shadow-inner' 
-                : 'text-slate-200 hover:bg-white/10'
-            }`}
-            title="Fellowship & Outreach"
-          >
-            <HeartHandshake className="w-5 h-5 text-teal-300 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>Fellowship & Outreach</span>}
-          </button>
+          {/* FELLOWSHIP & OUTREACH - ADMINS, PASTOR, HOD FELLOWSHIP, HOD OUTREACH ONLY */}
+          {(currentUser?.role === 'SuperAdmin' || 
+            currentUser?.role === 'Pastor' || 
+            currentUser?.role === 'SystemAdmin' || 
+            currentUser?.role === 'Admin' || 
+            (currentUser?.role === 'HOD' && (getHodDepartment(currentUser) === 'Follow-up & Welfare' || getHodDepartment(currentUser) === 'Evangelism & Outreach'))) && (
+            <button
+              onClick={() => { setActiveTab('fellowship'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+                activeTab === 'fellowship' 
+                  ? 'bg-teal-500/20 text-white border border-teal-400/40 shadow-inner' 
+                  : 'text-slate-200 hover:bg-white/10'
+              }`}
+              title="Fellowship & Outreach"
+            >
+              <HeartHandshake className="w-5 h-5 text-teal-300 flex-shrink-0" />
+              {!isSidebarCollapsed && <span>Fellowship & Outreach</span>}
+            </button>
+          )}
 
           {/* SYSTEM SETUP - SYSTEM ADMIN & PASTOR ONLY */}
           {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'SystemAdmin' || currentUser?.role === 'Admin') && (
@@ -2821,13 +2849,20 @@ export default function App() {
                 <h2 className="text-2xl font-bold text-slate-900">Parish Analytics Overview</h2>
                 <p className="text-slate-500 text-sm mt-1">Real-time attendance, financial metrics, and souls won across parish services.</p>
               </div>
-              <button
-                onClick={() => setActiveTab('service-report')}
-                className="bg-rccg-blue hover:bg-rccg-navy text-white font-semibold px-5 py-2.5 rounded-xl shadow-md flex items-center space-x-2 transition"
-              >
-                <PlusCircle className="w-5 h-5" />
-                <span>Submit Service Report</span>
-              </button>
+              {(currentUser?.role === 'SuperAdmin' || 
+                currentUser?.role === 'Pastor' || 
+                currentUser?.role === 'SystemAdmin' || 
+                currentUser?.role === 'Admin' || 
+                currentUser?.role === 'ServiceCoordinator' || 
+                (currentUser?.role === 'HOD' && getHodDepartment(currentUser) === 'Ushering & Protocol')) && (
+                <button
+                  onClick={() => setActiveTab('service-report')}
+                  className="bg-rccg-blue hover:bg-rccg-navy text-white font-semibold px-5 py-2.5 rounded-xl shadow-md flex items-center space-x-2 transition cursor-pointer"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  <span>Submit Service Report</span>
+                </button>
+              )}
             </div>
 
             {/* Metric Cards Grid */}
