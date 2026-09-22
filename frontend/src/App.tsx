@@ -5463,116 +5463,233 @@ export default function App() {
                                   </div>
                                 )}
 
-                                {/* SECTION 3: SERVICE LEADERSHIP & OFFICIATING MINISTERS SUB-CARD (ADMIN / PASTOR CONTROLS) */}
+                                {/* SECTION 3: SERVICE LEADERSHIP (COORDINATOR, MINISTER, OPEN HEAVENS LEADER) */}
                                 {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'ServiceCoordinator') && (
-                                  <div className="bg-gradient-to-br from-amber-50/60 via-purple-50/40 to-indigo-50/50 p-4 rounded-2xl border border-amber-200/80 space-y-3">
-                                    <div className="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
-                                      <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-                                        <span>👑</span> Service Leadership & Officiating Ministers
-                                      </span>
-                                      <span className="text-[10px] font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
-                                        Admin & Pastor Input
-                                      </span>
-                                    </div>
+                                 <div className="bg-gradient-to-br from-amber-50/60 via-purple-50/40 to-indigo-50/50 p-4 rounded-2xl border border-amber-200/80 space-y-3">
+                                   <div className="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
+                                     <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                                       <span>👑</span> Service Leadership (Coordinator, Minister & Open Heavens Leader)
+                                     </span>
+                                     <span className="text-[10px] font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
+                                       Interactive Pickers
+                                     </span>
+                                   </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                                      {/* COORDINATOR */}
-                                      <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
-                                        <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Coordinator *</label>
-                                        <input
-                                          type="text"
-                                          value={adminRosterScheduleData[srv.id]?.coordinator || ''}
-                                          onChange={(e) => {
-                                            const val = e.target.value;
-                                            setAdminRosterScheduleData(prev => ({
-                                              ...prev,
-                                              [srv.id]: {
-                                                ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
-                                                coordinator: val
-                                              }
-                                            }));
-                                          }}
-                                          placeholder="e.g. BRO. PHILLIP"
-                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue"
-                                        />
-                                      </div>
+                                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                                     {/* COORDINATOR WITH MULTI-PICK DROPDOWN */}
+                                     <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 shadow-2xs">
+                                       <div className="flex items-center justify-between">
+                                         <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Coordinator *</label>
+                                         <span className="text-[10px] text-slate-400 font-bold">Pick to add</span>
+                                       </div>
+                                       
+                                       {/* Current Badges */}
+                                       <div className="flex flex-wrap gap-1">
+                                         {(() => {
+                                           const raw = adminRosterScheduleData[srv.id]?.coordinator || '';
+                                           const list = raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                           if (list.length === 0) {
+                                             return <span className="text-[11px] text-slate-400 italic">No coordinator assigned</span>;
+                                           }
+                                           return list.map((name, idx) => (
+                                             <span key={idx} className="px-2 py-0.5 rounded-md bg-amber-100 border border-amber-200 text-amber-900 text-[11px] font-bold flex items-center gap-1">
+                                               <span>👤 {name}</span>
+                                               <button
+                                                 type="button"
+                                                 onClick={() => {
+                                                   const newList = list.filter(n => n !== name);
+                                                   setAdminRosterScheduleData(prev => ({
+                                                     ...prev,
+                                                     [srv.id]: {
+                                                       ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                       coordinator: newList.join(', ')
+                                                     }
+                                                   }));
+                                                 }}
+                                                 className="text-amber-700 hover:text-red-600 font-bold ml-0.5 cursor-pointer"
+                                               >
+                                                 ×
+                                               </button>
+                                             </span>
+                                           ));
+                                         })()}
+                                       </div>
 
-                                      {/* MINISTER (DROPDOWN TO PICK ANY MEMBER/MINISTER FROM USHERING, CHOIR, OR ANY DEPT) */}
-                                      <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
-                                        <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Minister *</label>
-                                        <select
-                                          value={adminRosterScheduleData[srv.id]?.officiatingMinister || ''}
-                                          onChange={(e) => {
-                                            const val = e.target.value;
-                                            setAdminRosterScheduleData(prev => ({
-                                              ...prev,
-                                              [srv.id]: {
-                                                ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
-                                                officiatingMinister: val
-                                              }
-                                            }));
-                                          }}
-                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue cursor-pointer"
-                                        >
-                                          <option value="">-- Select Minister / Preacher --</option>
-                                          <optgroup label="Ordained Ministers / Pastors">
-                                            {ministers.map((m) => (
-                                              <option key={m.id} value={m.fullName}>{m.fullName}</option>
-                                            ))}
-                                          </optgroup>
-                                          <optgroup label="Ushering Department">
-                                            {members.filter(m => m.assignedDepartment === 'Ushering & Protocol').map((mem) => (
-                                              <option key={mem.id} value={mem.fullName}>{mem.fullName} (Ushering)</option>
-                                            ))}
-                                          </optgroup>
-                                          <optgroup label="Choir & Music Ministry">
-                                            {members.filter(m => m.assignedDepartment === 'Choir & Praise Team').map((mem) => (
-                                              <option key={mem.id} value={mem.fullName}>{mem.fullName} (Choir)</option>
-                                            ))}
-                                          </optgroup>
-                                          <optgroup label="All Parish Members (Any Department)">
-                                            {members.map((mem) => (
-                                              <option key={mem.id} value={mem.fullName}>{mem.fullName} ({mem.assignedDepartment || 'Member'})</option>
-                                            ))}
-                                          </optgroup>
-                                          <optgroup label="Visiting / General Overseer">
-                                            <option value="DADDY G.O.">DADDY G.O.</option>
-                                            <option value="MUMMY G.O.">MUMMY G.O.</option>
-                                            <option value="PST. ADETUNJI">PST. ADETUNJI</option>
-                                            <option value="DEACON IDOWU">DEACON IDOWU</option>
-                                            <option value="BRO. SAMUEL EGBA">BRO. SAMUEL EGBA</option>
-                                            <option value="BRO. MICHAEL SHONIBARE">BRO. MICHAEL SHONIBARE</option>
-                                            <option value="MUMMY CHUKWUMA">MUMMY CHUKWUMA</option>
-                                            <option value="BRO. RAPHAEL">BRO. RAPHAEL</option>
-                                            <option value="SIS. MERCY ZAINAB">SIS. MERCY ZAINAB</option>
-                                            <option value="GUEST MINISTER">GUEST MINISTER</option>
-                                          </optgroup>
-                                        </select>
-                                      </div>
+                                       {/* Add Dropdown */}
+                                       <select
+                                         value=""
+                                         onChange={(e) => {
+                                           const newName = e.target.value;
+                                           if (!newName) return;
+                                           setAdminRosterScheduleData(prev => {
+                                             const current = prev[srv.id]?.coordinator || '';
+                                             const list = current ? current.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                             if (list.includes(newName)) return prev;
+                                             return {
+                                               ...prev,
+                                               [srv.id]: {
+                                                 ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                 coordinator: [...list, newName].join(', ')
+                                               }
+                                             };
+                                           });
+                                         }}
+                                         className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue cursor-pointer"
+                                       >
+                                         <option value="">+ Click to add Coordinator...</option>
+                                         <optgroup label="Ordained Ministers / Pastors">
+                                           {ministers.map((m) => (
+                                             <option key={m.id} value={m.fullName}>{m.fullName}</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="All Parish Members (Ushering, Choir, etc.)">
+                                           {members.map((mem) => (
+                                             <option key={mem.id} value={mem.fullName}>{mem.fullName} ({mem.assignedDepartment || 'Member'})</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="Common Coordinators">
+                                           <option value="BRO. PHILLIP">BRO. PHILLIP</option>
+                                           <option value="BRO. DANIEL">BRO. DANIEL</option>
+                                           <option value="VIGIL">VIGIL</option>
+                                         </optgroup>
+                                       </select>
+                                     </div>
 
-                                      {/* OPEN HEAVENS LEADER */}
-                                      <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
-                                        <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Open Heavens Leader</label>
-                                        <input
-                                          type="text"
-                                          value={adminRosterScheduleData[srv.id]?.openHeavensLeader || ''}
-                                          onChange={(e) => {
-                                            const val = e.target.value;
-                                            setAdminRosterScheduleData(prev => ({
-                                              ...prev,
-                                              [srv.id]: {
-                                                ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
-                                                openHeavensLeader: val
-                                              }
-                                            }));
-                                          }}
-                                          placeholder="e.g. SIS. PRAISE"
-                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue"
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
+                                     {/* MINISTER DROPDOWN */}
+                                     <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 shadow-2xs">
+                                       <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Minister *</label>
+                                       <select
+                                         value={adminRosterScheduleData[srv.id]?.officiatingMinister || ''}
+                                         onChange={(e) => {
+                                           const val = e.target.value;
+                                           setAdminRosterScheduleData(prev => ({
+                                             ...prev,
+                                             [srv.id]: {
+                                               ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                               officiatingMinister: val
+                                             }
+                                           }));
+                                         }}
+                                         className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue cursor-pointer"
+                                       >
+                                         <option value="">-- Select Minister / Preacher --</option>
+                                         <optgroup label="Ordained Ministers / Pastors">
+                                           {ministers.map((m) => (
+                                             <option key={m.id} value={m.fullName}>{m.fullName}</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="Ushering Department">
+                                           {members.filter(m => m.assignedDepartment === 'Ushering & Protocol').map((mem) => (
+                                             <option key={mem.id} value={mem.fullName}>{mem.fullName} (Ushering)</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="Choir & Music Ministry">
+                                           {members.filter(m => m.assignedDepartment === 'Choir & Praise Team').map((mem) => (
+                                             <option key={mem.id} value={mem.fullName}>{mem.fullName} (Choir)</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="All Parish Members (Any Department)">
+                                           {members.map((mem) => (
+                                             <option key={mem.id} value={mem.fullName}>{mem.fullName} ({mem.assignedDepartment || 'Member'})</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="Visiting / General Overseer">
+                                           <option value="DADDY G.O.">DADDY G.O.</option>
+                                           <option value="MUMMY G.O.">MUMMY G.O.</option>
+                                           <option value="PST. ADETUNJI">PST. ADETUNJI</option>
+                                           <option value="DEACON IDOWU">DEACON IDOWU</option>
+                                           <option value="BRO. SAMUEL EGBA">BRO. SAMUEL EGBA</option>
+                                           <option value="BRO. MICHAEL SHONIBARE">BRO. MICHAEL SHONIBARE</option>
+                                           <option value="MUMMY CHUKWUMA">MUMMY CHUKWUMA</option>
+                                           <option value="BRO. RAPHAEL">BRO. RAPHAEL</option>
+                                           <option value="SIS. MERCY ZAINAB">SIS. MERCY ZAINAB</option>
+                                           <option value="GUEST MINISTER">GUEST MINISTER</option>
+                                         </optgroup>
+                                       </select>
+                                     </div>
+
+                                     {/* OPEN HEAVENS LEADER WITH MULTI-PICK DROPDOWN */}
+                                     <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 shadow-2xs">
+                                       <div className="flex items-center justify-between">
+                                         <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Open Heavens Leader</label>
+                                         <span className="text-[10px] text-slate-400 font-bold">Pick to add</span>
+                                       </div>
+
+                                       {/* Current Badges */}
+                                       <div className="flex flex-wrap gap-1">
+                                         {(() => {
+                                           const raw = adminRosterScheduleData[srv.id]?.openHeavensLeader || '';
+                                           const list = raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                           if (list.length === 0) {
+                                             return <span className="text-[11px] text-slate-400 italic">No leader assigned</span>;
+                                           }
+                                           return list.map((name, idx) => (
+                                             <span key={idx} className="px-2 py-0.5 rounded-md bg-purple-100 border border-purple-200 text-purple-900 text-[11px] font-bold flex items-center gap-1">
+                                               <span>📖 {name}</span>
+                                               <button
+                                                 type="button"
+                                                 onClick={() => {
+                                                   const newList = list.filter(n => n !== name);
+                                                   setAdminRosterScheduleData(prev => ({
+                                                     ...prev,
+                                                     [srv.id]: {
+                                                       ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                       openHeavensLeader: newList.join(', ')
+                                                     }
+                                                   }));
+                                                 }}
+                                                 className="text-purple-700 hover:text-red-600 font-bold ml-0.5 cursor-pointer"
+                                               >
+                                                 ×
+                                               </button>
+                                             </span>
+                                           ));
+                                         })()}
+                                       </div>
+
+                                       {/* Add Dropdown */}
+                                       <select
+                                         value=""
+                                         onChange={(e) => {
+                                           const newName = e.target.value;
+                                           if (!newName) return;
+                                           setAdminRosterScheduleData(prev => {
+                                             const current = prev[srv.id]?.openHeavensLeader || '';
+                                             const list = current ? current.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                             if (list.includes(newName)) return prev;
+                                             return {
+                                               ...prev,
+                                               [srv.id]: {
+                                                 ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                 openHeavensLeader: [...list, newName].join(', ')
+                                               }
+                                             };
+                                           });
+                                         }}
+                                         className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue cursor-pointer"
+                                       >
+                                         <option value="">+ Click to add Open Heavens Leader...</option>
+                                         <optgroup label="Ordained Ministers / Pastors">
+                                           {ministers.map((m) => (
+                                             <option key={m.id} value={m.fullName}>{m.fullName}</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="All Parish Members (Ushering, Choir, etc.)">
+                                           {members.map((mem) => (
+                                             <option key={mem.id} value={mem.fullName}>{mem.fullName} ({mem.assignedDepartment || 'Member'})</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="Common Leaders">
+                                           <option value="SIS. PRAISE">SIS. PRAISE</option>
+                                           <option value="BRO. JOHNSON (GANGAN)">BRO. JOHNSON (GANGAN)</option>
+                                           <option value="SIS. BLESSING">SIS. BLESSING</option>
+                                           <option value="VIGIL">VIGIL</option>
+                                         </optgroup>
+                                       </select>
+                                     </div>
+                                   </div>
+                                 </div>
+                               )}
                             </div>
                           );
                         })}
