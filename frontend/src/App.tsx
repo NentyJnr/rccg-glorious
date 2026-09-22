@@ -2485,7 +2485,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex font-sans overflow-x-hidden">
+    <div className="h-screen w-screen overflow-hidden bg-slate-100 flex font-sans select-none">
       {/* MOBILE SIDEBAR OVERLAY */}
       {mobileSidebarOpen && (
         <div 
@@ -2495,7 +2495,7 @@ export default function App() {
       )}
 
       {/* SIDEBAR NAVIGATION CONTAINER */}
-      <aside className={`rccg-gradient-header text-white flex flex-col justify-between fixed md:sticky top-0 h-screen z-50 transition-all duration-300 shadow-xl ${
+      <aside className={`rccg-gradient-header text-white flex flex-col justify-between h-screen fixed md:relative z-50 flex-shrink-0 transition-all duration-300 shadow-xl ${
         mobileSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'
       } ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'}`}>
         
@@ -2645,9 +2645,9 @@ export default function App() {
       </aside>
 
       {/* MAIN CONTENT WORKSPACE AREA */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
         {/* TOP WORKSPACE HEADER BAR */}
-        <header className="bg-white border-b border-slate-200 h-16 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+        <header className="bg-white border-b border-slate-200 h-16 px-4 sm:px-8 flex items-center justify-between flex-shrink-0 z-30 shadow-xs">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setMobileSidebarOpen(true)}
@@ -2689,7 +2689,7 @@ export default function App() {
 
         {/* Global Notification Banner */}
         {notification && (
-          <div className={`py-3 px-4 shadow-md text-white text-sm font-medium flex items-center justify-center space-x-2 transition ${
+          <div className={`py-3 px-4 shadow-md text-white text-sm font-medium flex items-center justify-center space-x-2 transition flex-shrink-0 ${
             notification.type === 'success' ? 'bg-rccg-green' : 'bg-rccg-red'
           }`}>
             {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
@@ -2698,7 +2698,8 @@ export default function App() {
         )}
 
         {/* Main Content Body */}
-        <main className="p-4 sm:p-8 flex-1 w-full max-w-7xl mx-auto">
+        <main className="p-4 sm:p-8 flex-1 w-full overflow-y-auto min-h-0 bg-slate-100">
+          <div className="max-w-7xl mx-auto">
         {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
@@ -5451,7 +5452,8 @@ export default function App() {
             )}
           </div>
         )}
-      </main>
+          </div>
+        </main>
 
       {/* ---------------- MODAL 1: DETAILED SERVICE TYPE & CATEGORY SETUP POPUP ---------------- */}
       {isAddSetupModalOpen && (
