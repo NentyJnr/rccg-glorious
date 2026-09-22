@@ -264,46 +264,68 @@ export default function App() {
         {
           id: 'd1',
           serviceDate: '2026-10-04',
-          serviceTypeName: 'Sunday 1st Service',
+          serviceTypeName: 'Sunday 1st Service (08:00 AM)',
           departmentName: 'Choir & Praise Team',
           dutyRole: 'Worship Lead & Praise Team',
-          assignedPersonNames: ['Okon Emmanuel', 'Minister David Okafor', 'Blessing Grace'],
+          assignedPersonNames: ['Okon Emmanuel', 'Eze Chukwudi'],
+          ministrationBreakdown: {
+            workersPraise: ['Okon Emmanuel'],
+            mainPraise: ['Okon Emmanuel', 'Eze Chukwudi'],
+            offering: ['Eze Chukwudi'],
+            thanksgiving: ['Okon Emmanuel']
+          },
           status: 'SubmittedForApproval'
         },
         {
           id: 'd2',
           serviceDate: '2026-10-04',
-          serviceTypeName: 'Sunday 2nd Service',
+          serviceTypeName: 'Sunday 2nd Service (10:00 AM)',
           departmentName: 'Choir & Praise Team',
           dutyRole: 'Choir Ministration',
-          assignedPersonNames: ['Okon Emmanuel', 'Minister David Okafor'],
+          assignedPersonNames: ['Okon Emmanuel'],
+          ministrationBreakdown: {
+            workersPraise: ['Okon Emmanuel'],
+            mainPraise: ['Okon Emmanuel'],
+            offering: ['Okon Emmanuel'],
+            thanksgiving: ['Eze Chukwudi']
+          },
           status: 'SubmittedForApproval'
         },
         {
           id: 'd3',
           serviceDate: '2026-10-06',
-          serviceTypeName: 'Tuesday Digging Deep',
+          serviceTypeName: 'Tuesday Digging Deep (06:00 PM)',
           departmentName: 'Choir & Praise Team',
           dutyRole: 'Worship Ministration',
           assignedPersonNames: ['Okon Emmanuel'],
+          ministrationBreakdown: {
+            workersPraise: ['Okon Emmanuel'],
+            mainPraise: ['Okon Emmanuel']
+          },
           status: 'SubmittedForApproval'
         },
         {
           id: 'd4',
           serviceDate: '2026-10-08',
-          serviceTypeName: 'Thursday Faith Clinic',
+          serviceTypeName: 'Thursday Faith Clinic (06:00 PM)',
           departmentName: 'Choir & Praise Team',
           dutyRole: 'Praise & Worship',
-          assignedPersonNames: ['Minister David Okafor'],
+          assignedPersonNames: ['Eze Chukwudi'],
+          ministrationBreakdown: {
+            mainPraise: ['Eze Chukwudi']
+          },
           status: 'SubmittedForApproval'
         },
         {
           id: 'd5',
           serviceDate: '2026-10-16',
-          serviceTypeName: 'Monthly Night Vigil (Special Event)',
+          serviceTypeName: 'Monthly Night Vigil (10:00 PM) - Special Event',
           departmentName: 'Choir & Praise Team',
           dutyRole: 'All Night Ministration',
-          assignedPersonNames: ['Okon Emmanuel', 'Minister David Okafor', 'Blessing Grace'],
+          assignedPersonNames: ['Okon Emmanuel', 'Eze Chukwudi'],
+          ministrationBreakdown: {
+            mainPraise: ['Okon Emmanuel', 'Eze Chukwudi']
+          },
           status: 'SubmittedForApproval'
         }
       ]
@@ -4998,6 +5020,68 @@ export default function App() {
                           const assignment = activeRoster?.assignments?.find((a: any) => a.serviceDate === srv.serviceDate && (a.serviceTypeName === srv.serviceTypeName || srv.serviceTypeName.startsWith(a.serviceTypeName)));
                           const assignedNames: string[] = assignment?.assignedPersonNames || [];
 
+                          const isChoir = targetDept === 'Choir & Praise Team';
+                          const choirMinistrationRoles = [
+                            { key: 'workersPraise', label: "Praise & Worship (Worker's Meeting)", icon: '🌅', color: 'border-amber-200 bg-amber-50/60 text-amber-950' },
+                            { key: 'mainPraise', label: "Praise & Worship (Main Service)", icon: '🔥', color: 'border-purple-200 bg-purple-50/60 text-purple-950' },
+                            { key: 'offering', label: "Offering Ministration (Main Service)", icon: '💸', color: 'border-emerald-200 bg-emerald-50/60 text-emerald-950' },
+                            { key: 'thanksgiving', label: "Thanksgiving Ministration (Main Service)", icon: '🙌', color: 'border-blue-200 bg-blue-50/60 text-blue-950' },
+                          ];
+
+                          const handleToggleChoirMinistration = (roleKey: string, memberName: string) => {
+                            setRosters(prev => {
+                              const targetRoster = prev.find(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth);
+                              const existingAssignments = [...(targetRoster?.assignments || [])];
+                              const aIdx = existingAssignments.findIndex((a: any) => a.serviceDate === srv.serviceDate && (a.serviceTypeName === srv.serviceTypeName || srv.serviceTypeName.startsWith(a.serviceTypeName)));
+
+                              let updatedAssign: any;
+                              if (aIdx >= 0) {
+                                const currentAssign = existingAssignments[aIdx];
+                                const currentBreakdown = currentAssign.ministrationBreakdown || {};
+                                const currentRoleList: string[] = currentBreakdown[roleKey] || [];
+                                const nextRoleList = currentRoleList.includes(memberName)
+                                  ? currentRoleList.filter(n => n !== memberName)
+                                  : [...currentRoleList, memberName];
+
+                                const nextBreakdown = { ...currentBreakdown, [roleKey]: nextRoleList };
+                                const allAssigned = Array.from(new Set(Object.values(nextBreakdown).flat())) as string[];
+
+                                updatedAssign = {
+                                  ...currentAssign,
+                                  ministrationBreakdown: nextBreakdown,
+                                  assignedPersonNames: allAssigned
+                                };
+                                existingAssignments[aIdx] = updatedAssign;
+                              } else {
+                                const nextBreakdown = { [roleKey]: [memberName] };
+                                updatedAssign = {
+                                  id: `d_${Date.now()}`,
+                                  serviceDate: srv.serviceDate,
+                                  serviceTypeName: srv.serviceTypeName,
+                                  departmentName: targetDept,
+                                  dutyRole: 'Choir Ministration Breakdown',
+                                  assignedPersonNames: [memberName],
+                                  ministrationBreakdown: nextBreakdown,
+                                  status: 'Draft'
+                                };
+                                existingAssignments.push(updatedAssign);
+                              }
+
+                              if (!targetRoster) {
+                                return [...prev, {
+                                  id: `ros_${Date.now()}`,
+                                  monthYear: rosterSelectedMonth,
+                                  departmentName: targetDept,
+                                  hodName: currentUser?.fullName || 'HOD Choir',
+                                  status: 'Draft',
+                                  assignments: existingAssignments
+                                }];
+                              } else {
+                                return prev.map(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth ? { ...r, assignments: existingAssignments } : r);
+                              }
+                            });
+                          };
+
                           return (
                             <div key={srv.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3.5 hover:border-slate-300 transition">
                               
@@ -5021,120 +5105,197 @@ export default function App() {
                                 </span>
                               </div>
 
-                              {/* CURRENT ASSIGNED MEMBERS BADGES */}
-                              <div className="space-y-1.5">
-                                <label className="block text-[11px] font-bold text-slate-600">Assigned Department Personnel:</label>
-                                {assignedNames.length === 0 ? (
-                                  <div className="text-xs text-slate-400 italic bg-slate-50 p-2.5 rounded-xl border border-dashed border-slate-200">
-                                    No personnel assigned yet for this service slot. Select below.
+                              {isChoir ? (
+                                /* CHOIR SPECIFIC MINISTRATION BREAKDOWN UI */
+                                <div className="space-y-3 pt-1">
+                                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                      <span>🎼</span> Choir Ministration Roles
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-medium">Multiple members per ministration allowed</span>
                                   </div>
-                                ) : (
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {assignedNames.map((name, nIdx) => (
-                                      <span key={nIdx} className="px-2.5 py-1 rounded-xl bg-rccg-blue/10 border border-rccg-blue/30 text-rccg-blue text-xs font-bold flex items-center gap-1.5">
-                                        <span>👤 {name}</span>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const updatedNames = assignedNames.filter(n => n !== name);
-                                            setRosters(prev => prev.map(r => {
-                                              if (r.departmentName === targetDept && r.monthYear === rosterSelectedMonth) {
-                                                const existingAssignments = r.assignments || [];
-                                                const assignIdx = existingAssignments.findIndex((a: any) => a.serviceDate === srv.serviceDate);
-                                                if (assignIdx >= 0) {
-                                                  existingAssignments[assignIdx] = { ...existingAssignments[assignIdx], assignedPersonNames: updatedNames };
-                                                }
-                                                return { ...r, assignments: [...existingAssignments] };
-                                              }
-                                              return r;
-                                            }));
-                                          }}
-                                          className="text-slate-400 hover:text-red-600 font-bold cursor-pointer"
-                                          title="Remove from service"
-                                        >
-                                          ×
-                                        </button>
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
 
-                              {/* TOGGLE WORKER ASSIGNMENT SELECTION */}
-                              <div className="pt-2 border-t border-slate-100">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Assign / Toggle Members:</label>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {deptWorkers.map((mem) => {
-                                    const isAssigned = assignedNames.includes(mem.fullName);
+                                  {choirMinistrationRoles.map(mRole => {
+                                    const minBreakdown = assignment?.ministrationBreakdown || {};
+                                    const slotAssigned: string[] = minBreakdown[mRole.key] || [];
+
                                     return (
-                                      <button
-                                        key={mem.id}
-                                        type="button"
-                                        onClick={() => {
-                                          const nextNames = isAssigned
-                                            ? assignedNames.filter(n => n !== mem.fullName)
-                                            : [...assignedNames, mem.fullName];
+                                      <div key={mRole.key} className={`p-3 rounded-xl border ${mRole.color} space-y-2 transition`}>
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs font-bold flex items-center gap-1.5">
+                                            <span>{mRole.icon}</span>
+                                            <span>{mRole.label}</span>
+                                          </span>
+                                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white/90 border border-current/20 shadow-xs">
+                                            {slotAssigned.length} Assigned
+                                          </span>
+                                        </div>
 
-                                          setRosters(prev => {
-                                            const targetRoster = prev.find(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth);
-                                            if (!targetRoster) {
-                                              const newRoster = {
-                                                id: `ros_${Date.now()}`,
-                                                monthYear: rosterSelectedMonth,
-                                                departmentName: targetDept,
-                                                hodName: currentUser?.fullName || 'Department HOD',
-                                                status: 'Draft',
-                                                assignments: [
-                                                  {
-                                                    id: `d_${Date.now()}`,
-                                                    serviceDate: srv.serviceDate,
-                                                    serviceTypeName: srv.serviceTypeName,
-                                                    departmentName: targetDept,
-                                                    dutyRole: 'Service Ministration',
-                                                    assignedPersonNames: nextNames,
-                                                    status: 'Draft'
-                                                  }
-                                                ]
-                                              };
-                                              return [...prev, newRoster];
-                                            } else {
-                                              return prev.map(r => {
-                                                if (r.departmentName === targetDept && r.monthYear === rosterSelectedMonth) {
-                                                  const existingList = [...(r.assignments || [])];
-                                                  const aIdx = existingList.findIndex(a => a.serviceDate === srv.serviceDate && a.serviceTypeName === srv.serviceTypeName);
-                                                  if (aIdx >= 0) {
-                                                    existingList[aIdx] = { ...existingList[aIdx], assignedPersonNames: nextNames };
-                                                  } else {
-                                                    existingList.push({
-                                                      id: `d_${Date.now()}`,
-                                                      serviceDate: srv.serviceDate,
-                                                      serviceTypeName: srv.serviceTypeName,
-                                                      departmentName: targetDept,
-                                                      dutyRole: 'Service Ministration',
-                                                      assignedPersonNames: nextNames,
-                                                      status: 'Draft'
-                                                    });
-                                                  }
-                                                  return { ...r, assignments: existingList };
-                                                }
-                                                return r;
-                                              });
-                                            }
-                                          });
-                                        }}
-                                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center space-x-1 cursor-pointer ${
-                                          isAssigned
-                                            ? 'bg-rccg-blue text-white border-rccg-blue shadow-sm'
-                                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                        }`}
-                                      >
-                                        <span>{isAssigned ? '✓' : '+'}</span>
-                                        <span>{mem.fullName}</span>
-                                      </button>
+                                        {/* Assigned Members Badges */}
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {slotAssigned.length === 0 ? (
+                                            <span className="text-[11px] text-slate-400 italic">No choir member assigned yet</span>
+                                          ) : (
+                                            slotAssigned.map((name, idx) => (
+                                              <span key={idx} className="px-2.5 py-1 rounded-lg bg-white shadow-xs border border-slate-200 text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                                <span>👤 {name}</span>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleToggleChoirMinistration(mRole.key, name)}
+                                                  className="text-slate-400 hover:text-red-600 font-bold ml-0.5 cursor-pointer"
+                                                  title="Remove from this ministration"
+                                                >
+                                                  ×
+                                                </button>
+                                              </span>
+                                            ))
+                                          )}
+                                        </div>
+
+                                        {/* Toggle/Assign Choir Members */}
+                                        <div className="pt-1.5 border-t border-slate-200/50 flex flex-wrap items-center gap-1">
+                                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Assign:</span>
+                                          {deptWorkers.map((mem) => {
+                                            const isSlotAssigned = slotAssigned.includes(mem.fullName);
+                                            return (
+                                              <button
+                                                key={mem.id}
+                                                type="button"
+                                                onClick={() => handleToggleChoirMinistration(mRole.key, mem.fullName)}
+                                                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition cursor-pointer ${
+                                                  isSlotAssigned
+                                                    ? 'bg-slate-900 text-white shadow-xs'
+                                                    : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                                                }`}
+                                              >
+                                                {isSlotAssigned ? `✓ ${mem.fullName}` : `+ ${mem.fullName}`}
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
                                     );
                                   })}
                                 </div>
-                              </div>
+                              ) : (
+                                /* STANDARD NON-CHOIR DEPARTMENT DUTY ASSIGNMENT UI */
+                                <>
+                                  {/* CURRENT ASSIGNED MEMBERS BADGES */}
+                                  <div className="space-y-1.5">
+                                    <label className="block text-[11px] font-bold text-slate-600">Assigned Department Personnel:</label>
+                                    {assignedNames.length === 0 ? (
+                                      <div className="text-xs text-slate-400 italic bg-slate-50 p-2.5 rounded-xl border border-dashed border-slate-200">
+                                        No personnel assigned yet for this service slot. Select below.
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {assignedNames.map((name, nIdx) => (
+                                          <span key={nIdx} className="px-2.5 py-1 rounded-xl bg-rccg-blue/10 border border-rccg-blue/30 text-rccg-blue text-xs font-bold flex items-center gap-1.5">
+                                            <span>👤 {name}</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const updatedNames = assignedNames.filter(n => n !== name);
+                                                setRosters(prev => prev.map(r => {
+                                                  if (r.departmentName === targetDept && r.monthYear === rosterSelectedMonth) {
+                                                    const existingAssignments = r.assignments || [];
+                                                    const assignIdx = existingAssignments.findIndex((a: any) => a.serviceDate === srv.serviceDate);
+                                                    if (assignIdx >= 0) {
+                                                      existingAssignments[assignIdx] = { ...existingAssignments[assignIdx], assignedPersonNames: updatedNames };
+                                                    }
+                                                    return { ...r, assignments: [...existingAssignments] };
+                                                  }
+                                                  return r;
+                                                }));
+                                              }}
+                                              className="text-slate-400 hover:text-red-600 font-bold cursor-pointer"
+                                              title="Remove from service"
+                                            >
+                                              ×
+                                            </button>
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* TOGGLE WORKER ASSIGNMENT SELECTION */}
+                                  <div className="pt-2 border-t border-slate-100">
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Assign / Toggle Members:</label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {deptWorkers.map((mem) => {
+                                        const isAssigned = assignedNames.includes(mem.fullName);
+                                        return (
+                                          <button
+                                            key={mem.id}
+                                            type="button"
+                                            onClick={() => {
+                                              const nextNames = isAssigned
+                                                ? assignedNames.filter(n => n !== mem.fullName)
+                                                : [...assignedNames, mem.fullName];
+
+                                              setRosters(prev => {
+                                                const targetRoster = prev.find(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth);
+                                                if (!targetRoster) {
+                                                  const newRoster = {
+                                                    id: `ros_${Date.now()}`,
+                                                    monthYear: rosterSelectedMonth,
+                                                    departmentName: targetDept,
+                                                    hodName: currentUser?.fullName || 'Department HOD',
+                                                    status: 'Draft',
+                                                    assignments: [
+                                                      {
+                                                        id: `d_${Date.now()}`,
+                                                        serviceDate: srv.serviceDate,
+                                                        serviceTypeName: srv.serviceTypeName,
+                                                        departmentName: targetDept,
+                                                        dutyRole: 'Service Ministration',
+                                                        assignedPersonNames: nextNames,
+                                                        status: 'Draft'
+                                                      }
+                                                    ]
+                                                  };
+                                                  return [...prev, newRoster];
+                                                } else {
+                                                  return prev.map(r => {
+                                                    if (r.departmentName === targetDept && r.monthYear === rosterSelectedMonth) {
+                                                      const existingList = [...(r.assignments || [])];
+                                                      const aIdx = existingList.findIndex(a => a.serviceDate === srv.serviceDate && a.serviceTypeName === srv.serviceTypeName);
+                                                      if (aIdx >= 0) {
+                                                        existingList[aIdx] = { ...existingList[aIdx], assignedPersonNames: nextNames };
+                                                      } else {
+                                                        existingList.push({
+                                                          id: `d_${Date.now()}`,
+                                                          serviceDate: srv.serviceDate,
+                                                          serviceTypeName: srv.serviceTypeName,
+                                                          departmentName: targetDept,
+                                                          dutyRole: 'Service Ministration',
+                                                          assignedPersonNames: nextNames,
+                                                          status: 'Draft'
+                                                        });
+                                                      }
+                                                      return { ...r, assignments: existingList };
+                                                    }
+                                                    return r;
+                                                  });
+                                                }
+                                              });
+                                            }}
+                                            className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center space-x-1 cursor-pointer ${
+                                              isAssigned
+                                                ? 'bg-rccg-blue text-white border-rccg-blue shadow-sm'
+                                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                            }`}
+                                          >
+                                            <span>{isAssigned ? '✓' : '+'}</span>
+                                            <span>{mem.fullName}</span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           );
                         })}
@@ -7332,10 +7493,19 @@ export default function App() {
                 `👑 HOD: ${activeRoster?.hodName || currentUser?.fullName}\n` +
                 `STATUS: ${activeRoster?.status === 'Approved' ? 'PUBLISHED & APPROVED ✓' : 'DRAFT / SUBMITTED'}\n` +
                 `=======================================\n\n` +
-                (assignments.length === 0 ? "No specific assignments configured yet." : assignments.map((a: any) => (
-                  `🗓️ ${a.serviceDate} - ${a.serviceTypeName}\n` +
-                  `👤 Workers (${a.assignedPersonNames?.length || 0}): ${a.assignedPersonNames?.join(', ') || 'Unassigned'}\n`
-                )).join('\n')) +
+                (assignments.length === 0 ? "No specific assignments configured yet." : assignments.map((a: any) => {
+                  let str = `🗓️ ${a.serviceDate} - ${a.serviceTypeName}\n`;
+                  if (activeDept === 'Choir & Praise Team' && a.ministrationBreakdown) {
+                    const mb = a.ministrationBreakdown;
+                    if (mb.workersPraise?.length) str += ` ├ 🌅 Worker's P&W: ${mb.workersPraise.join(', ')}\n`;
+                    if (mb.mainPraise?.length) str += ` ├ 🔥 Main P&W: ${mb.mainPraise.join(', ')}\n`;
+                    if (mb.offering?.length) str += ` ├ 💸 Offering Ministration: ${mb.offering.join(', ')}\n`;
+                    if (mb.thanksgiving?.length) str += ` └ 🙌 Thanksgiving Ministration: ${mb.thanksgiving.join(', ')}\n`;
+                  } else {
+                    str += ` └ 👤 Workers (${a.assignedPersonNames?.length || 0}): ${a.assignedPersonNames?.join(', ') || 'Unassigned'}\n`;
+                  }
+                  return str;
+                }).join('\n')) +
                 `\n=======================================\n` +
                 `God bless your service in His Vineyard! 🙏✨`;
 
