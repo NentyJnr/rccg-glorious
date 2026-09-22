@@ -5464,8 +5464,7 @@ export default function App() {
                                 )}
 
                                 {/* SECTION 3: SERVICE LEADERSHIP (COORDINATOR, MINISTER, OPEN HEAVENS LEADER) */}
-                                {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'ServiceCoordinator') && (
-                                 <div className="bg-gradient-to-br from-amber-50/60 via-purple-50/40 to-indigo-50/50 p-4 rounded-2xl border border-amber-200/80 space-y-3">
+                                <div className="bg-gradient-to-br from-amber-50/60 via-purple-50/40 to-indigo-50/50 p-4 rounded-2xl border border-amber-200/80 space-y-3">
                                    <div className="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
                                      <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
                                        <span>👑</span> Service Leadership (Coordinator, Minister & Open Heavens Leader)
@@ -5689,7 +5688,6 @@ export default function App() {
                                      </div>
                                    </div>
                                  </div>
-                               )}
                             </div>
                           );
                         })}
