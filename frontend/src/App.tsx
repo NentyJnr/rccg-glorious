@@ -49,7 +49,8 @@ import {
   Camera,
   User,
   Receipt,
-  Send
+  Send,
+  Printer
 } from 'lucide-react';
 import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
@@ -386,6 +387,32 @@ export default function App() {
 
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [newServiceTitleInput, setNewServiceTitleInput] = useState<string>('');
+
+  // Admin Master Roster & Official PDF Print State
+  const [monthlyRosterTheme, setMonthlyRosterTheme] = useState<string>('WORK IN THE SPIRIT (GALATIANS 5 VS 16)');
+  const [showPrintPdfModal, setShowPrintPdfModal] = useState<boolean>(false);
+  const [adminRosterScheduleData, setAdminRosterScheduleData] = useState<{
+    [serviceId: string]: {
+      coordinator: string;
+      usherInCharge: string;
+      praiseLeader: string;
+      officiatingMinister: string;
+      openHeavensLeader: string;
+    }
+  }>({
+    srv1: { coordinator: 'BRO. PHILLIP', usherInCharge: 'SIS. BLESSING', praiseLeader: 'BRO. JOHNSON GANGAN', officiatingMinister: 'PST. ADETUNJI', openHeavensLeader: '' },
+    srv2: { coordinator: 'BRO. PHILLIP', usherInCharge: 'DEACONESS BISOYE', praiseLeader: 'BRO. OLALEKAN', officiatingMinister: 'DEACON IDOWU', openHeavensLeader: '' },
+    srv3: { coordinator: 'BRO. PHILLIP', usherInCharge: 'USHERS', praiseLeader: 'CHOIR', officiatingMinister: 'DADDY G.O.', openHeavensLeader: '' },
+    srv4: { coordinator: 'BRO. DANIEL', usherInCharge: 'BRO. NENTY', praiseLeader: 'SIS. PRECIOUS', officiatingMinister: 'BRO. SAMUEL EGBA', openHeavensLeader: '' },
+    srv5: { coordinator: 'BRO. PHILLIP', usherInCharge: 'DEACONESS BISOYE', praiseLeader: 'SIS. STEPHANIE', officiatingMinister: 'BRO. MICHAEL SHONIBARE', openHeavensLeader: '' },
+    srv6: { coordinator: 'BRO. PHILLIP', usherInCharge: 'BRO. NENTY', praiseLeader: 'SIS. MARY', officiatingMinister: 'MUMMY CHUKWUMA', openHeavensLeader: 'SIS. PRAISE' },
+    srv7: { coordinator: 'BRO. PHILLIP', usherInCharge: 'SIS. BLESSING', praiseLeader: 'BRO. OLA', officiatingMinister: 'BRO. RAPHAEL', openHeavensLeader: '' },
+    srv8: { coordinator: 'BRO. PHILLIP', usherInCharge: 'USHERS', praiseLeader: 'CHOIR', officiatingMinister: 'SIS. MERCY ZAINAB', openHeavensLeader: '' },
+    srv9: { coordinator: 'VIGIL', usherInCharge: 'VIGIL', praiseLeader: 'VIGIL', officiatingMinister: 'VIGIL', openHeavensLeader: 'VIGIL' },
+    srv10: { coordinator: 'BRO. PHILLIP', usherInCharge: 'SIS. BISOYE', praiseLeader: 'BRO. SAMUEL', officiatingMinister: 'BRO. FELIX', openHeavensLeader: 'BRO. JOHNSON (GANGAN)' },
+    srv11: { coordinator: 'BRO. PHILLIP', usherInCharge: 'BRO. NENTY', praiseLeader: 'BRO. GODWIN', officiatingMinister: 'DEACON TAIWO IDOWU', openHeavensLeader: '' },
+    srv12: { coordinator: 'BRO. PHILLIP', usherInCharge: 'BRO. NENTY', praiseLeader: 'BRO. GODWIN', officiatingMinister: 'PRAISE SUNDAY', openHeavensLeader: 'SIS. BLESSING' }
+  });
 
   // Members Directory & Registration State
   const [members, setMembers] = useState<Member[]>([
@@ -4997,6 +5024,16 @@ export default function App() {
                       <Share2 className="w-3.5 h-3.5" />
                       <span>Download / Share (WhatsApp)</span>
                     </button>
+
+                    {/* PRINT PDF OFFICIAL SCHEDULE (MATCHING MASTER SCHEDULE IMAGE 1) */}
+                    <button
+                      type="button"
+                      onClick={() => setShowPrintPdfModal(true)}
+                      className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow border border-slate-700"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Print PDF Official Schedule</span>
+                    </button>
                   </div>
                 </div>
 
@@ -5176,241 +5213,336 @@ export default function App() {
                                   </span>
                                 </div>
 
-                                {isChoir ? (
-                                  /* CHOIR SPECIFIC MINISTRATION BREAKDOWN UI */
-                                  <div className="space-y-3 pt-1">
-                                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                        <span>🎼</span> Choir Ministration Roles
+                                {/* SECTION 1: CHOIR & PRAISE TEAM SUB-CARD */}
+                                {(currentUser?.role !== 'HOD' || targetDept === 'Choir & Praise Team') && (
+                                  <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 space-y-3">
+                                    <div className="flex items-center justify-between border-b border-slate-200/60 pb-1.5">
+                                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                        <span>🎼</span> Choir & Praise Team (Praise Leader & Roles)
                                       </span>
-                                      <span className="text-[10px] text-slate-400 font-medium">Multiple members per ministration allowed</span>
+                                      <span className="text-[10px] text-slate-500 font-bold bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                                        Setup by HOD Choir
+                                      </span>
                                     </div>
 
-                                    {choirMinistrationRoles.map(mRole => {
-                                      const minBreakdown = assignment?.ministrationBreakdown || {};
-                                      const slotAssigned: string[] = minBreakdown[mRole.key] || [];
+                                    <div className="space-y-2.5">
+                                      {choirMinistrationRoles.map(mRole => {
+                                        const minBreakdown = assignment?.ministrationBreakdown || {};
+                                        const slotAssigned: string[] = minBreakdown[mRole.key] || [];
 
-                                      return (
-                                        <div key={mRole.key} className={`p-3 rounded-xl border ${mRole.color} space-y-2 transition`}>
-                                          <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-xs font-bold flex items-center gap-1.5">
-                                                <span>{mRole.icon}</span>
-                                                <span>{mRole.label}</span>
-                                              </span>
-                                              {/* EDIT ROLE BUTTON */}
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  setEditingRoleState({ serviceId: srv.id, roleKey: mRole.key, currentLabel: mRole.label });
-                                                  setNewRoleLabelInput(mRole.label);
-                                                }}
-                                                className="p-1 rounded-md text-slate-400 hover:text-slate-900 hover:bg-white/80 transition cursor-pointer"
-                                                title="Edit Ministration Role Title"
-                                              >
-                                                <Pencil className="w-3 h-3" />
-                                              </button>
-                                              {/* DELETE ROLE BUTTON */}
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  setDeletedRolesPerService(prev => ({
-                                                    ...prev,
-                                                    [srv.id]: [...(prev[srv.id] || []), mRole.key]
-                                                  }));
-                                                  handleToggleChoirMinistration(mRole.key, 'CLEAR_ROLE_ALL');
-                                                  setRosterSuccessAlert(`Deleted "${mRole.label}" ministration role.`);
-                                                  setTimeout(() => setRosterSuccessAlert(null), 3500);
-                                                }}
-                                                className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-white/80 transition cursor-pointer"
-                                                title="Delete Ministration Role"
-                                              >
-                                                <Trash2 className="w-3 h-3" />
-                                              </button>
-                                            </div>
-                                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white/90 border border-current/20 shadow-xs">
-                                              {slotAssigned.length} Assigned
-                                            </span>
-                                          </div>
-
-                                          {/* Assigned Members Badges */}
-                                          <div className="flex flex-wrap gap-1.5">
-                                            {slotAssigned.length === 0 ? (
-                                              <span className="text-[11px] text-slate-400 italic">No choir member assigned yet</span>
-                                            ) : (
-                                              slotAssigned.map((name, idx) => (
-                                                <span key={idx} className="px-2.5 py-1 rounded-lg bg-white shadow-xs border border-slate-200 text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                                  <span>👤 {name}</span>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => handleToggleChoirMinistration(mRole.key, name)}
-                                                    className="text-slate-400 hover:text-red-600 font-bold ml-0.5 cursor-pointer"
-                                                    title="Remove from this ministration"
-                                                  >
-                                                    ×
-                                                  </button>
+                                        return (
+                                          <div key={mRole.key} className={`p-3 rounded-xl border ${mRole.color} space-y-2 transition`}>
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold flex items-center gap-1.5">
+                                                  <span>{mRole.icon}</span>
+                                                  <span>{mRole.label}</span>
                                                 </span>
-                                              ))
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    setEditingRoleState({ serviceId: srv.id, roleKey: mRole.key, currentLabel: mRole.label });
+                                                    setNewRoleLabelInput(mRole.label);
+                                                  }}
+                                                  className="p-1 rounded-md text-slate-400 hover:text-slate-900 hover:bg-white/80 transition cursor-pointer"
+                                                  title="Edit Ministration Role Title"
+                                                >
+                                                  <Pencil className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    setDeletedRolesPerService(prev => ({
+                                                      ...prev,
+                                                      [srv.id]: [...(prev[srv.id] || []), mRole.key]
+                                                    }));
+                                                    handleToggleChoirMinistration(mRole.key, 'CLEAR_ROLE_ALL');
+                                                    setRosterSuccessAlert(`Deleted "${mRole.label}" ministration role.`);
+                                                    setTimeout(() => setRosterSuccessAlert(null), 3500);
+                                                  }}
+                                                  className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-white/80 transition cursor-pointer"
+                                                  title="Delete Ministration Role"
+                                                >
+                                                  <Trash2 className="w-3 h-3" />
+                                                </button>
+                                              </div>
+                                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white/90 border border-current/20 shadow-xs">
+                                                {slotAssigned.length} Assigned
+                                              </span>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-1.5">
+                                              {slotAssigned.length === 0 ? (
+                                                <span className="text-[11px] text-slate-400 italic">No choir member assigned yet</span>
+                                              ) : (
+                                                slotAssigned.map((name, idx) => (
+                                                  <span key={idx} className="px-2.5 py-1 rounded-lg bg-white shadow-xs border border-slate-200 text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                                    <span>👤 {name}</span>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleToggleChoirMinistration(mRole.key, name)}
+                                                      className="text-slate-400 hover:text-red-600 font-bold ml-0.5 cursor-pointer"
+                                                      title="Remove from this ministration"
+                                                    >
+                                                      ×
+                                                    </button>
+                                                  </span>
+                                                ))
+                                              )}
+                                            </div>
+
+                                            {targetDept === 'Choir & Praise Team' && (
+                                              <div className="pt-1.5 border-t border-slate-200/50 flex flex-wrap items-center gap-1">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Assign:</span>
+                                                {deptWorkers.map((mem) => {
+                                                  const isSlotAssigned = slotAssigned.includes(mem.fullName);
+                                                  return (
+                                                    <button
+                                                      key={mem.id}
+                                                      type="button"
+                                                      onClick={() => handleToggleChoirMinistration(mRole.key, mem.fullName)}
+                                                      className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition cursor-pointer ${
+                                                        isSlotAssigned
+                                                          ? 'bg-slate-900 text-white shadow-xs'
+                                                          : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                                                      }`}
+                                                    >
+                                                      {isSlotAssigned ? `✓ ${mem.fullName}` : `+ ${mem.fullName}`}
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
                                             )}
                                           </div>
-
-                                          {/* Toggle/Assign Choir Members */}
-                                          <div className="pt-1.5 border-t border-slate-200/50 flex flex-wrap items-center gap-1">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Assign:</span>
-                                            {deptWorkers.map((mem) => {
-                                              const isSlotAssigned = slotAssigned.includes(mem.fullName);
-                                              return (
-                                                <button
-                                                  key={mem.id}
-                                                  type="button"
-                                                  onClick={() => handleToggleChoirMinistration(mRole.key, mem.fullName)}
-                                                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition cursor-pointer ${
-                                                    isSlotAssigned
-                                                      ? 'bg-slate-900 text-white shadow-xs'
-                                                      : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
-                                                  }`}
-                                                >
-                                                  {isSlotAssigned ? `✓ ${mem.fullName}` : `+ ${mem.fullName}`}
-                                                </button>
-                                              );
-                                            })}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-
-                                    {/* ADD CUSTOM MINISTRATION ROLE BUTTON */}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setAddingRoleServiceId(srv.id);
-                                        setNewRoleTitleInput('');
-                                      }}
-                                      className="w-full py-2 border border-dashed border-slate-300 hover:border-rccg-blue rounded-xl text-xs font-bold text-rccg-blue bg-slate-50/50 hover:bg-blue-50/50 transition flex items-center justify-center space-x-1.5 cursor-pointer mt-2"
-                                    >
-                                      <Plus className="w-3.5 h-3.5" />
-                                      <span>+ Add Custom Ministration Role</span>
-                                    </button>
-                                  </div>
-                                ) : (
-                                /* STANDARD NON-CHOIR DEPARTMENT DUTY ASSIGNMENT UI */
-                                <>
-                                  {/* CURRENT ASSIGNED MEMBERS BADGES */}
-                                  <div className="space-y-1.5">
-                                    <label className="block text-[11px] font-bold text-slate-600">Assigned Department Personnel:</label>
-                                    {assignedNames.length === 0 ? (
-                                      <div className="text-xs text-slate-400 italic bg-slate-50 p-2.5 rounded-xl border border-dashed border-slate-200">
-                                        No personnel assigned yet for this service slot. Select below.
-                                      </div>
-                                    ) : (
-                                      <div className="flex flex-wrap gap-1.5">
-                                        {assignedNames.map((name, nIdx) => (
-                                          <span key={nIdx} className="px-2.5 py-1 rounded-xl bg-rccg-blue/10 border border-rccg-blue/30 text-rccg-blue text-xs font-bold flex items-center gap-1.5">
-                                            <span>👤 {name}</span>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const updatedNames = assignedNames.filter(n => n !== name);
-                                                setRosters(prev => prev.map(r => {
-                                                  if (r.departmentName === targetDept && r.monthYear === rosterSelectedMonth) {
-                                                    const existingAssignments = r.assignments || [];
-                                                    const assignIdx = existingAssignments.findIndex((a: any) => a.serviceDate === srv.serviceDate);
-                                                    if (assignIdx >= 0) {
-                                                      existingAssignments[assignIdx] = { ...existingAssignments[assignIdx], assignedPersonNames: updatedNames };
-                                                    }
-                                                    return { ...r, assignments: [...existingAssignments] };
-                                                  }
-                                                  return r;
-                                                }));
-                                              }}
-                                              className="text-slate-400 hover:text-red-600 font-bold cursor-pointer"
-                                              title="Remove from service"
-                                            >
-                                              ×
-                                            </button>
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* TOGGLE WORKER ASSIGNMENT SELECTION */}
-                                  <div className="pt-2 border-t border-slate-100">
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Assign / Toggle Members:</label>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {deptWorkers.map((mem) => {
-                                        const isAssigned = assignedNames.includes(mem.fullName);
-                                        return (
-                                          <button
-                                            key={mem.id}
-                                            type="button"
-                                            onClick={() => {
-                                              const nextNames = isAssigned
-                                                ? assignedNames.filter(n => n !== mem.fullName)
-                                                : [...assignedNames, mem.fullName];
-
-                                              setRosters(prev => {
-                                                const targetRoster = prev.find(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth);
-                                                if (!targetRoster) {
-                                                  const newRoster = {
-                                                    id: `ros_${Date.now()}`,
-                                                    monthYear: rosterSelectedMonth,
-                                                    departmentName: targetDept,
-                                                    hodName: currentUser?.fullName || 'Department HOD',
-                                                    status: 'Draft',
-                                                    assignments: [
-                                                      {
-                                                        id: `d_${Date.now()}`,
-                                                        serviceDate: srv.serviceDate,
-                                                        serviceTypeName: srv.serviceTypeName,
-                                                        departmentName: targetDept,
-                                                        dutyRole: 'Service Ministration',
-                                                        assignedPersonNames: nextNames,
-                                                        status: 'Draft'
-                                                      }
-                                                    ]
-                                                  };
-                                                  return [...prev, newRoster];
-                                                } else {
-                                                  return prev.map(r => {
-                                                    if (r.departmentName === targetDept && r.monthYear === rosterSelectedMonth) {
-                                                      const existingList = [...(r.assignments || [])];
-                                                      const aIdx = existingList.findIndex(a => a.serviceDate === srv.serviceDate && a.serviceTypeName === srv.serviceTypeName);
-                                                      if (aIdx >= 0) {
-                                                        existingList[aIdx] = { ...existingList[aIdx], assignedPersonNames: nextNames };
-                                                      } else {
-                                                        existingList.push({
-                                                          id: `d_${Date.now()}`,
-                                                          serviceDate: srv.serviceDate,
-                                                          serviceTypeName: srv.serviceTypeName,
-                                                          departmentName: targetDept,
-                                                          dutyRole: 'Service Ministration',
-                                                          assignedPersonNames: nextNames,
-                                                          status: 'Draft'
-                                                        });
-                                                      }
-                                                      return { ...r, assignments: existingList };
-                                                    }
-                                                    return r;
-                                                  });
-                                                }
-                                              });
-                                            }}
-                                            className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center space-x-1 cursor-pointer ${
-                                              isAssigned
-                                                ? 'bg-rccg-blue text-white border-rccg-blue shadow-sm'
-                                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                            }`}
-                                          >
-                                            <span>{isAssigned ? '✓' : '+'}</span>
-                                            <span>{mem.fullName}</span>
-                                          </button>
                                         );
                                       })}
                                     </div>
+
+                                    {targetDept === 'Choir & Praise Team' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAddingRoleServiceId(srv.id);
+                                          setNewRoleTitleInput('');
+                                        }}
+                                        className="w-full py-2 border border-dashed border-slate-300 hover:border-rccg-blue rounded-xl text-xs font-bold text-rccg-blue bg-white hover:bg-blue-50/50 transition flex items-center justify-center space-x-1.5 cursor-pointer mt-2 shadow-xs"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" />
+                                        <span>+ Add Custom Ministration Role</span>
+                                      </button>
+                                    )}
                                   </div>
-                                </>
-                              )}
+                                )}
+
+                                {/* SECTION 2: USHERING & PROTOCOL SUB-CARD */}
+                                {(currentUser?.role !== 'HOD' || targetDept === 'Ushering & Protocol') && (
+                                  <div className="bg-blue-50/40 p-4 rounded-2xl border border-blue-100 space-y-3">
+                                    <div className="flex items-center justify-between border-b border-blue-100 pb-1.5">
+                                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                        <span>🛡️</span> Ushering & Protocol (Ushers In-Charge)
+                                      </span>
+                                      <span className="text-[10px] text-slate-500 font-bold bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                                        Setup by HOD Ushering
+                                      </span>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                      <label className="block text-[11px] font-bold text-slate-600">Assigned Department Personnel:</label>
+                                      {assignedNames.length === 0 ? (
+                                        <div className="text-xs text-slate-400 italic bg-white p-2.5 rounded-xl border border-dashed border-slate-200">
+                                          No personnel assigned yet for this service slot.
+                                        </div>
+                                      ) : (
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {assignedNames.map((name, nIdx) => (
+                                            <span key={nIdx} className="px-2.5 py-1 rounded-xl bg-rccg-blue/10 border border-rccg-blue/30 text-rccg-blue text-xs font-bold flex items-center gap-1.5">
+                                              <span>👤 {name}</span>
+                                              {targetDept === 'Ushering & Protocol' && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const updatedNames = assignedNames.filter(n => n !== name);
+                                                    setRosters(prev => prev.map(r => {
+                                                      if (r.departmentName === targetDept && r.monthYear === rosterSelectedMonth) {
+                                                        const existingAssignments = r.assignments || [];
+                                                        const assignIdx = existingAssignments.findIndex((a: any) => a.serviceDate === srv.serviceDate);
+                                                        if (assignIdx >= 0) {
+                                                          existingAssignments[assignIdx] = { ...existingAssignments[assignIdx], assignedPersonNames: updatedNames };
+                                                        }
+                                                        return { ...r, assignments: [...existingAssignments] };
+                                                      }
+                                                      return r;
+                                                    }));
+                                                  }}
+                                                  className="text-slate-400 hover:text-red-600 font-bold cursor-pointer"
+                                                  title="Remove from service"
+                                                >
+                                                  ×
+                                                </button>
+                                              )}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {targetDept === 'Ushering & Protocol' && (
+                                      <div className="pt-2 border-t border-slate-200/50">
+                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Assign / Toggle Members:</label>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {deptWorkers.map((mem) => {
+                                            const isAssigned = assignedNames.includes(mem.fullName);
+                                            return (
+                                              <button
+                                                key={mem.id}
+                                                type="button"
+                                                onClick={() => {
+                                                  const nextNames = isAssigned
+                                                    ? assignedNames.filter(n => n !== mem.fullName)
+                                                    : [...assignedNames, mem.fullName];
+
+                                                  setRosters(prev => {
+                                                    const targetRoster = prev.find(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth);
+                                                    if (!targetRoster) {
+                                                      const newRoster = {
+                                                        id: `ros_${Date.now()}`,
+                                                        monthYear: rosterSelectedMonth,
+                                                        departmentName: targetDept,
+                                                        hodName: currentUser?.fullName || 'Department HOD',
+                                                        status: 'Draft',
+                                                        assignments: [
+                                                          {
+                                                            id: `d_${Date.now()}`,
+                                                            serviceDate: srv.serviceDate,
+                                                            serviceTypeName: srv.serviceTypeName,
+                                                            departmentName: targetDept,
+                                                            dutyRole: 'Service Ministration',
+                                                            assignedPersonNames: nextNames,
+                                                            status: 'Draft'
+                                                          }
+                                                        ]
+                                                      };
+                                                      return [...prev, newRoster];
+                                                    } else {
+                                                      return prev.map(r => {
+                                                        if (r.departmentName === targetDept && r.monthYear === rosterSelectedMonth) {
+                                                          const existingList = [...(r.assignments || [])];
+                                                          const aIdx = existingList.findIndex(a => a.serviceDate === srv.serviceDate && a.serviceTypeName === srv.serviceTypeName);
+                                                          if (aIdx >= 0) {
+                                                            existingList[aIdx] = { ...existingList[aIdx], assignedPersonNames: nextNames };
+                                                          } else {
+                                                            existingList.push({
+                                                              id: `d_${Date.now()}`,
+                                                              serviceDate: srv.serviceDate,
+                                                              serviceTypeName: srv.serviceTypeName,
+                                                              departmentName: targetDept,
+                                                              dutyRole: 'Service Ministration',
+                                                              assignedPersonNames: nextNames,
+                                                              status: 'Draft'
+                                                            });
+                                                          }
+                                                          return { ...r, assignments: existingList };
+                                                        }
+                                                        return r;
+                                                      });
+                                                    }
+                                                  });
+                                                }}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center space-x-1 cursor-pointer ${
+                                                  isAssigned
+                                                    ? 'bg-rccg-blue text-white border-rccg-blue shadow-sm'
+                                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                }`}
+                                              >
+                                                <span>{isAssigned ? '✓' : '+'}</span>
+                                                <span>{mem.fullName}</span>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* SECTION 3: SERVICE LEADERSHIP & OFFICIATING MINISTERS SUB-CARD (ADMIN / PASTOR CONTROLS) */}
+                                {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'ServiceCoordinator') && (
+                                  <div className="bg-gradient-to-br from-amber-50/60 via-purple-50/40 to-indigo-50/50 p-4 rounded-2xl border border-amber-200/80 space-y-3">
+                                    <div className="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
+                                      <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                                        <span>👑</span> Service Leadership & Officiating Ministers
+                                      </span>
+                                      <span className="text-[10px] font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
+                                        Admin & Pastor Input
+                                      </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                                      {/* COORDINATOR */}
+                                      <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
+                                        <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Coordinator *</label>
+                                        <input
+                                          type="text"
+                                          value={adminRosterScheduleData[srv.id]?.coordinator || ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setAdminRosterScheduleData(prev => ({
+                                              ...prev,
+                                              [srv.id]: {
+                                                ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                coordinator: val
+                                              }
+                                            }));
+                                          }}
+                                          placeholder="e.g. BRO. PHILLIP"
+                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue"
+                                        />
+                                      </div>
+
+                                      {/* OFFICIATING MINISTER */}
+                                      <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
+                                        <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Officiating Minister *</label>
+                                        <input
+                                          type="text"
+                                          value={adminRosterScheduleData[srv.id]?.officiatingMinister || ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setAdminRosterScheduleData(prev => ({
+                                              ...prev,
+                                              [srv.id]: {
+                                                ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                officiatingMinister: val
+                                              }
+                                            }));
+                                          }}
+                                          placeholder="e.g. PST. ADETUNJI / DADDY G.O."
+                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue"
+                                        />
+                                      </div>
+
+                                      {/* OPEN HEAVENS LEADER */}
+                                      <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
+                                        <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Open Heavens Leader</label>
+                                        <input
+                                          type="text"
+                                          value={adminRosterScheduleData[srv.id]?.openHeavensLeader || ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setAdminRosterScheduleData(prev => ({
+                                              ...prev,
+                                              [srv.id]: {
+                                                ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                openHeavensLeader: val
+                                              }
+                                            }));
+                                          }}
+                                          placeholder="e.g. SIS. PRAISE"
+                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                             </div>
                           );
                         })}
@@ -7836,6 +7968,130 @@ export default function App() {
                   Save Title
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. PRINT PDF OFFICIAL ROSTER SCHEDULE MODAL (MATCHING IMAGE 1 EXACTLY) */}
+      {showPrintPdfModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200 my-8">
+            
+            {/* MODAL ACTION BAR */}
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between no-print">
+              <div className="flex items-center space-x-2">
+                <Printer className="w-5 h-5 text-amber-400" />
+                <h3 className="text-sm font-bold">Official Printable Monthly Roster Schedule (PDF View)</h3>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print / Save PDF</span>
+                </button>
+                <button onClick={() => setShowPrintPdfModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* PRINTABLE DOCUMENT BODY (MATCHING IMAGE 1) */}
+            <div className="p-8 space-y-6 bg-white text-slate-900 font-sans print-document-container">
+              
+              {/* THEME & MONTH CONTROL BAR FOR ADMIN */}
+              <div className="no-print bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                <label className="block text-xs font-bold text-slate-700">Customize Monthly Roster Theme (Appears on Printable PDF):</label>
+                <input
+                  type="text"
+                  value={monthlyRosterTheme}
+                  onChange={(e) => setMonthlyRosterTheme(e.target.value)}
+                  placeholder="e.g. WORK IN THE SPIRIT (GALATIANS 5 VS 16)"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800"
+                />
+              </div>
+
+              {/* DOCUMENT HEADER */}
+              <div className="text-center space-y-1.5 border-b-2 border-slate-900 pb-4">
+                <h1 className="text-lg font-black uppercase tracking-wide text-slate-900 underline underline-offset-4">
+                  {org.parishName}
+                </h1>
+                <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-800 underline underline-offset-2">
+                  MONTHLY SCHEDULE FOR WORKERS AND MINISTERS ({rosterSelectedMonth === '2026-10' ? 'OCTOBER, 2026' : rosterSelectedMonth})
+                </h2>
+                <h3 className="text-xs font-extrabold uppercase tracking-wide text-slate-900 italic mt-1">
+                  THEME: {monthlyRosterTheme}
+                </h3>
+              </div>
+
+              {/* SCHEDULE TABLE MATCHING IMAGE 1 */}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border-2 border-slate-900 text-center text-xs">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-900 uppercase font-black tracking-wider border-b-2 border-slate-900">
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5 w-16">DATE</th>
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5 w-32">ACTIVITY</th>
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5">COORDINATOR</th>
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5">USHER IN-CHARGE</th>
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5">PRAISE LEADER</th>
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5">OFFICIATING MINISTER</th>
+                      <th className="border-2 border-slate-900 p-2.5">OPEN HEAVENS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y border-slate-900 font-bold">
+                    {[
+                      { id: 'srv1', serviceDate: '2026-10-04', serviceTypeName: 'SUNDAY SERVICE', dayName: 'Sunday' },
+                      { id: 'srv2', serviceDate: '2026-10-04', serviceTypeName: 'SUNDAY SERVICE (2ND)', dayName: 'Sunday' },
+                      { id: 'srv3', serviceDate: '2026-10-06', serviceTypeName: 'DIGGING DEEP', dayName: 'Tuesday' },
+                      { id: 'srv4', serviceDate: '2026-10-08', serviceTypeName: 'FAITH CLINIC', dayName: 'Thursday' },
+                      { id: 'srv5', serviceDate: '2026-10-11', serviceTypeName: 'SUNDAY SERVICE', dayName: 'Sunday' },
+                      { id: 'srv6', serviceDate: '2026-10-11', serviceTypeName: 'SUNDAY SERVICE (2ND)', dayName: 'Sunday' },
+                      { id: 'srv7', serviceDate: '2026-10-13', serviceTypeName: 'DIGGING DEEP', dayName: 'Tuesday' },
+                      { id: 'srv8', serviceDate: '2026-10-15', serviceTypeName: 'FAITH CLINIC', dayName: 'Thursday' },
+                      { id: 'srv9', serviceDate: '2026-10-16', serviceTypeName: 'VIGIL', dayName: 'Friday' },
+                      { id: 'srv10', serviceDate: '2026-10-18', serviceTypeName: 'SUNDAY SERVICE', dayName: 'Sunday' },
+                      { id: 'srv11', serviceDate: '2026-10-18', serviceTypeName: 'SUNDAY SERVICE (2ND)', dayName: 'Sunday' },
+                      { id: 'srv12', serviceDate: '2026-10-25', serviceTypeName: 'SUNDAY SERVICE', dayName: 'Sunday' }
+                    ]
+                    .filter(s => !deletedServices.includes(s.id))
+                    .map((srvRow) => {
+                      const adminData = adminRosterScheduleData[srvRow.id] || {};
+                      const isSunday = srvRow.dayName === 'Sunday';
+                      const isVigil = srvRow.serviceTypeName.includes('VIGIL');
+
+                      const formattedDate = srvRow.serviceDate.split('-').slice(1).reverse().join('/'); // e.g. 04/10
+
+                      const rowTextColor = isSunday 
+                        ? 'text-red-700 font-extrabold' 
+                        : isVigil 
+                        ? 'text-purple-800 font-extrabold' 
+                        : 'text-slate-900 font-bold';
+
+                      return (
+                        <tr key={srvRow.id} className={`border-b border-slate-900 ${rowTextColor}`}>
+                          <td className="border-r border-slate-900 p-2.5 font-mono">{formattedDate}</td>
+                          <td className="border-r border-slate-900 p-2.5 uppercase">{renamedServices[srvRow.id] || srvRow.serviceTypeName}</td>
+                          <td className="border-r border-slate-900 p-2.5 uppercase">{adminData.coordinator || 'BRO. PHILLIP'}</td>
+                          <td className="border-r border-slate-900 p-2.5 uppercase">{adminData.usherInCharge || 'USHERS'}</td>
+                          <td className="border-r border-slate-900 p-2.5 uppercase">{adminData.praiseLeader || 'CHOIR'}</td>
+                          <td className="border-r border-slate-900 p-2.5 uppercase">{adminData.officiatingMinister || 'PST. ADETUNJI'}</td>
+                          <td className="border-slate-900 p-2.5 uppercase">{adminData.openHeavensLeader || ''}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* FOOTER SIGNATURES & NOTICE */}
+              <div className="pt-6 border-t border-slate-300 flex justify-between items-center text-[11px] font-bold text-slate-600">
+                <div>Prepared by: Service Coordinator & HODs</div>
+                <div>Approved by: Pastor-in-Charge of Parish</div>
+              </div>
+
             </div>
           </div>
         </div>
