@@ -348,14 +348,47 @@ export default function App() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('register') === 'member') {
       setShowPublicMemberForm(true);
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     }
     if (urlParams.get('report') === 'fellowship') {
       setShowPublicFellowshipForm(true);
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     }
     if (urlParams.get('report') === 'outreach') {
       setShowPublicOutreachForm(true);
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     }
   }, []);
+
+  const handleClosePublicMemberForm = () => {
+    setShowPublicMemberForm(false);
+    setPublicFormSuccess(false);
+    if (window.history && window.history.replaceState && window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  };
+
+  const handleClosePublicFellowshipForm = () => {
+    setShowPublicFellowshipForm(false);
+    setPublicFellowshipSuccess(false);
+    if (window.history && window.history.replaceState && window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  };
+
+  const handleClosePublicOutreachForm = () => {
+    setShowPublicOutreachForm(false);
+    setPublicOutreachSuccess(false);
+    if (window.history && window.history.replaceState && window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  };
 
   const [bulkFileName, setBulkFileName] = useState<string | null>(null);
   const [parsedPreviewMembers, setParsedPreviewMembers] = useState<Member[]>([]);
@@ -1770,10 +1803,7 @@ export default function App() {
           <div className="bg-gradient-to-b from-slate-950 via-rccg-navy to-purple-950 text-white p-6 sm:p-8 relative text-center flex flex-col items-center">
             <button
               type="button"
-              onClick={() => {
-                setShowPublicFellowshipForm(false);
-                setPublicFellowshipSuccess(false);
-              }}
+              onClick={handleClosePublicFellowshipForm}
               className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full text-slate-200 hover:text-white transition cursor-pointer"
               title="Return to Main Website"
             >
@@ -1828,10 +1858,7 @@ export default function App() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowPublicFellowshipForm(false);
-                    setPublicFellowshipSuccess(false);
-                  }}
+                  onClick={handleClosePublicFellowshipForm}
                   className="px-5 py-2.5 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold shadow cursor-pointer"
                 >
                   Continue to Website
@@ -1977,10 +2004,7 @@ export default function App() {
           <div className="bg-gradient-to-b from-slate-950 via-rccg-navy to-red-950 text-white p-6 sm:p-8 relative text-center flex flex-col items-center">
             <button
               type="button"
-              onClick={() => {
-                setShowPublicOutreachForm(false);
-                setPublicOutreachSuccess(false);
-              }}
+              onClick={handleClosePublicOutreachForm}
               className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full text-slate-200 hover:text-white transition cursor-pointer"
               title="Return to Main Website"
             >
@@ -2034,10 +2058,7 @@ export default function App() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowPublicOutreachForm(false);
-                    setPublicOutreachSuccess(false);
-                  }}
+                  onClick={handleClosePublicOutreachForm}
                   className="px-5 py-2.5 rounded-xl bg-rccg-red hover:bg-red-800 text-white text-xs font-bold shadow cursor-pointer"
                 >
                   Continue to Website
@@ -2173,10 +2194,7 @@ export default function App() {
           <div className="bg-gradient-to-b from-slate-950 via-rccg-navy to-purple-950 text-white p-6 sm:p-8 relative text-center flex flex-col items-center">
             <button
               type="button"
-              onClick={() => {
-                setShowPublicMemberForm(false);
-                setPublicFormSuccess(false);
-              }}
+              onClick={handleClosePublicMemberForm}
               className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full text-slate-200 hover:text-white transition cursor-pointer"
               title="Return to Main Website"
             >
@@ -2234,10 +2252,7 @@ export default function App() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowPublicMemberForm(false);
-                    setPublicFormSuccess(false);
-                  }}
+                  onClick={handleClosePublicMemberForm}
                   className="px-5 py-2.5 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold shadow cursor-pointer"
                 >
                   Continue to Website
