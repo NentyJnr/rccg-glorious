@@ -47,7 +47,8 @@ import {
   Copy,
   ExternalLink,
   Camera,
-  User
+  User,
+  Receipt
 } from 'lucide-react';
 import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
@@ -132,6 +133,13 @@ interface OfferingItem {
   isBreakdownOpen?: boolean;
 }
 
+export interface ExpenseItem {
+  id: string;
+  category: string;
+  description: string;
+  amount: number;
+}
+
 interface ServiceReport {
   id: string;
   serviceTypeName: string;
@@ -145,7 +153,10 @@ interface ServiceReport {
   newConvertsCount: number;
   preacherName?: string;
   totalOffering: number;
+  totalExpenses?: number;
+  netOffering?: number;
   offeringsBreakdown?: OfferingItem[];
+  expensesBreakdown?: ExpenseItem[];
 }
 
 export interface HouseFellowshipReportItem {
@@ -774,7 +785,9 @@ export default function App() {
       totalAttendance: 415,
       firstTimersCount: 18,
       newConvertsCount: 6,
-      totalOffering: 245000
+      totalOffering: 245000,
+      totalExpenses: 27000,
+      netOffering: 218000
     },
     {
       id: 'r2',
@@ -788,7 +801,9 @@ export default function App() {
       firstTimersCount: 4,
       newConvertsCount: 1,
       preacherName: 'Pastor Oluwaseun Adeleke',
-      totalOffering: 68500
+      totalOffering: 68500,
+      totalExpenses: 8500,
+      netOffering: 60000
     }
   ]);
 
@@ -1270,10 +1285,37 @@ export default function App() {
     { categoryId: 'c6', name: 'Firstfruit & Welfare', amount: 40000 }
   ]);
 
+  // Service Expenses & Deductions State
+  const [serviceExpenses, setServiceExpenses] = useState<ExpenseItem[]>([
+    { id: 'exp1', category: 'Guest Minister Honorarium', description: 'Pastor Visiting Speaker Blessing', amount: 15000 },
+    { id: 'exp2', category: 'Fuel / Generator', description: 'Diesel for Sunday Generator', amount: 12000 }
+  ]);
+
+  const handleAddExpenseItem = () => {
+    setServiceExpenses([
+      ...serviceExpenses,
+      { id: 'exp_' + Date.now(), category: 'Fuel / Generator', description: '', amount: 0 }
+    ]);
+  };
+
+  const handleUpdateExpenseItem = (id: string, field: keyof ExpenseItem, value: any) => {
+    setServiceExpenses(
+      serviceExpenses.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
+    );
+  };
+
+  const handleRemoveExpenseItem = (id: string) => {
+    setServiceExpenses(serviceExpenses.filter((exp) => exp.id !== id));
+  };
+
   const totalCalculatedAttendance = Number(menCount || 0) + Number(womenCount || 0) + Number(childrenCount || 0);
-  const totalCalculatedOffering = serviceCategory === 'Midweek' 
+  const totalCalculatedGrossOffering = serviceCategory === 'Midweek' 
     ? Number(midweekOffering || 0)
     : sundayOfferings.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  
+  const totalCalculatedExpenses = serviceExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const totalCalculatedNetOffering = Math.max(0, totalCalculatedGrossOffering - totalCalculatedExpenses);
+  const totalCalculatedOffering = totalCalculatedGrossOffering;
 
   const calculateDenominationTotal = (denom?: DenominationBreakdown): number => {
     if (!denom) return 0;
@@ -1337,12 +1379,15 @@ export default function App() {
       firstTimersCount: Number(firstTimers),
       newConvertsCount: Number(newConverts),
       preacherName: serviceCategory === 'Midweek' ? selectedPreacher : undefined,
-      totalOffering: totalCalculatedOffering,
-      offeringsBreakdown: serviceCategory === 'Sunday' ? sundayOfferings : undefined
+      totalOffering: totalCalculatedGrossOffering,
+      totalExpenses: totalCalculatedExpenses,
+      netOffering: totalCalculatedNetOffering,
+      offeringsBreakdown: serviceCategory === 'Sunday' ? sundayOfferings : undefined,
+      expensesBreakdown: serviceExpenses.length > 0 ? serviceExpenses : undefined
     };
 
     setReports([newReport, ...reports]);
-    showNotification(`Service Report submitted successfully! Total Offering: ${org.baseCurrency} ${totalCalculatedOffering.toLocaleString()}`);
+    showNotification(`Service Report submitted! Gross: ${org.baseCurrency} ${totalCalculatedGrossOffering.toLocaleString()} | Expenses: -${org.baseCurrency} ${totalCalculatedExpenses.toLocaleString()} | Net Remittance: ${org.baseCurrency} ${totalCalculatedNetOffering.toLocaleString()}`);
     setActiveTab('dashboard');
   };
 
@@ -1366,7 +1411,9 @@ export default function App() {
     const totalFilteredChildren = filteredReports.reduce((sum, r) => sum + r.childrenCount, 0);
     const totalFilteredFirstTimers = filteredReports.reduce((sum, r) => sum + r.firstTimersCount, 0);
     const totalFilteredSoulsWon = filteredReports.reduce((sum, r) => sum + r.newConvertsCount, 0);
-    const totalFilteredFinancialOffering = filteredReports.reduce((sum, r) => sum + r.totalOffering, 0);
+    const totalFilteredGrossOffering = filteredReports.reduce((sum, r) => sum + r.totalOffering, 0);
+    const totalFilteredExpenses = filteredReports.reduce((sum, r) => sum + (r.totalExpenses || 0), 0);
+    const totalFilteredNetOffering = filteredReports.reduce((sum, r) => sum + (r.netOffering ?? r.totalOffering), 0);
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -1384,12 +1431,12 @@ export default function App() {
             
             .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 25px; }
             .metric-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; text-align: center; }
-            .metric-val { font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 3px; }
+            .metric-val { font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 3px; }
             .metric-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
             
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
-            th { background-color: #001f3f; color: #ffffff; font-weight: 700; text-align: left; padding: 8px 10px; border: 1px solid #001f3f; text-transform: uppercase; font-size: 10px; }
-            td { padding: 8px 10px; border: 1px solid #cbd5e1; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10px; }
+            th { background-color: #001f3f; color: #ffffff; font-weight: 700; text-align: left; padding: 7px 8px; border: 1px solid #001f3f; text-transform: uppercase; font-size: 9px; }
+            td { padding: 7px 8px; border: 1px solid #cbd5e1; }
             tr:nth-child(even) { background-color: #f8fafc; }
             
             .footer-sign { margin-top: 40px; display: flex; justify-content: space-between; padding-top: 25px; border-top: 1px dashed #cbd5e1; }
@@ -1427,18 +1474,26 @@ export default function App() {
               <div class="metric-card">
                 <div class="metric-label">Total Attendance</div>
                 <div class="metric-val">${totalFilteredAttendance.toLocaleString()}</div>
-                <div style="font-size:10px; color:#475569; margin-top:2px;">M: ${totalFilteredMen} | W: ${totalFilteredWomen} | C: ${totalFilteredChildren}</div>
+                <div style="font-size:9px; color:#475569; margin-top:2px;">M: ${totalFilteredMen} | W: ${totalFilteredWomen} | C: ${totalFilteredChildren}</div>
               </div>
               <div class="metric-card">
                 <div class="metric-label">First Timers & Converts</div>
                 <div class="metric-val">${totalFilteredFirstTimers} / ${totalFilteredSoulsWon}</div>
-                <div style="font-size:10px; color:#16a34a; margin-top:2px;">${totalFilteredSoulsWon} Souls Won</div>
+                <div style="font-size:9px; color:#16a34a; margin-top:2px;">${totalFilteredSoulsWon} Souls Won</div>
               </div>
             ` : ''}
             ${filterReportType !== 'Demographics' ? `
               <div class="metric-card" style="border-color:#bbf7d0; background:#f0fdf4;">
-                <div class="metric-label" style="color:#15803d;">Total Financial Offering</div>
-                <div class="metric-val" style="color:#166534;">${org.baseCurrency} ${totalFilteredFinancialOffering.toLocaleString()}</div>
+                <div class="metric-label" style="color:#15803d;">Gross Offering</div>
+                <div class="metric-val" style="color:#166534;">${org.baseCurrency} ${totalFilteredGrossOffering.toLocaleString()}</div>
+              </div>
+              <div class="metric-card" style="border-color:#fecdd3; background:#fff1f2;">
+                <div class="metric-label" style="color:#be123c;">Total Expenses Deducted</div>
+                <div class="metric-val" style="color:#9f1239;">- ${org.baseCurrency} ${totalFilteredExpenses.toLocaleString()}</div>
+              </div>
+              <div class="metric-card" style="border-color:#fde68a; background:#fffbeb;">
+                <div class="metric-label" style="color:#b45309;">Net Remittance Total</div>
+                <div class="metric-val" style="color:#92400e;">${org.baseCurrency} ${totalFilteredNetOffering.toLocaleString()}</div>
               </div>
             ` : ''}
           </div>
@@ -1459,14 +1514,16 @@ export default function App() {
                   <th>Souls Won</th>
                 ` : ''}
                 ${filterReportType !== 'Demographics' ? `
-                  <th>Total Offering (${org.baseCurrency})</th>
+                  <th>Gross Offering (${org.baseCurrency})</th>
+                  <th>Deducted Expenses (${org.baseCurrency})</th>
+                  <th>Net Remittance (${org.baseCurrency})</th>
                 ` : ''}
                 <th>Preacher / Minister</th>
               </tr>
             </thead>
             <tbody>
               ${filteredReports.length === 0 ? `
-                <tr><td colspan="12" style="text-align:center; padding:20px; color:#94a3b8;">No service reports match the selected filters.</td></tr>
+                <tr><td colspan="14" style="text-align:center; padding:20px; color:#94a3b8;">No service reports match the selected filters.</td></tr>
               ` : filteredReports.map((r, idx) => `
                 <tr>
                   <td>${idx + 1}</td>
@@ -1482,7 +1539,9 @@ export default function App() {
                     <td style="color:#dc2626; font-weight:bold;">${r.newConvertsCount}</td>
                   ` : ''}
                   ${filterReportType !== 'Demographics' ? `
-                    <td style="font-weight:bold; color:#15803d;">${org.baseCurrency} ${r.totalOffering.toLocaleString()}</td>
+                    <td style="font-weight:bold; color:#166534;">${org.baseCurrency} ${r.totalOffering.toLocaleString()}</td>
+                    <td style="color:#be123c;">- ${org.baseCurrency} ${(r.totalExpenses || 0).toLocaleString()}</td>
+                    <td style="font-weight:bold; color:#b45309;">${org.baseCurrency} ${(r.netOffering ?? r.totalOffering).toLocaleString()}</td>
                   ` : ''}
                   <td>${r.preacherName || 'Parish Pastorate'}</td>
                 </tr>
@@ -3160,6 +3219,126 @@ export default function App() {
                     )}
                   </div>
 
+                  {/* 4. SERVICE EXPENSES & REMITTANCE SUMMARY */}
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
+                      <h3 className="text-md font-bold text-slate-900 flex items-center space-x-2">
+                        <Receipt className="w-5 h-5 text-amber-600" />
+                        <span>4. Service Expenses & Financial Remittance Summary</span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={handleAddExpenseItem}
+                        className="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer border border-amber-200"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Add Expense Line Item</span>
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-slate-500">
+                      Record any service-related expenses or instant cash disbursements (e.g. Guest Minister Honorarium, Fuel for Generator, Refreshments, Transportation). Deductions will be automatically subtracted from Gross Collection to compute Net Remittance.
+                    </p>
+
+                    {/* EXPENSES LINE ITEMS */}
+                    {serviceExpenses.length > 0 ? (
+                      <div className="space-y-3">
+                        {serviceExpenses.map((exp) => (
+                          <div key={exp.id} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <div className="sm:col-span-4">
+                              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Expense Category</label>
+                              <select
+                                value={exp.category}
+                                onChange={(e) => handleUpdateExpenseItem(exp.id, 'category', e.target.value)}
+                                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-rccg-blue"
+                              >
+                                <option value="Guest Minister Honorarium">Guest Minister Honorarium</option>
+                                <option value="Fuel / Generator">Fuel / Generator</option>
+                                <option value="Refreshments & Welfare">Refreshments & Welfare</option>
+                                <option value="Transportation / Logistics">Transportation / Logistics</option>
+                                <option value="Media & Sound Equipment">Media & Sound Equipment</option>
+                                <option value="Maintenance / Miscellaneous">Maintenance / Miscellaneous</option>
+                              </select>
+                            </div>
+
+                            <div className="sm:col-span-4">
+                              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Description / Purpose</label>
+                              <input
+                                type="text"
+                                value={exp.description}
+                                onChange={(e) => handleUpdateExpenseItem(exp.id, 'description', e.target.value)}
+                                placeholder="e.g. Fuel for generator during 1st service"
+                                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-rccg-blue"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-3">
+                              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Amount ({org.baseCurrency})</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={exp.amount || ''}
+                                onChange={(e) => handleUpdateExpenseItem(exp.id, 'amount', parseFloat(e.target.value) || 0)}
+                                placeholder="0"
+                                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900 text-right focus:ring-2 focus:ring-rccg-blue"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-1 flex justify-end pt-2 sm:pt-4">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveExpenseItem(exp.id)}
+                                className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
+                                title="Remove expense line"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                        <p className="text-xs text-slate-400 font-medium">No service expenses recorded yet.</p>
+                        <button
+                          type="button"
+                          onClick={handleAddExpenseItem}
+                          className="mt-2 text-xs font-bold text-rccg-blue hover:underline inline-flex items-center space-x-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add Expense Line Item</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* FINANCIAL REMITTANCE SUMMARY BOX */}
+                    <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-inner grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="border-b sm:border-b-0 sm:border-r border-slate-800 pb-3 sm:pb-0 sm:pr-4">
+                        <span className="block text-xs font-medium text-slate-400 uppercase tracking-wider">Gross Total Collection</span>
+                        <span className="text-xl font-black text-emerald-400 mt-1 block">
+                          {org.baseCurrency} {totalCalculatedGrossOffering.toLocaleString()}
+                        </span>
+                        <span className="text-[10px] text-slate-400">Total collected before expenses</span>
+                      </div>
+
+                      <div className="border-b sm:border-b-0 sm:border-r border-slate-800 pb-3 sm:pb-0 sm:pr-4">
+                        <span className="block text-xs font-medium text-slate-400 uppercase tracking-wider">Total Expenses Deducted</span>
+                        <span className="text-xl font-black text-rose-400 mt-1 block">
+                          - {org.baseCurrency} {totalCalculatedExpenses.toLocaleString()}
+                        </span>
+                        <span className="text-[10px] text-slate-400">{serviceExpenses.length} expense line item(s)</span>
+                      </div>
+
+                      <div>
+                        <span className="block text-xs font-medium text-amber-300 uppercase tracking-wider">Net Remittance Total</span>
+                        <span className="text-2xl font-black text-amber-400 mt-1 block">
+                          {org.baseCurrency} {totalCalculatedNetOffering.toLocaleString()}
+                        </span>
+                        <span className="text-[10px] text-emerald-400 font-semibold">Final net amount to be remitted/banked</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex justify-end space-x-4">
                     <button
                       type="button"
@@ -3195,7 +3374,9 @@ export default function App() {
               const totalFilteredChildren = filteredReports.reduce((sum, r) => sum + r.childrenCount, 0);
               const totalFilteredFirstTimers = filteredReports.reduce((sum, r) => sum + r.firstTimersCount, 0);
               const totalFilteredSoulsWon = filteredReports.reduce((sum, r) => sum + r.newConvertsCount, 0);
-              const totalFilteredFinancialOffering = filteredReports.reduce((sum, r) => sum + r.totalOffering, 0);
+              const totalFilteredGrossOffering = filteredReports.reduce((sum, r) => sum + r.totalOffering, 0);
+              const totalFilteredExpenses = filteredReports.reduce((sum, r) => sum + (r.totalExpenses || 0), 0);
+              const totalFilteredNetOffering = filteredReports.reduce((sum, r) => sum + (r.netOffering ?? r.totalOffering), 0);
 
               return (
                 <div className="space-y-6 animate-fadeIn">
@@ -3298,11 +3479,25 @@ export default function App() {
                     )}
 
                     {filterReportType !== 'Demographics' && (
-                      <div className="bg-emerald-50/50 p-5 rounded-2xl shadow-sm border border-emerald-200">
-                        <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">Total Offering Collected</span>
-                        <div className="text-2xl font-extrabold text-emerald-700 mt-1">{org.baseCurrency} {totalFilteredFinancialOffering.toLocaleString()}</div>
-                        <span className="text-xs text-emerald-600 font-medium mt-1 block">Aggregated total</span>
-                      </div>
+                      <>
+                        <div className="bg-emerald-50/50 p-5 rounded-2xl shadow-sm border border-emerald-200">
+                          <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">Gross Offering</span>
+                          <div className="text-2xl font-extrabold text-emerald-700 mt-1">{org.baseCurrency} {totalFilteredGrossOffering.toLocaleString()}</div>
+                          <span className="text-xs text-emerald-600 font-medium mt-1 block">Total collection</span>
+                        </div>
+
+                        <div className="bg-rose-50/50 p-5 rounded-2xl shadow-sm border border-rose-200">
+                          <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wider block">Expenses Deducted</span>
+                          <div className="text-2xl font-extrabold text-rose-700 mt-1">- {org.baseCurrency} {totalFilteredExpenses.toLocaleString()}</div>
+                          <span className="text-xs text-rose-600 font-medium mt-1 block">Service disbursements</span>
+                        </div>
+
+                        <div className="bg-amber-50/50 p-5 rounded-2xl shadow-sm border border-amber-200">
+                          <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider block">Net Remittance Total</span>
+                          <div className="text-2xl font-extrabold text-amber-700 mt-1">{org.baseCurrency} {totalFilteredNetOffering.toLocaleString()}</div>
+                          <span className="text-xs text-amber-600 font-bold mt-1 block">Net bank remittance</span>
+                        </div>
+                      </>
                     )}
                   </div>
 
@@ -3331,7 +3526,11 @@ export default function App() {
                               </>
                             )}
                             {filterReportType !== 'Demographics' && (
-                              <th className="p-3.5 text-right font-extrabold">Total Offering ({org.baseCurrency})</th>
+                              <>
+                                <th className="p-3.5 text-right font-extrabold">Gross ({org.baseCurrency})</th>
+                                <th className="p-3.5 text-right font-extrabold text-rose-600">Expenses ({org.baseCurrency})</th>
+                                <th className="p-3.5 text-right font-black text-amber-700">Net Total ({org.baseCurrency})</th>
+                              </>
                             )}
                             <th className="p-3.5">Preacher / Minister</th>
                           </tr>
@@ -3366,9 +3565,17 @@ export default function App() {
                                   </>
                                 )}
                                 {filterReportType !== 'Demographics' && (
-                                  <td className="p-3.5 text-right font-extrabold text-emerald-700">
-                                    {org.baseCurrency} {r.totalOffering.toLocaleString()}
-                                  </td>
+                                  <>
+                                    <td className="p-3.5 text-right font-bold text-emerald-700">
+                                      {org.baseCurrency} {r.totalOffering.toLocaleString()}
+                                    </td>
+                                    <td className="p-3.5 text-right font-bold text-rose-600">
+                                      - {org.baseCurrency} {(r.totalExpenses || 0).toLocaleString()}
+                                    </td>
+                                    <td className="p-3.5 text-right font-black text-amber-700 bg-amber-50/30">
+                                      {org.baseCurrency} {(r.netOffering ?? r.totalOffering).toLocaleString()}
+                                    </td>
+                                  </>
                                 )}
                                 <td className="p-3.5 font-medium text-slate-600">
                                   {r.preacherName || <span className="text-slate-400 italic">Parish Pastorate</span>}
