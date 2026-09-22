@@ -2698,13 +2698,6 @@ export default function App() {
               <span>Currency: <strong className="text-slate-800">{org.baseCurrency}</strong></span>
             </div>
 
-            <button
-              onClick={() => setActiveTab('service-report')}
-              className="px-4 py-2 bg-rccg-blue hover:bg-blue-900 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center space-x-2"
-            >
-              <PlusCircle className="w-4 h-4 text-emerald-300" />
-              <span className="hidden sm:inline">Submit Service Report</span>
-            </button>
           </div>
         </header>
 
