@@ -2686,24 +2686,26 @@ export default function App() {
             {!isSidebarCollapsed && <span>Fellowship & Outreach</span>}
           </button>
 
-          {/* SYSTEM SETUP */}
-          <button
-            onClick={() => { setActiveTab('setup'); setMobileSidebarOpen(false); }}
-            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
-              activeTab === 'setup' 
-                ? 'bg-blue-500/20 text-white border border-blue-400/40 shadow-inner' 
-                : 'text-slate-200 hover:bg-white/10'
-            }`}
-            title="System Setup"
-          >
-            <Settings className="w-5 h-5 text-slate-300 flex-shrink-0" />
-            {!isSidebarCollapsed && (
-              <div className="flex-1 flex items-center justify-between">
-                <span>System Setup</span>
-                <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-              </div>
-            )}
-          </button>
+          {/* SYSTEM SETUP - SYSTEM ADMIN & PASTOR ONLY */}
+          {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'SystemAdmin' || currentUser?.role === 'Admin') && (
+            <button
+              onClick={() => { setActiveTab('setup'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+                activeTab === 'setup' 
+                  ? 'bg-blue-500/20 text-white border border-blue-400/40 shadow-inner' 
+                  : 'text-slate-200 hover:bg-white/10'
+              }`}
+              title="System Setup"
+            >
+              <Settings className="w-5 h-5 text-slate-300 flex-shrink-0" />
+              {!isSidebarCollapsed && (
+                <div className="flex-1 flex items-center justify-between">
+                  <span>System Setup</span>
+                  <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                </div>
+              )}
+            </button>
+          )}
         </div>
 
         {/* USER PROFILE & LOGOUT FOOTER */}
@@ -5398,8 +5400,8 @@ export default function App() {
           </div>
         )}
 
-        {/* SETUP TAB */}
-        {activeTab === 'setup' && (
+        {/* SETUP TAB - SYSTEM ADMIN & PASTOR ONLY */}
+        {activeTab === 'setup' && (currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'SystemAdmin' || currentUser?.role === 'Admin') && (
           <div className="space-y-6 max-w-6xl mx-auto">
             {/* SETUP HEADER & CONTROL BAR */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
