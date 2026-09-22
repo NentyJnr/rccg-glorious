@@ -346,6 +346,13 @@ export default function App() {
   const [selectedDept, setSelectedDept] = useState<string>('Ushering & Protocol');
   const [isHodToggle, setIsHodToggle] = useState<boolean>(false);
 
+  // Service Report Sub-Tabs & Filtering State
+  const [serviceReportSubTab, setServiceReportSubTab] = useState<'entry' | 'filter-reports'>('entry');
+  const [filterStartDate, setFilterStartDate] = useState<string>('2026-09-01');
+  const [filterEndDate, setFilterEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [filterServiceTypeName, setFilterServiceTypeName] = useState<string>('All');
+  const [filterReportType, setFilterReportType] = useState<'All' | 'Demographics' | 'Financial'>('All');
+
   // Role Elevation & Department Assignment Modal State
   const [roleAssignModalMember, setRoleAssignModalMember] = useState<Member | null>(null);
   const [selectedDeptForMember, setSelectedDeptForMember] = useState<string>('Ushering & Protocol');
@@ -1290,6 +1297,177 @@ export default function App() {
     setReports([newReport, ...reports]);
     showNotification(`Service Report submitted successfully! Total Offering: ${org.baseCurrency} ${totalCalculatedOffering.toLocaleString()}`);
     setActiveTab('dashboard');
+  };
+
+  const handleDownloadPDFReport = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showNotification('Please allow popups to generate the PDF report.', 'error');
+      return;
+    }
+
+    const filteredReports = reports.filter((rep) => {
+      if (filterStartDate && rep.serviceDate < filterStartDate) return false;
+      if (filterEndDate && rep.serviceDate > filterEndDate) return false;
+      if (filterServiceTypeName !== 'All' && rep.serviceTypeName !== filterServiceTypeName) return false;
+      return true;
+    });
+
+    const totalFilteredAttendance = filteredReports.reduce((sum, r) => sum + r.totalAttendance, 0);
+    const totalFilteredMen = filteredReports.reduce((sum, r) => sum + r.menCount, 0);
+    const totalFilteredWomen = filteredReports.reduce((sum, r) => sum + r.womenCount, 0);
+    const totalFilteredChildren = filteredReports.reduce((sum, r) => sum + r.childrenCount, 0);
+    const totalFilteredFirstTimers = filteredReports.reduce((sum, r) => sum + r.firstTimersCount, 0);
+    const totalFilteredSoulsWon = filteredReports.reduce((sum, r) => sum + r.newConvertsCount, 0);
+    const totalFilteredFinancialOffering = filteredReports.reduce((sum, r) => sum + r.totalOffering, 0);
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Parish Service Report (${filterStartDate} to ${filterEndDate}) - ${org.parishName}</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+            body { font-family: 'Inter', sans-serif; color: #0f172a; margin: 0; padding: 25px; background: #fff; }
+            .header { text-align: center; border-bottom: 2px solid #001f3f; padding-bottom: 15px; margin-bottom: 20px; }
+            .logo { width: 75px; height: 75px; object-fit: contain; margin-bottom: 8px; }
+            .parish-name { font-size: 18px; font-weight: 800; color: #001f3f; text-transform: uppercase; letter-spacing: 1px; }
+            .report-title { font-size: 15px; font-weight: 700; color: #dc2626; margin-top: 4px; }
+            .meta { font-size: 11px; color: #64748b; margin-top: 6px; }
+            
+            .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 25px; }
+            .metric-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; text-align: center; }
+            .metric-val { font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 3px; }
+            .metric-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
+            th { background-color: #001f3f; color: #ffffff; font-weight: 700; text-align: left; padding: 8px 10px; border: 1px solid #001f3f; text-transform: uppercase; font-size: 10px; }
+            td { padding: 8px 10px; border: 1px solid #cbd5e1; }
+            tr:nth-child(even) { background-color: #f8fafc; }
+            
+            .footer-sign { margin-top: 40px; display: flex; justify-content: space-between; padding-top: 25px; border-top: 1px dashed #cbd5e1; }
+            .sign-box { text-align: center; width: 180px; }
+            .sign-line { border-top: 1px solid #0f172a; margin-top: 35px; margin-bottom: 4px; }
+            .sign-label { font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; }
+            
+            @media print {
+              body { padding: 0; }
+              @page { size: A4 landscape; margin: 12mm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <img src="${org.logoUrl}" class="logo" />
+            <div class="parish-name">${org.parishName}</div>
+            <div class="report-title">
+              Parish Service ${filterReportType === 'All' ? 'Attendance & Financial' : filterReportType} Summary Report
+            </div>
+            <div class="meta">
+              Date Range: <strong>${filterStartDate}</strong> to <strong>${filterEndDate}</strong> | 
+              Service Scope: <strong>${filterServiceTypeName}</strong> | 
+              Report Category: <strong>${filterReportType}</strong> | 
+              Generated On: ${new Date().toLocaleString()}
+            </div>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-label">Services Logged</div>
+              <div class="metric-val">${filteredReports.length} Services</div>
+            </div>
+            ${filterReportType !== 'Financial' ? `
+              <div class="metric-card">
+                <div class="metric-label">Total Attendance</div>
+                <div class="metric-val">${totalFilteredAttendance.toLocaleString()}</div>
+                <div style="font-size:10px; color:#475569; margin-top:2px;">M: ${totalFilteredMen} | W: ${totalFilteredWomen} | C: ${totalFilteredChildren}</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">First Timers & Converts</div>
+                <div class="metric-val">${totalFilteredFirstTimers} / ${totalFilteredSoulsWon}</div>
+                <div style="font-size:10px; color:#16a34a; margin-top:2px;">${totalFilteredSoulsWon} Souls Won</div>
+              </div>
+            ` : ''}
+            ${filterReportType !== 'Demographics' ? `
+              <div class="metric-card" style="border-color:#bbf7d0; background:#f0fdf4;">
+                <div class="metric-label" style="color:#15803d;">Total Financial Offering</div>
+                <div class="metric-val" style="color:#166534;">${org.baseCurrency} ${totalFilteredFinancialOffering.toLocaleString()}</div>
+              </div>
+            ` : ''}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Service Name</th>
+                <th>Category</th>
+                ${filterReportType !== 'Financial' ? `
+                  <th>Men</th>
+                  <th>Women</th>
+                  <th>Children</th>
+                  <th>Total Attendance</th>
+                  <th>1st Timers</th>
+                  <th>Souls Won</th>
+                ` : ''}
+                ${filterReportType !== 'Demographics' ? `
+                  <th>Total Offering (${org.baseCurrency})</th>
+                ` : ''}
+                <th>Preacher / Minister</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredReports.length === 0 ? `
+                <tr><td colspan="12" style="text-align:center; padding:20px; color:#94a3b8;">No service reports match the selected filters.</td></tr>
+              ` : filteredReports.map((r, idx) => `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td><strong>${r.serviceDate}</strong></td>
+                  <td>${r.serviceTypeName}</td>
+                  <td><span style="padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; background:${r.category === 'Sunday' ? '#eff6ff; color:#1e40af' : '#f0fdf4; color:#166534'}">${r.category}</span></td>
+                  ${filterReportType !== 'Financial' ? `
+                    <td>${r.menCount}</td>
+                    <td>${r.womenCount}</td>
+                    <td>${r.childrenCount}</td>
+                    <td><strong>${r.totalAttendance}</strong></td>
+                    <td>${r.firstTimersCount}</td>
+                    <td style="color:#dc2626; font-weight:bold;">${r.newConvertsCount}</td>
+                  ` : ''}
+                  ${filterReportType !== 'Demographics' ? `
+                    <td style="font-weight:bold; color:#15803d;">${org.baseCurrency} ${r.totalOffering.toLocaleString()}</td>
+                  ` : ''}
+                  <td>${r.preacherName || 'Parish Pastorate'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer-sign">
+            <div class="sign-box">
+              <div class="sign-line"></div>
+              <div class="sign-label">Prepared By (Admin / Secretary)</div>
+            </div>
+            <div class="sign-box">
+              <div class="sign-line"></div>
+              <div class="sign-label">Authorized Pastor / Minister</div>
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   // --- Onboarding User Form State ---
@@ -2555,245 +2733,487 @@ export default function App() {
           </div>
         )}
 
-        {/* SERVICE REPORTING TAB - Dynamic Form Engine */}
+        {/* SERVICE REPORTING TAB - Dynamic Form Engine & Filter Analytics */}
         {activeTab === 'service-report' && (
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <div className="flex items-center space-x-3 mb-2">
-                <div className="p-2.5 bg-rccg-blue/10 rounded-xl text-rccg-blue">
-                  <FileText className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900">Service Attendance & Financial Report</h2>
-                  <p className="text-xs text-slate-500">Dynamic workflow adapts based on Midweek vs Sunday service category selection.</p>
-                </div>
-              </div>
+          <div className="max-w-5xl mx-auto space-y-6">
+            {/* SUB-TAB SWITCHER */}
+            <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex space-x-2">
+              <button
+                type="button"
+                onClick={() => setServiceReportSubTab('entry')}
+                className={`flex-1 py-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 cursor-pointer ${
+                  serviceReportSubTab === 'entry'
+                    ? 'bg-rccg-blue text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Submit Service Report</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setServiceReportSubTab('filter-reports')}
+                className={`flex-1 py-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 cursor-pointer ${
+                  serviceReportSubTab === 'filter-reports'
+                    ? 'bg-rccg-blue text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <Sliders className="w-4 h-4" />
+                <span>Filtered Reports & PDF Export ({reports.filter(r => {
+                  if (filterStartDate && r.serviceDate < filterStartDate) return false;
+                  if (filterEndDate && r.serviceDate > filterEndDate) return false;
+                  if (filterServiceTypeName !== 'All' && r.serviceTypeName !== filterServiceTypeName) return false;
+                  return true;
+                }).length})</span>
+              </button>
             </div>
 
-            <form onSubmit={handleServiceReportSubmit} className="space-y-6">
-              {/* Category & Service Type Selector */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                <h3 className="text-md font-bold text-slate-900 flex items-center space-x-2 border-b pb-3">
-                  <Calendar className="w-5 h-5 text-rccg-blue" />
-                  <span>1. Service Type & Date Configuration</span>
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Service Category</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => { setServiceCategory('Sunday'); setServiceTypeName('Sunday 1st Service'); }}
-                        className={`py-3 px-4 rounded-xl text-xs font-bold border text-center transition ${
-                          serviceCategory === 'Sunday'
-                            ? 'bg-rccg-blue text-white border-rccg-blue shadow-md'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                        }`}
-                      >
-                        Sunday Service
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setServiceCategory('Midweek'); setServiceTypeName('Digging Deep'); }}
-                        className={`py-3 px-4 rounded-xl text-xs font-bold border text-center transition ${
-                          serviceCategory === 'Midweek'
-                            ? 'bg-rccg-green text-white border-rccg-green shadow-md'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                        }`}
-                      >
-                        Midweek Service
-                      </button>
+            {/* TAB 1: SUBMIT SERVICE REPORT FORM */}
+            {serviceReportSubTab === 'entry' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="p-2.5 bg-rccg-blue/10 rounded-xl text-rccg-blue">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900">Service Attendance & Financial Report</h2>
+                      <p className="text-xs text-slate-500">Dynamic workflow adapts based on Midweek vs Sunday service category selection.</p>
                     </div>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Service Name</label>
-                    <select
-                      value={serviceTypeName}
-                      onChange={(e) => setServiceTypeName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-rccg-blue"
-                    >
-                      {serviceCategory === 'Sunday' ? (
-                        <>
-                          <option value="Sunday 1st Service">Sunday 1st Service</option>
-                          <option value="Sunday 2nd Service">Sunday 2nd Service</option>
-                          <option value="Combined Thanksgiving Service">Combined Thanksgiving Service</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="Digging Deep">Digging Deep (Tuesday)</option>
-                          <option value="Faith Clinic">Faith Clinic (Thursday)</option>
-                          <option value="Commanding The Morning">Commanding The Morning</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Service Date</label>
-                  <input
-                    type="date"
-                    value={serviceDate}
-                    onChange={(e) => setServiceDate(e.target.value)}
-                    className="w-full sm:w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800"
-                  />
-                </div>
-              </div>
+                <form onSubmit={handleServiceReportSubmit} className="space-y-6">
+                  {/* Category & Service Type Selector */}
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                    <h3 className="text-md font-bold text-slate-900 flex items-center space-x-2 border-b pb-3">
+                      <Calendar className="w-5 h-5 text-rccg-blue" />
+                      <span>1. Service Type & Date Configuration</span>
+                    </h3>
 
-              {/* Headcount Breakdown Section */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                <div className="flex justify-between items-center border-b pb-3">
-                  <h3 className="text-md font-bold text-slate-900 flex items-center space-x-2">
-                    <Users className="w-5 h-5 text-rccg-blue" />
-                    <span>2. Headcount & Demographics</span>
-                  </h3>
-                  <div className="bg-blue-50 text-rccg-blue px-3 py-1 rounded-full text-xs font-bold">
-                    Calculated Total: {totalCalculatedAttendance}
-                  </div>
-                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Service Category</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => { setServiceCategory('Sunday'); setServiceTypeName('Sunday 1st Service'); }}
+                            className={`py-3 px-4 rounded-xl text-xs font-bold border text-center transition ${
+                              serviceCategory === 'Sunday'
+                                ? 'bg-rccg-blue text-white border-rccg-blue shadow-md'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            Sunday Service
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setServiceCategory('Midweek'); setServiceTypeName('Digging Deep'); }}
+                            className={`py-3 px-4 rounded-xl text-xs font-bold border text-center transition ${
+                              serviceCategory === 'Midweek'
+                                ? 'bg-rccg-green text-white border-rccg-green shadow-md'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            Midweek Service
+                          </button>
+                        </div>
+                      </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Men Count</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={menCount}
-                      onChange={(e) => setMenCount(parseInt(e.target.value) || 0)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Women Count</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={womenCount}
-                      onChange={(e) => setWomenCount(parseInt(e.target.value) || 0)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Children Count</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={childrenCount}
-                      onChange={(e) => setChildrenCount(parseInt(e.target.value) || 0)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">First Timers Registered</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={firstTimers}
-                      onChange={(e) => setFirstTimers(parseInt(e.target.value) || 0)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">New Converts (Souls Won)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newConverts}
-                      onChange={(e) => setNewConverts(parseInt(e.target.value) || 0)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Dynamic Financial & Preacher Sub-Workflow */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                <div className="flex justify-between items-center border-b pb-3">
-                  <h3 className="text-md font-bold text-slate-900 flex items-center space-x-2">
-                    <DollarSign className="w-5 h-5 text-rccg-green" />
-                    <span>3. {serviceCategory === 'Midweek' ? 'Midweek Preacher & Financial Summary' : 'Sunday Offering Embedded Accounts Breakdown'}</span>
-                  </h3>
-                  <div className="bg-emerald-50 text-rccg-green px-3 py-1 rounded-full text-xs font-bold">
-                    Total Offering: {org.baseCurrency} {totalCalculatedOffering.toLocaleString()}
-                  </div>
-                </div>
-
-                {serviceCategory === 'Midweek' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Preacher / Minister <span className="text-rccg-red">*</span></label>
-                      <select
-                        value={selectedPreacher}
-                        onChange={(e) => setSelectedPreacher(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800"
-                        required
-                      >
-                        {ministers.map((m) => (
-                          <option key={m.id} value={m.fullName}>{m.title} {m.fullName}</option>
-                        ))}
-                      </select>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Service Name</label>
+                        <select
+                          value={serviceTypeName}
+                          onChange={(e) => setServiceTypeName(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-rccg-blue"
+                        >
+                          {serviceCategory === 'Sunday' ? (
+                            <>
+                              <option value="Sunday 1st Service">Sunday 1st Service</option>
+                              <option value="Sunday 2nd Service">Sunday 2nd Service</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="Digging Deep (Midweek)">Digging Deep (Midweek)</option>
+                              <option value="Faith Clinic (Midweek)">Faith Clinic (Midweek)</option>
+                              <option value="Holy Ghost Night Vigil">Holy Ghost Night Vigil</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Summary Offering Amount ({org.baseCurrency})</label>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Service Date</label>
                       <input
-                        type="number"
-                        min="0"
-                        value={midweekOffering}
-                        onChange={(e) => setMidweekOffering(parseFloat(e.target.value) || 0)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800"
+                        type="date"
+                        value={serviceDate}
+                        onChange={(e) => setServiceDate(e.target.value)}
+                        className="w-full sm:w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-rccg-blue"
                       />
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-xs text-slate-500">Enter line-item amounts for each offering category configured under Parish Setup:</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {sundayOfferings.map((item, idx) => (
-                        <div key={item.categoryId} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
-                          <span className="text-xs font-semibold text-slate-700">{item.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs font-bold text-slate-400">{org.baseCurrency}</span>
-                            <input
-                              type="number"
-                              min="0"
-                              value={item.amount}
-                              onChange={(e) => handleSundayOfferingChange(idx, parseFloat(e.target.value) || 0)}
-                              className="w-32 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-900 text-right"
-                            />
-                          </div>
-                        </div>
-                      ))}
+
+                  {/* Attendance & Demographics Input Section */}
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                    <div className="flex justify-between items-center border-b pb-3">
+                      <h3 className="text-md font-bold text-slate-900 flex items-center space-x-2">
+                        <Users className="w-5 h-5 text-rccg-blue" />
+                        <span>2. Headcount & Demographics</span>
+                      </h3>
+                      <div className="bg-blue-50 text-rccg-blue px-3 py-1 rounded-full text-xs font-bold">
+                        Calculated Total: {totalCalculatedAttendance}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Men Count</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={menCount}
+                          onChange={(e) => setMenCount(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Women Count</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={womenCount}
+                          onChange={(e) => setWomenCount(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Children Count</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={childrenCount}
+                          onChange={(e) => setChildrenCount(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2 border-t">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">First Timers Registered</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={firstTimers}
+                          onChange={(e) => setFirstTimers(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">New Converts (Souls Won)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={newConverts}
+                          onChange={(e) => setNewConverts(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800"
+                        />
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
 
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('dashboard')}
-                  className="px-6 py-3 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-8 py-3 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white text-sm font-bold shadow-md flex items-center space-x-2"
-                >
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span>Submit Service Report</span>
-                </button>
+                  {/* Dynamic Financial & Preacher Sub-Workflow */}
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                    <div className="flex justify-between items-center border-b pb-3">
+                      <h3 className="text-md font-bold text-slate-900 flex items-center space-x-2">
+                        <DollarSign className="w-5 h-5 text-rccg-green" />
+                        <span>3. {serviceCategory === 'Midweek' ? 'Midweek Preacher & Financial Summary' : 'Sunday Offering Embedded Accounts Breakdown'}</span>
+                      </h3>
+                      <div className="bg-emerald-50 text-rccg-green px-3 py-1 rounded-full text-xs font-bold">
+                        Total Offering: {org.baseCurrency} {totalCalculatedOffering.toLocaleString()}
+                      </div>
+                    </div>
+
+                    {serviceCategory === 'Midweek' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Preacher / Minister <span className="text-rccg-red">*</span></label>
+                          <select
+                            value={selectedPreacher}
+                            onChange={(e) => setSelectedPreacher(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800"
+                            required
+                          >
+                            {ministers.map((m) => (
+                              <option key={m.id} value={m.fullName}>{m.title} {m.fullName}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Summary Offering Amount ({org.baseCurrency})</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={midweekOffering}
+                            onChange={(e) => setMidweekOffering(parseFloat(e.target.value) || 0)}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <p className="text-xs text-slate-500">Enter line-item amounts for each offering category configured under Parish Setup:</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {sundayOfferings.map((item, idx) => (
+                            <div key={item.categoryId} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                              <span className="text-xs font-semibold text-slate-700">{item.name}</span>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-slate-400">{org.baseCurrency}</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={item.amount}
+                                  onChange={(e) => handleSundayOfferingChange(idx, parseFloat(e.target.value) || 0)}
+                                  className="w-32 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-900 text-right"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('dashboard')}
+                      className="px-6 py-3 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-8 py-3 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white text-sm font-bold shadow-md flex items-center space-x-2"
+                    >
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Submit Service Report</span>
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
+            )}
+
+            {/* TAB 2: FILTERED REPORTS & PDF EXPORT */}
+            {serviceReportSubTab === 'filter-reports' && (() => {
+              const filteredReports = reports.filter((rep) => {
+                if (filterStartDate && rep.serviceDate < filterStartDate) return false;
+                if (filterEndDate && rep.serviceDate > filterEndDate) return false;
+                if (filterServiceTypeName !== 'All' && rep.serviceTypeName !== filterServiceTypeName) return false;
+                return true;
+              });
+
+              const totalFilteredAttendance = filteredReports.reduce((sum, r) => sum + r.totalAttendance, 0);
+              const totalFilteredMen = filteredReports.reduce((sum, r) => sum + r.menCount, 0);
+              const totalFilteredWomen = filteredReports.reduce((sum, r) => sum + r.womenCount, 0);
+              const totalFilteredChildren = filteredReports.reduce((sum, r) => sum + r.childrenCount, 0);
+              const totalFilteredFirstTimers = filteredReports.reduce((sum, r) => sum + r.firstTimersCount, 0);
+              const totalFilteredSoulsWon = filteredReports.reduce((sum, r) => sum + r.newConvertsCount, 0);
+              const totalFilteredFinancialOffering = filteredReports.reduce((sum, r) => sum + r.totalOffering, 0);
+
+              return (
+                <div className="space-y-6 animate-fadeIn">
+                  {/* FILTER CONTROL CARD */}
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+                          <Sliders className="w-5 h-5 text-rccg-blue" />
+                          <span>Service Reports Analytics & Filtering</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Filter by date range, specific service type, and report category (Financial vs Demographics).</p>
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <button
+                          type="button"
+                          onClick={handleDownloadPDFReport}
+                          className="px-4 py-2.5 rounded-xl bg-rccg-red hover:bg-red-800 text-white text-xs font-bold transition flex items-center space-x-2 cursor-pointer shadow-md"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Download PDF Report</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* FILTERS INPUT GRID */}
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">From Date</label>
+                        <input
+                          type="date"
+                          value={filterStartDate}
+                          onChange={(e) => setFilterStartDate(e.target.value)}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rccg-blue"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">To Date</label>
+                        <input
+                          type="date"
+                          value={filterEndDate}
+                          onChange={(e) => setFilterEndDate(e.target.value)}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rccg-blue"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Service Type</label>
+                        <select
+                          value={filterServiceTypeName}
+                          onChange={(e) => setFilterServiceTypeName(e.target.value)}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rccg-blue"
+                        >
+                          <option value="All">All Service Types</option>
+                          {serviceTypes.map(st => (
+                            <option key={st.id} value={st.name}>{st.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Report Category</label>
+                        <select
+                          value={filterReportType}
+                          onChange={(e) => setFilterReportType(e.target.value as any)}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rccg-blue"
+                        >
+                          <option value="All">All Categories (Financial & Demographics)</option>
+                          <option value="Demographics">Demographics & Attendance Only</option>
+                          <option value="Financial">Financial & Offerings Only</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* FILTERED SUMMARY METRIC CARDS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Matching Reports</span>
+                      <div className="text-2xl font-extrabold text-slate-900 mt-1">{filteredReports.length} Services</div>
+                      <span className="text-xs text-slate-400 mt-1 block">In selected period</span>
+                    </div>
+
+                    {filterReportType !== 'Financial' && (
+                      <>
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Total Attendance</span>
+                          <div className="text-2xl font-extrabold text-rccg-blue mt-1">{totalFilteredAttendance.toLocaleString()}</div>
+                          <span className="text-xs text-slate-500 mt-1 block">M: {totalFilteredMen} | W: {totalFilteredWomen} | C: {totalFilteredChildren}</span>
+                        </div>
+
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">1st Timers & Souls Won</span>
+                          <div className="text-2xl font-extrabold text-amber-600 mt-1">{totalFilteredFirstTimers} / {totalFilteredSoulsWon}</div>
+                          <span className="text-xs text-rccg-red font-semibold mt-1 block">{totalFilteredSoulsWon} New Converts Logged</span>
+                        </div>
+                      </>
+                    )}
+
+                    {filterReportType !== 'Demographics' && (
+                      <div className="bg-emerald-50/50 p-5 rounded-2xl shadow-sm border border-emerald-200">
+                        <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">Total Offering Collected</span>
+                        <div className="text-2xl font-extrabold text-emerald-700 mt-1">{org.baseCurrency} {totalFilteredFinancialOffering.toLocaleString()}</div>
+                        <span className="text-xs text-emerald-600 font-medium mt-1 block">Aggregated total</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* FILTERED TABLE */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                      <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Filtered Service Log Records ({filteredReports.length})</h4>
+                      <span className="text-xs font-medium text-slate-500">Showing scope: {filterReportType}</span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase text-[11px]">
+                            <th className="p-3.5">Date</th>
+                            <th className="p-3.5">Service Name</th>
+                            <th className="p-3.5">Category</th>
+                            {filterReportType !== 'Financial' && (
+                              <>
+                                <th className="p-3.5 text-center">Men</th>
+                                <th className="p-3.5 text-center">Women</th>
+                                <th className="p-3.5 text-center">Children</th>
+                                <th className="p-3.5 text-center font-extrabold">Total Att.</th>
+                                <th className="p-3.5 text-center">1st Timers</th>
+                                <th className="p-3.5 text-center">Souls Won</th>
+                              </>
+                            )}
+                            {filterReportType !== 'Demographics' && (
+                              <th className="p-3.5 text-right font-extrabold">Total Offering ({org.baseCurrency})</th>
+                            )}
+                            <th className="p-3.5">Preacher / Minister</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
+                          {filteredReports.length === 0 ? (
+                            <tr>
+                              <td colSpan={10} className="p-8 text-center text-slate-400">
+                                No service report records match your selected date range and filter criteria.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredReports.map((r) => (
+                              <tr key={r.id} className="hover:bg-slate-50/80 transition">
+                                <td className="p-3.5 font-bold font-mono text-slate-900">{r.serviceDate}</td>
+                                <td className="p-3.5 font-semibold text-slate-800">{r.serviceTypeName}</td>
+                                <td className="p-3.5">
+                                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                    r.category === 'Sunday' ? 'bg-blue-100 text-rccg-blue' : 'bg-emerald-100 text-emerald-800'
+                                  }`}>
+                                    {r.category}
+                                  </span>
+                                </td>
+                                {filterReportType !== 'Financial' && (
+                                  <>
+                                    <td className="p-3.5 text-center">{r.menCount}</td>
+                                    <td className="p-3.5 text-center">{r.womenCount}</td>
+                                    <td className="p-3.5 text-center">{r.childrenCount}</td>
+                                    <td className="p-3.5 text-center font-extrabold text-rccg-blue">{r.totalAttendance}</td>
+                                    <td className="p-3.5 text-center font-bold text-amber-700">{r.firstTimersCount}</td>
+                                    <td className="p-3.5 text-center font-bold text-rccg-red">{r.newConvertsCount}</td>
+                                  </>
+                                )}
+                                {filterReportType !== 'Demographics' && (
+                                  <td className="p-3.5 text-right font-extrabold text-emerald-700">
+                                    {org.baseCurrency} {r.totalOffering.toLocaleString()}
+                                  </td>
+                                )}
+                                <td className="p-3.5 font-medium text-slate-600">
+                                  {r.preacherName || <span className="text-slate-400 italic">Parish Pastorate</span>}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
