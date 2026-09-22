@@ -116,10 +116,20 @@ export interface WorkerRegistration {
   notes?: string;
 }
 
+export interface DenominationBreakdown {
+  n1000?: number;
+  n500?: number;
+  n200?: number;
+  n100?: number;
+  n50?: number;
+}
+
 interface OfferingItem {
   categoryId: string;
   name: string;
   amount: number;
+  denominations?: DenominationBreakdown;
+  isBreakdownOpen?: boolean;
 }
 
 interface ServiceReport {
@@ -135,6 +145,7 @@ interface ServiceReport {
   newConvertsCount: number;
   preacherName?: string;
   totalOffering: number;
+  offeringsBreakdown?: OfferingItem[];
 }
 
 export interface HouseFellowshipReportItem {
@@ -1264,9 +1275,44 @@ export default function App() {
     ? Number(midweekOffering || 0)
     : sundayOfferings.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
+  const calculateDenominationTotal = (denom?: DenominationBreakdown): number => {
+    if (!denom) return 0;
+    return (
+      (Number(denom.n1000) || 0) * 1000 +
+      (Number(denom.n500) || 0) * 500 +
+      (Number(denom.n200) || 0) * 200 +
+      (Number(denom.n100) || 0) * 100 +
+      (Number(denom.n50) || 0) * 50
+    );
+  };
+
   const handleSundayOfferingChange = (index: number, val: number) => {
     const updated = [...sundayOfferings];
     updated[index].amount = val;
+    setSundayOfferings(updated);
+  };
+
+  const handleToggleOfferingBreakdown = (index: number) => {
+    const updated = [...sundayOfferings];
+    updated[index].isBreakdownOpen = !updated[index].isBreakdownOpen;
+    setSundayOfferings(updated);
+  };
+
+  const handleDenominationChange = (
+    index: number,
+    field: keyof DenominationBreakdown,
+    val: number
+  ) => {
+    const updated = [...sundayOfferings];
+    const item = updated[index];
+    const currentDenom = item.denominations || {};
+    const updatedDenom = { ...currentDenom, [field]: val >= 0 ? val : 0 };
+    item.denominations = updatedDenom;
+
+    const newDenomTotal = calculateDenominationTotal(updatedDenom);
+    if (newDenomTotal > 0) {
+      item.amount = newDenomTotal;
+    }
     setSundayOfferings(updated);
   };
 
@@ -1291,7 +1337,8 @@ export default function App() {
       firstTimersCount: Number(firstTimers),
       newConvertsCount: Number(newConverts),
       preacherName: serviceCategory === 'Midweek' ? selectedPreacher : undefined,
-      totalOffering: totalCalculatedOffering
+      totalOffering: totalCalculatedOffering,
+      offeringsBreakdown: serviceCategory === 'Sunday' ? sundayOfferings : undefined
     };
 
     setReports([newReport, ...reports]);
@@ -2969,23 +3016,145 @@ export default function App() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <p className="text-xs text-slate-500">Enter line-item amounts for each offering category configured under Parish Setup:</p>
+                        <p className="text-xs text-slate-500">Enter line-item amounts for each offering category configured under Parish Setup. Expand any offering to optionally count Naira notes (1,000 to 50):</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {sundayOfferings.map((item, idx) => (
-                            <div key={item.categoryId} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
-                              <span className="text-xs font-semibold text-slate-700">{item.name}</span>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs font-bold text-slate-400">{org.baseCurrency}</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={item.amount}
-                                  onChange={(e) => handleSundayOfferingChange(idx, parseFloat(e.target.value) || 0)}
-                                  className="w-32 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-900 text-right"
-                                />
+                          {sundayOfferings.map((item, idx) => {
+                            const denomTotal = calculateDenominationTotal(item.denominations);
+                            const hasDenomData = denomTotal > 0;
+                            const isMatch = hasDenomData && denomTotal === item.amount;
+
+                            return (
+                              <div key={item.categoryId} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 transition">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                  <div>
+                                    <span className="text-xs font-bold text-slate-800 block">{item.name}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleOfferingBreakdown(idx)}
+                                      className="text-[11px] font-semibold text-rccg-blue hover:text-rccg-navy transition flex items-center space-x-1 mt-0.5 cursor-pointer"
+                                    >
+                                      <Sliders className="w-3 h-3 text-rccg-blue" />
+                                      <span>{item.isBreakdownOpen ? 'Hide Note Count' : 'Count Notes (1000, 500, 200, 100, 50)'}</span>
+                                      {hasDenomData && (
+                                        <span className="ml-1 px-2 py-0.2 rounded-full text-[10px] font-mono font-bold bg-purple-100 text-purple-800">
+                                          Counted: ₦{denomTotal.toLocaleString()}
+                                        </span>
+                                      )}
+                                    </button>
+                                  </div>
+
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs font-bold text-slate-400">{org.baseCurrency}</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={item.amount || ''}
+                                      onChange={(e) => handleSundayOfferingChange(idx, parseFloat(e.target.value) || 0)}
+                                      placeholder="0"
+                                      className="w-32 bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-sm font-extrabold text-slate-900 text-right focus:ring-2 focus:ring-rccg-blue"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* COLLAPSIBLE CURRENCY DENOMINATION BREAKDOWN */}
+                                {item.isBreakdownOpen && (
+                                  <div className="pt-3 border-t border-slate-200 bg-white p-3.5 rounded-xl space-y-3 animate-fadeIn">
+                                    <div className="flex justify-between items-center text-xs">
+                                      <span className="font-bold text-slate-700 flex items-center space-x-1.5">
+                                        <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>Notes Count Breakdown (Optional)</span>
+                                      </span>
+
+                                      {hasDenomData && (
+                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                          isMatch ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                        }`}>
+                                          {isMatch ? `✓ Matches ₦${item.amount.toLocaleString()}` : `Notes Sum: ₦${denomTotal.toLocaleString()}`}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div className="grid grid-cols-5 gap-2">
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-slate-600 text-center mb-1">₦1,000</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={item.denominations?.n1000 || ''}
+                                          onChange={(e) => handleDenominationChange(idx, 'n1000', parseInt(e.target.value) || 0)}
+                                          placeholder="0"
+                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-center"
+                                        />
+                                        <span className="block text-[9px] text-slate-400 text-center mt-0.5">
+                                          =₦{((item.denominations?.n1000 || 0) * 1000).toLocaleString()}
+                                        </span>
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-slate-600 text-center mb-1">₦500</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={item.denominations?.n500 || ''}
+                                          onChange={(e) => handleDenominationChange(idx, 'n500', parseInt(e.target.value) || 0)}
+                                          placeholder="0"
+                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-center"
+                                        />
+                                        <span className="block text-[9px] text-slate-400 text-center mt-0.5">
+                                          =₦{((item.denominations?.n500 || 0) * 500).toLocaleString()}
+                                        </span>
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-slate-600 text-center mb-1">₦200</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={item.denominations?.n200 || ''}
+                                          onChange={(e) => handleDenominationChange(idx, 'n200', parseInt(e.target.value) || 0)}
+                                          placeholder="0"
+                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-center"
+                                        />
+                                        <span className="block text-[9px] text-slate-400 text-center mt-0.5">
+                                          =₦{((item.denominations?.n200 || 0) * 200).toLocaleString()}
+                                        </span>
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-slate-600 text-center mb-1">₦100</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={item.denominations?.n100 || ''}
+                                          onChange={(e) => handleDenominationChange(idx, 'n100', parseInt(e.target.value) || 0)}
+                                          placeholder="0"
+                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-center"
+                                        />
+                                        <span className="block text-[9px] text-slate-400 text-center mt-0.5">
+                                          =₦{((item.denominations?.n100 || 0) * 100).toLocaleString()}
+                                        </span>
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-slate-600 text-center mb-1">₦50</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={item.denominations?.n50 || ''}
+                                          onChange={(e) => handleDenominationChange(idx, 'n50', parseInt(e.target.value) || 0)}
+                                          placeholder="0"
+                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-center"
+                                        />
+                                        <span className="block text-[9px] text-slate-400 text-center mt-0.5">
+                                          =₦{((item.denominations?.n50 || 0) * 50).toLocaleString()}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
