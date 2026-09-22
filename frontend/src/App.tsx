@@ -225,14 +225,14 @@ interface DepartmentItem {
 }
 
 const getHodDepartment = (user: User | null): string => {
-  if (!user) return 'Choir & Praise Team';
+  if (!user) return 'Ushering & Protocol';
   if (user.assignedDepartment) return user.assignedDepartment;
   const text = ((user.fullName || '') + ' ' + (user.email || '')).toLowerCase();
-  if (text.includes('ushering') || text.includes('grace usang')) return 'Ushering & Protocol';
-  if (text.includes('choir') || text.includes('david okafor')) return 'Choir & Praise Team';
-  if (text.includes('fellowship') || text.includes('samuel adebayo')) return 'Follow-up & Welfare';
-  if (text.includes('outreach') || text.includes('peter king')) return 'Evangelism & Outreach';
-  return 'Choir & Praise Team';
+  if (text.includes('ushering') || text.includes('grace usang') || text.includes('hod.ushering')) return 'Ushering & Protocol';
+  if (text.includes('choir') || text.includes('david okafor') || text.includes('hod.choir')) return 'Choir & Praise Team';
+  if (text.includes('fellowship') || text.includes('samuel adebayo') || text.includes('hod.fellowship')) return 'Follow-up & Welfare';
+  if (text.includes('outreach') || text.includes('peter king') || text.includes('hod.outreach')) return 'Evangelism & Outreach';
+  return 'Ushering & Protocol';
 };
 
 export default function App() {
@@ -313,7 +313,7 @@ export default function App() {
       monthYear: '2026-10',
       departmentName: 'Ushering & Protocol',
       hodName: 'Sister Grace Usang',
-      status: 'Approved',
+      status: 'SubmittedForApproval',
       submittedAt: '2026-09-20T10:00:00Z',
       approvedAt: '2026-09-21T14:30:00Z',
       approvedBy: 'Pastor / Service Coordinator',
@@ -321,11 +321,20 @@ export default function App() {
         {
           id: 'd6',
           serviceDate: '2026-10-04',
-          serviceTypeName: 'Sunday 1st Service',
+          serviceTypeName: 'Sunday 1st Service (08:00 AM)',
           departmentName: 'Ushering & Protocol',
           dutyRole: 'Sanctuary Ushering',
-          assignedPersonNames: ['Blessing Grace', 'Sister Grace Usang'],
-          status: 'Approved'
+          assignedPersonNames: ['Blessing Grace', 'Adams Victoria'],
+          status: 'SubmittedForApproval'
+        },
+        {
+          id: 'd7',
+          serviceDate: '2026-10-04',
+          serviceTypeName: 'Sunday 2nd Service (10:00 AM)',
+          departmentName: 'Ushering & Protocol',
+          dutyRole: 'Sanctuary Ushering & Protocol',
+          assignedPersonNames: ['Blessing Grace'],
+          status: 'SubmittedForApproval'
         }
       ]
     }
@@ -905,10 +914,10 @@ export default function App() {
   const [users, setUsers] = useState<User[]>([
     { id: 'u1', fullName: 'System Administrator', email: 'admin@rccgglorious.org', phone: '+2348000000000', role: 'SystemAdmin', mustChangePassword: false, isActive: true },
     { id: 'u2', fullName: 'Pastor In Charge', email: 'pastor@rccgglorious.org', phone: '+2348000000001', role: 'Pastor', mustChangePassword: false, isActive: true },
-    { id: 'u3', fullName: 'Sister Grace Usang (HOD Ushering)', email: 'hod.ushering@rccgglorious.org', phone: '+2348000000002', role: 'HOD', mustChangePassword: false, isActive: true },
-    { id: 'u4', fullName: 'Minister David Okafor (HOD Choir)', email: 'hod.choir@rccgglorious.org', phone: '+2348000000003', role: 'HOD', mustChangePassword: false, isActive: true },
-    { id: 'u5', fullName: 'Brother Samuel Adebayo (HOD Fellowship)', email: 'hod.fellowship@rccgglorious.org', phone: '+2348000000004', role: 'HOD', mustChangePassword: false, isActive: true },
-    { id: 'u6', fullName: 'Evangelist Peter King (HOD Outreach)', email: 'hod.outreach@rccgglorious.org', phone: '+2348000000005', role: 'HOD', mustChangePassword: false, isActive: true }
+    { id: 'u3', fullName: 'Sister Grace Usang (HOD Ushering)', email: 'hod.ushering@rccgglorious.org', phone: '+2348000000002', role: 'HOD', assignedDepartment: 'Ushering & Protocol', mustChangePassword: false, isActive: true },
+    { id: 'u4', fullName: 'Minister David Okafor (HOD Choir)', email: 'hod.choir@rccgglorious.org', phone: '+2348000000003', role: 'HOD', assignedDepartment: 'Choir & Praise Team', mustChangePassword: false, isActive: true },
+    { id: 'u5', fullName: 'Brother Samuel Adebayo (HOD Fellowship)', email: 'hod.fellowship@rccgglorious.org', phone: '+2348000000004', role: 'HOD', assignedDepartment: 'Follow-up & Welfare', mustChangePassword: false, isActive: true },
+    { id: 'u6', fullName: 'Evangelist Peter King (HOD Outreach)', email: 'hod.outreach@rccgglorious.org', phone: '+2348000000005', role: 'HOD', assignedDepartment: 'Evangelism & Outreach', mustChangePassword: false, isActive: true }
   ]);
 
   const [reports, setReports] = useState<ServiceReport[]>([]);
@@ -4786,7 +4795,7 @@ export default function App() {
                       {currentUser?.role === 'HOD' ? (
                         <div className="px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-xs font-bold text-slate-800 flex items-center gap-2">
                           <Building2 className="w-4 h-4 text-rccg-blue" />
-                          <span>{currentUser?.assignedDepartment || 'Choir & Praise Team'}</span>
+                          <span>{getHodDepartment(currentUser)}</span>
                         </div>
                       ) : (
                         <select
@@ -4823,7 +4832,7 @@ export default function App() {
 
                     {/* CURRENT ROSTER STATUS BADGE */}
                     {(() => {
-                      const activeDept = currentUser?.role === 'HOD' ? (currentUser?.assignedDepartment || 'Choir & Praise Team') : rosterSelectedDept;
+                      const activeDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
                       const activeRoster = rosters.find(r => r.departmentName === activeDept && r.monthYear === rosterSelectedMonth);
                       const currentStatus = activeRoster?.status || 'Draft';
 
@@ -4861,7 +4870,8 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => {
-                        setRosterSuccessAlert(`Draft roster saved successfully for ${rosterSelectedDept} (${rosterSelectedMonth}).`);
+                        const activeDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
+                        setRosterSuccessAlert(`Draft roster saved successfully for ${activeDept} (${rosterSelectedMonth}).`);
                         setTimeout(() => setRosterSuccessAlert(null), 5000);
                       }}
                       className="px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-sm"
@@ -4874,7 +4884,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => {
-                        const activeDept = currentUser?.role === 'HOD' ? (currentUser?.assignedDepartment || 'Choir & Praise Team') : rosterSelectedDept;
+                        const activeDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
                         setRosters(prev => prev.map(r => r.departmentName === activeDept && r.monthYear === rosterSelectedMonth ? { ...r, status: 'SubmittedForApproval', submittedAt: new Date().toISOString() } : r));
                         setRosterSuccessAlert(`Roster submitted to Service Coordinator & Pastor for review! Notifications scheduled.`);
                         setTimeout(() => setRosterSuccessAlert(null), 6000);
@@ -4915,11 +4925,11 @@ export default function App() {
 
                 {/* DUTY ROSTER ASSIGNMENT SERVICES GRID */}
                 {(() => {
-                  const targetDept = currentUser?.role === 'HOD' ? (currentUser?.assignedDepartment || 'Choir & Praise Team') : rosterSelectedDept;
+                  const targetDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
                   const activeRoster = rosters.find(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth);
                   
-                  // Filter members for active department
-                  const deptWorkers = members.filter(m => !m.assignedDepartment || m.assignedDepartment === targetDept || currentUser?.role !== 'HOD');
+                  // Filter members strictly for target department
+                  const deptWorkers = members.filter(m => m.assignedDepartment === targetDept);
 
                   // Default list of recurring services for October 2026 if empty
                   const defaultServiceList = [
@@ -4950,7 +4960,7 @@ export default function App() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {defaultServiceList.map((srv) => {
                           // Find existing assignment if present
-                          const assignment = activeRoster?.assignments?.find((a: any) => a.serviceDate === srv.serviceDate && a.serviceTypeName.includes(srv.dayName));
+                          const assignment = activeRoster?.assignments?.find((a: any) => a.serviceDate === srv.serviceDate && (a.serviceTypeName === srv.serviceTypeName || srv.serviceTypeName.startsWith(a.serviceTypeName)));
                           const assignedNames: string[] = assignment?.assignedPersonNames || [];
 
                           return (
@@ -7227,7 +7237,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    const activeDept = currentUser?.role === 'HOD' ? (currentUser?.assignedDepartment || 'Choir & Praise Team') : rosterSelectedDept;
+                    const activeDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
                     const newAssignment = {
                       id: `d_nv_${Date.now()}`,
                       serviceDate: nightVigilDate,
@@ -7276,7 +7286,7 @@ export default function App() {
             </div>
 
             {(() => {
-              const activeDept = currentUser?.role === 'HOD' ? (currentUser?.assignedDepartment || 'Choir & Praise Team') : rosterSelectedDept;
+              const activeDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
               const activeRoster = rosters.find(r => r.departmentName === activeDept && r.monthYear === rosterSelectedMonth);
               const assignments = activeRoster?.assignments || [];
 
