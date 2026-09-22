@@ -5497,11 +5497,10 @@ export default function App() {
                                         />
                                       </div>
 
-                                      {/* OFFICIATING MINISTER */}
+                                      {/* MINISTER (DROPDOWN TO PICK ANY MEMBER/MINISTER FROM USHERING, CHOIR, OR ANY DEPT) */}
                                       <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
-                                        <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Officiating Minister *</label>
-                                        <input
-                                          type="text"
+                                        <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Minister *</label>
+                                        <select
                                           value={adminRosterScheduleData[srv.id]?.officiatingMinister || ''}
                                           onChange={(e) => {
                                             const val = e.target.value;
@@ -5513,9 +5512,42 @@ export default function App() {
                                               }
                                             }));
                                           }}
-                                          placeholder="e.g. PST. ADETUNJI / DADDY G.O."
-                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue"
-                                        />
+                                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue cursor-pointer"
+                                        >
+                                          <option value="">-- Select Minister / Preacher --</option>
+                                          <optgroup label="Ordained Ministers / Pastors">
+                                            {ministers.map((m) => (
+                                              <option key={m.id} value={m.fullName}>{m.fullName}</option>
+                                            ))}
+                                          </optgroup>
+                                          <optgroup label="Ushering Department">
+                                            {members.filter(m => m.assignedDepartment === 'Ushering & Protocol').map((mem) => (
+                                              <option key={mem.id} value={mem.fullName}>{mem.fullName} (Ushering)</option>
+                                            ))}
+                                          </optgroup>
+                                          <optgroup label="Choir & Music Ministry">
+                                            {members.filter(m => m.assignedDepartment === 'Choir & Praise Team').map((mem) => (
+                                              <option key={mem.id} value={mem.fullName}>{mem.fullName} (Choir)</option>
+                                            ))}
+                                          </optgroup>
+                                          <optgroup label="All Parish Members (Any Department)">
+                                            {members.map((mem) => (
+                                              <option key={mem.id} value={mem.fullName}>{mem.fullName} ({mem.assignedDepartment || 'Member'})</option>
+                                            ))}
+                                          </optgroup>
+                                          <optgroup label="Visiting / General Overseer">
+                                            <option value="DADDY G.O.">DADDY G.O.</option>
+                                            <option value="MUMMY G.O.">MUMMY G.O.</option>
+                                            <option value="PST. ADETUNJI">PST. ADETUNJI</option>
+                                            <option value="DEACON IDOWU">DEACON IDOWU</option>
+                                            <option value="BRO. SAMUEL EGBA">BRO. SAMUEL EGBA</option>
+                                            <option value="BRO. MICHAEL SHONIBARE">BRO. MICHAEL SHONIBARE</option>
+                                            <option value="MUMMY CHUKWUMA">MUMMY CHUKWUMA</option>
+                                            <option value="BRO. RAPHAEL">BRO. RAPHAEL</option>
+                                            <option value="SIS. MERCY ZAINAB">SIS. MERCY ZAINAB</option>
+                                            <option value="GUEST MINISTER">GUEST MINISTER</option>
+                                          </optgroup>
+                                        </select>
                                       </div>
 
                                       {/* OPEN HEAVENS LEADER */}
@@ -7852,14 +7884,14 @@ export default function App() {
         </div>
       )}
 
-      {/* 4. ADD CUSTOM MINISTRATION ROLE MODAL */}
+      {/* 4. ADD CUSTOM MINISTRATION ROLE & MINISTER SELECTION MODAL */}
       {addingRoleServiceId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
             <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
               <h3 className="text-sm font-bold flex items-center gap-2">
                 <Plus className="w-4 h-4 text-emerald-400" />
-                <span>Add Custom Ministration Role</span>
+                <span>Add Custom Ministration Role / Minister</span>
               </h3>
               <button onClick={() => setAddingRoleServiceId(null)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
@@ -7867,15 +7899,61 @@ export default function App() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Custom Ministration Role Title *</label>
-                <input
-                  type="text"
-                  value={newRoleTitleInput}
-                  onChange={(e) => setNewRoleTitleInput(e.target.value)}
-                  placeholder="e.g. Choir Anthem / Special Duet Ministration"
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:bg-white focus:outline-rccg-blue"
-                  autoFocus
-                />
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Minister / Custom Role Title *</label>
+                
+                {/* SELECT FROM MINISTER & MEMBER DROPDOWN ACROSS ALL DEPARTMENTS */}
+                <div className="space-y-2">
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setNewRoleTitleInput(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue cursor-pointer mb-2"
+                  >
+                    <option value="">-- Quick Pick Minister / Member --</option>
+                    <optgroup label="Ordained Ministers / Pastors">
+                      {ministers.map((m) => (
+                        <option key={m.id} value={`Ministration by ${m.fullName}`}>
+                          {m.fullName}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Ushering Department">
+                      {members.filter(m => m.assignedDepartment === 'Ushering & Protocol').map((mem) => (
+                        <option key={mem.id} value={`Preaching / Ministration by ${mem.fullName}`}>
+                          {mem.fullName} (Ushering)
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Choir & Music Ministry">
+                      {members.filter(m => m.assignedDepartment === 'Choir & Praise Team').map((mem) => (
+                        <option key={mem.id} value={`Special Ministration by ${mem.fullName}`}>
+                          {mem.fullName} (Choir)
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="All Parish Members (Any Department)">
+                      {members.map((mem) => (
+                        <option key={mem.id} value={`Ministration by ${mem.fullName}`}>
+                          {mem.fullName} ({mem.assignedDepartment || 'General Member'})
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+
+                  <input
+                    type="text"
+                    value={newRoleTitleInput}
+                    onChange={(e) => setNewRoleTitleInput(e.target.value)}
+                    placeholder="Or type custom title e.g. Preaching / Special Duet Ministration"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:bg-white focus:outline-rccg-blue"
+                    autoFocus
+                  />
+                  <p className="text-[11px] text-slate-500 italic">
+                    Someone in Ushering, Choir, or any department can be picked to preach or minister on that service day.
+                  </p>
+                </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
@@ -7900,7 +7978,7 @@ export default function App() {
                       ...prev,
                       [addingRoleServiceId]: [...(prev[addingRoleServiceId] || []), newRoleObj]
                     }));
-                    setRosterSuccessAlert(`Added custom ministration role "${newRoleTitleInput.trim()}".`);
+                    setRosterSuccessAlert(`Added ministration role "${newRoleTitleInput.trim()}".`);
                     setAddingRoleServiceId(null);
                     setNewRoleTitleInput('');
                     setTimeout(() => setRosterSuccessAlert(null), 4000);
