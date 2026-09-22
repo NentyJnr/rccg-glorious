@@ -1783,9 +1783,8 @@ export default function App() {
               </div>
 
               <div className="p-4 bg-red-50 border border-red-200 rounded-2xl">
-                <label className="block text-xs font-bold text-red-900 mb-1 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-rccg-red" />
-                  <span>Souls Won (Converts) *</span>
+                <label className="block text-xs font-bold text-red-900 mb-1">
+                  Souls Won (Converts) *
                 </label>
                 <input
                   type="number"
