@@ -1388,7 +1388,7 @@ export default function App() {
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 py-8 animate-fadeIn">
         <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden my-auto">
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-rccg-navy via-rccg-blue to-purple-900 text-white p-6 sm:p-8 relative">
+          <div className="bg-gradient-to-b from-slate-950 via-rccg-navy to-purple-950 text-white p-6 sm:p-8 relative text-center flex flex-col items-center">
             <button
               type="button"
               onClick={() => {
@@ -1401,16 +1401,20 @@ export default function App() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 mb-3">
-              <img src={org.logoUrl} alt="Logo" className="w-10 h-10 object-contain bg-white rounded-full p-1 shadow" />
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">{org.parishName}</span>
+            {/* Centralized & Bigger Logo (No white background patch) */}
+            <div className="mb-3">
+              <img src={org.logoUrl} alt="RCCG Logo" className="w-24 h-24 object-contain mx-auto drop-shadow-xl" />
             </div>
 
-            <h2 className="text-base sm:text-lg font-extrabold leading-snug">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-amber-400 mb-2.5 block">
+              {org.parishName}
+            </span>
+
+            <h2 className="text-base sm:text-lg font-extrabold leading-snug max-w-lg mx-auto text-white">
               "I love this family of God, Lets get to Know and Celebrate with You as a Member of Glorious Family"
             </h2>
 
-            <p className="text-xs text-blue-100 italic mt-3 pt-3 border-t border-white/20">
+            <p className="text-xs text-blue-100 italic mt-3 pt-3 border-t border-white/20 max-w-md mx-auto">
               1 John 4:7-8 — "Beloved, let us love one another, for love is of God; and everyone who loves is born of God and knows God."
             </p>
           </div>
