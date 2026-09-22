@@ -311,6 +311,16 @@ export default function App() {
   const [pubFellowshipChildren, setPubFellowshipChildren] = useState<number>(5);
   const [pubFellowshipOffering, setPubFellowshipOffering] = useState<number>(25000);
 
+  // Shareable Public Outreach & Evangelism Log State
+  const [showPublicOutreachForm, setShowPublicOutreachForm] = useState(false);
+  const [publicOutreachSuccess, setPublicOutreachSuccess] = useState(false);
+  const [pubOutreachLocation, setPubOutreachLocation] = useState('Market Square Outreach');
+  const [pubOutreachLeader, setPubOutreachLeader] = useState('Minister David Okafor');
+  const [pubOutreachMen, setPubOutreachMen] = useState<number>(25);
+  const [pubOutreachWomen, setPubOutreachWomen] = useState<number>(30);
+  const [pubOutreachChildren, setPubOutreachChildren] = useState<number>(15);
+  const [pubOutreachSouls, setPubOutreachSouls] = useState<number>(14);
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('register') === 'member') {
@@ -318,6 +328,9 @@ export default function App() {
     }
     if (urlParams.get('report') === 'fellowship') {
       setShowPublicFellowshipForm(true);
+    }
+    if (urlParams.get('report') === 'outreach') {
+      setShowPublicOutreachForm(true);
     }
   }, []);
 
@@ -1596,6 +1609,203 @@ export default function App() {
                 <Building2 className="w-4 h-4" />
                 <span>Submit House Fellowship Weekly Report</span>
               </button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Standalone Public Church on the Street Outreach Form (when share link ?report=outreach is opened or previewed)
+  if (showPublicOutreachForm) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 py-8 animate-fadeIn">
+        <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden my-auto">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-b from-slate-950 via-rccg-navy to-red-950 text-white p-6 sm:p-8 relative text-center flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setShowPublicOutreachForm(false);
+                setPublicOutreachSuccess(false);
+              }}
+              className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full text-slate-200 hover:text-white transition cursor-pointer"
+              title="Return to Main Website"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Centralized & Bigger Logo */}
+            <div className="mb-3">
+              <img src={org.logoUrl} alt="RCCG Logo" className="w-24 h-24 object-contain mx-auto drop-shadow-xl" />
+            </div>
+
+            <span className="text-xs font-extrabold uppercase tracking-widest text-amber-400 mb-2.5 block">
+              {org.parishName}
+            </span>
+
+            <h2 className="text-base sm:text-lg font-extrabold leading-snug max-w-lg mx-auto text-white">
+              Church on the Street (Outreach & Evangelism Log)
+            </h2>
+
+            <p className="text-xs text-red-100 italic mt-3 pt-3 border-t border-white/20 max-w-md mx-auto">
+              Mark 16:15 — "And He said to them, Go into all the world and preach the gospel to every creature."
+            </p>
+          </div>
+
+          {/* Form Body or Success State */}
+          {publicOutreachSuccess ? (
+            <div className="p-8 text-center space-y-4">
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <CheckCircle2 className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Outreach Log Submitted!</h3>
+              <p className="text-sm text-slate-600 max-w-md mx-auto">
+                Glory to God! The outreach log for your street evangelism location has been successfully recorded into the parish database.
+              </p>
+              <div className="pt-4 flex justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPublicOutreachSuccess(false);
+                    setPubOutreachLocation('');
+                    setPubOutreachLeader('');
+                    setPubOutreachMen(0);
+                    setPubOutreachWomen(0);
+                    setPubOutreachChildren(0);
+                    setPubOutreachSouls(0);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+                >
+                  Submit Another Location
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPublicOutreachForm(false);
+                    setPublicOutreachSuccess(false);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-rccg-red hover:bg-red-800 text-white text-xs font-bold shadow cursor-pointer"
+                >
+                  Continue to Website
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!pubOutreachLocation.trim()) {
+                  alert('Please enter Outreach Street / Location.');
+                  return;
+                }
+                const totalR = Number(pubOutreachMen || 0) + Number(pubOutreachWomen || 0) + Number(pubOutreachChildren || 0);
+                const newReport: OutreachReportItem = {
+                  id: 'out_' + Date.now(),
+                  locationName: pubOutreachLocation.trim(),
+                  reportDate: new Date().toISOString().split('T')[0],
+                  menReached: Number(pubOutreachMen || 0),
+                  womenReached: Number(pubOutreachWomen || 0),
+                  childrenReached: Number(pubOutreachChildren || 0),
+                  totalReached: totalR,
+                  soulsWonCount: Number(pubOutreachSouls || 0),
+                  leaderName: pubOutreachLeader.trim() || 'Evangelism Leader'
+                };
+                setOutreachReports(prev => [newReport, ...prev]);
+                setPublicOutreachSuccess(true);
+              }}
+              className="p-6 sm:p-8 space-y-5"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Outreach Street / Location *</label>
+                  <input
+                    type="text"
+                    required
+                    value={pubOutreachLocation}
+                    onChange={(e) => setPubOutreachLocation(e.target.value)}
+                    placeholder="e.g. Market Square Outreach"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Evangelism Leader Name</label>
+                  <input
+                    type="text"
+                    value={pubOutreachLeader}
+                    onChange={(e) => setPubOutreachLeader(e.target.value)}
+                    placeholder="e.g. Minister David Okafor"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block">People Reached Breakdown</span>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Men Reached</label>
+                    <input
+                      type="number"
+                      value={pubOutreachMen}
+                      onChange={(e) => setPubOutreachMen(parseInt(e.target.value) || 0)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-center"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Women Reached</label>
+                    <input
+                      type="number"
+                      value={pubOutreachWomen}
+                      onChange={(e) => setPubOutreachWomen(parseInt(e.target.value) || 0)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-center"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Children Reached</label>
+                    <input
+                      type="number"
+                      value={pubOutreachChildren}
+                      onChange={(e) => setPubOutreachChildren(parseInt(e.target.value) || 0)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-center"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-xs">
+                  <span className="font-semibold text-slate-600">Calculated Total Reached:</span>
+                  <span className="font-extrabold text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-200">
+                    {Number(pubOutreachMen || 0) + Number(pubOutreachWomen || 0) + Number(pubOutreachChildren || 0)} People
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-red-50 border border-red-200 rounded-2xl">
+                <label className="block text-xs font-bold text-red-900 mb-1 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-rccg-red" />
+                  <span>Souls Won (Converts) *</span>
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={pubOutreachSouls}
+                  onChange={(e) => setPubOutreachSouls(parseInt(e.target.value) || 0)}
+                  placeholder="Number of converts"
+                  className="w-full bg-white border border-red-300 rounded-xl px-3.5 py-2.5 text-sm font-extrabold text-rccg-red focus:ring-2 focus:ring-rccg-red"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full py-3.5 bg-rccg-red hover:bg-red-800 text-white rounded-xl text-xs font-extrabold shadow-lg hover:shadow-xl transition cursor-pointer flex items-center justify-center space-x-2"
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span>Submit Outreach Report</span>
+                </button>
+              </div>
             </form>
           )}
         </div>
@@ -3681,6 +3891,42 @@ export default function App() {
             {/* SUB-TAB 2: CHURCH ON THE STREET (OUTREACH) */}
             {fellowshipSubTab === 'outreach' && (
               <div className="space-y-6">
+                {/* SHAREABLE OUTREACH REPORT LINK BANNER */}
+                <div className="bg-gradient-to-r from-rccg-red via-red-900 to-purple-950 p-5 rounded-2xl text-white shadow-md space-y-3">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold flex items-center gap-2">
+                        <Share2 className="w-4 h-4 text-amber-300" />
+                        <span>Shareable Church on the Street Outreach Link</span>
+                      </h3>
+                      <p className="text-xs text-red-100 mt-0.5">Share this link on WhatsApp groups for Evangelism Street Leaders to log outreach reports & souls won directly.</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const shareableUrl = `${window.location.origin}${window.location.pathname}?report=outreach`;
+                          navigator.clipboard.writeText(shareableUrl);
+                          showNotification("Outreach report link copied to clipboard! Share on WhatsApp.");
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy WhatsApp Link</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowPublicOutreachForm(true)}
+                        className="px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Preview Form</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 1. TOP FORM */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
                   <div className="flex items-center justify-between border-b pb-4">
