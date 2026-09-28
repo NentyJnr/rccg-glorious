@@ -65,6 +65,17 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
   // Hero Motion Background Media State (Video & Images rotation)
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
 
+  // Hero Background Video Playlist (Cycles between local video1.mp4 and Summit Church motion video)
+  const heroBackgroundVideos = [
+    '/video1.mp4',
+    'https://summitchurch.com/GetFile.ashx?Guid=f6e6e89c-bfa7-4e46-9a9f-ee6c0f05a7b4'
+  ];
+  const [heroVideoIndex, setHeroVideoIndex] = useState(0);
+
+  const handleHeroVideoEnded = () => {
+    setHeroVideoIndex((prev) => (prev + 1) % heroBackgroundVideos.length);
+  };
+
   // Schedule Filter State for Weekly Services
   const [scheduleTab, setScheduleTab] = useState<'all' | 'sunday' | 'midweek' | 'vigil'>('all');
 
@@ -495,35 +506,47 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
         {/* BACKGROUND BRIGHT MOTION SLIDESHOW & VIDEO CONTAINER */}
         <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
           
-          {/* CONTINUOUS LIVE BACKGROUND VIDEO STREAM WITH SEAMLESS LOOP */}
+          {/* CONTINUOUS LIVE BACKGROUND VIDEO PLAYLIST WITH SEAMLESS LOOP & FOCAL ALIGNMENT */}
           <div className="absolute inset-0 opacity-90 bg-slate-900">
             <video
+              key={heroBackgroundVideos[heroVideoIndex]}
               autoPlay
-              loop
               muted
               playsInline
               preload="auto"
+              onEnded={handleHeroVideoEnded}
               onTimeUpdate={(e) => {
                 const vid = e.currentTarget;
                 if (vid.duration && vid.currentTime >= vid.duration - 0.25) {
-                  vid.currentTime = 0.05;
-                  vid.play().catch(() => {});
+                  handleHeroVideoEnded();
                 }
               }}
-              onEnded={(e) => {
-                const vid = e.currentTarget;
-                vid.currentTime = 0.05;
-                vid.play().catch(() => {});
-              }}
-              className="w-full h-full object-cover filter brightness-110 contrast-105"
+              style={{ objectPosition: 'top center' }}
+              className="w-full h-full object-cover object-top filter brightness-110 contrast-105 transition-opacity duration-700"
             >
-              <source src="/video1.mp4" type="video/mp4" />
+              <source src={heroBackgroundVideos[heroVideoIndex]} type="video/mp4" />
             </video>
           </div>
 
           {/* LIGHT & VIVID CINEMATIC OVERLAY (LOW DARKNESS FOR MAXIMUM BRIGHTNESS) */}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-slate-950/40"></div>
           <div className="absolute inset-0 bg-grid-subtle opacity-40"></div>
+
+          {/* HERO BACKGROUND VIDEO SWITCHER CONTROLS */}
+          <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-12 z-20 flex items-center space-x-2 bg-slate-950/60 p-2 rounded-full border border-white/20 backdrop-blur-md">
+            {heroBackgroundVideos.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setHeroVideoIndex(idx)}
+                className={`h-2.5 rounded-full transition-all duration-300 ${
+                  heroVideoIndex === idx
+                    ? 'bg-emerald-400 w-7'
+                    : 'bg-white/40 hover:bg-white/80 w-2.5'
+                }`}
+                title={`Play Background Video ${idx + 1}`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* HERO CONTENT WRAPPER - MATCHING CONTAINER MARGINS OF IMAGE 2 */}
