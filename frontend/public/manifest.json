@@ -1,0 +1,26 @@
+{
+  "short_name": "ParishPortal",
+  "name": "RCCG Parish Portal - Church Management System",
+  "description": "Church Management System & Member Portal for RCCG Parish",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/rccg_official_logo.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#002244",
+  "theme_color": "#003366",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "categories": ["productivity", "utilities"]
+}

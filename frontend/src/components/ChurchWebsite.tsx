@@ -98,6 +98,30 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
     setTimeout(() => setSiteToast(null), 5000);
   };
 
+  // Event Registration Modal State
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [selectedEventName, setSelectedEventName] = useState<string>('');
+  const [eventSuccessMessage, setEventSuccessMessage] = useState<string | null>(null);
+  const [eventForm, setEventForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    seats: '1',
+    notes: ''
+  });
+
+  const handleEventRegistrationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventForm.fullName || !eventForm.email) {
+      showSiteToast('Please fill in your Full Name and Email address.', 'error');
+      return;
+    }
+    setEventModalOpen(false);
+    setEventSuccessMessage(`God bless you, ${eventForm.fullName}! Your seat reservation for "${selectedEventName}" is confirmed. Check your email (${eventForm.email}) for details.`);
+    setEventForm({ fullName: '', email: '', phone: '', seats: '1', notes: '' });
+    setTimeout(() => setEventSuccessMessage(null), 8000);
+  };
+
   const handleWorkforceSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!workforceForm.fullName || !workforceForm.phone) {
@@ -348,10 +372,19 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                   <div className="absolute left-0 mt-2 w-60 bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl backdrop-blur-xl py-2 z-50 animate-fadeIn">
                     <button onClick={() => handleNavClick('history')} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block">OUR HISTORY</button>
                     <button onClick={() => handleNavClick('vision')} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block">MISSION &amp; VISION</button>
-                    <button onClick={() => handleNavClick('beliefs')} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block">OUR BELIEFS &amp; DOCTRINE</button>
+                    <button onClick={() => handleNavClick('beliefs')} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block">OUR BELIEFS AND DOCTRINE</button>
                   </div>
                 )}
               </div>
+
+              {/* Events */}
+              <a
+                href="#events"
+                className="px-4 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-2 font-black uppercase tracking-wider"
+              >
+                <Calendar className="w-5 h-5 text-emerald-400" />
+                <span>EVENTS</span>
+              </a>
 
               {/* Give Your Life to Christ */}
               <a
@@ -421,6 +454,14 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
               <button onClick={() => handleNavClick('vision')} className="w-full text-left block px-3 py-1.5 text-slate-200 hover:text-emerald-400">MISSION &amp; VISION</button>
               <button onClick={() => handleNavClick('beliefs')} className="w-full text-left block px-3 py-1.5 text-slate-200 hover:text-emerald-400">OUR BELIEFS</button>
             </div>
+            <a
+              href="#events"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full text-left px-3 py-2 rounded-lg bg-emerald-950/80 text-emerald-300 font-extrabold flex items-center space-x-2 border border-emerald-700/50"
+            >
+              <Calendar className="w-4 h-4 text-emerald-400" />
+              <span>EVENTS</span>
+            </a>
             <a
               href="#salvation"
               onClick={() => setMobileMenuOpen(false)}
@@ -555,6 +596,149 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
           </svg>
         </div>
 
+      </section>
+
+      {/* ------------------------------------------------------------- */}
+      {/* 3. UPCOMING EVENTS & CONFERENCES SECTION                      */}
+      {/* ------------------------------------------------------------- */}
+      <section id="events" className="py-20 bg-slate-900 text-white border-b border-slate-800 relative overflow-hidden">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32 space-y-12 relative z-10">
+          
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <span className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-950/90 text-emerald-300 text-xs font-mono uppercase tracking-wider font-extrabold border border-emerald-500/40 shadow-lg">
+              <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+              <span>KINGDOM GATHERINGS &amp; SPECIAL EVENTS</span>
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+              Upcoming Parish Events
+            </h2>
+            <p className="text-sm sm:text-base text-slate-300 font-medium">
+              Join us for powerful worship experiences, anointed conferences, and life-changing parish gatherings.
+            </p>
+          </div>
+
+          {eventSuccessMessage && (
+            <div className="bg-emerald-950/90 border border-emerald-500/60 p-4 rounded-2xl text-emerald-200 text-xs sm:text-sm font-bold text-center animate-fadeIn shadow-xl">
+              ✨ {eventSuccessMessage}
+            </div>
+          )}
+
+          {/* EVENTS GRID */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            {/* EVENT 1 */}
+            <div className="bg-slate-950/90 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl hover:border-emerald-500/50 transition duration-300 flex flex-col justify-between group">
+              <div className="relative h-64 sm:h-72 overflow-hidden bg-slate-900">
+                <img
+                  src="/event_praise_night.jpg"
+                  alt="Annual Praise & Worship Night 2026"
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/30"></div>
+                <div className="absolute top-4 left-4 flex gap-2">
+                  <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-[11px] font-black uppercase tracking-wider shadow-md">
+                    Featured Event
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-blue-900/90 text-blue-200 text-[11px] font-bold uppercase tracking-wider border border-blue-400/40 backdrop-blur-md">
+                    Registration Required
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-6 sm:p-8 space-y-5 flex-1 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <h3 className="text-2xl sm:text-3xl font-black text-white group-hover:text-emerald-400 transition">
+                    Annual Praise &amp; Worship Night 2026
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+                    Join us for an unforgettable night of high praise, deep worship, and prophetic ministrations as we celebrate God's divine faithfulness across the zone.
+                  </p>
+                </div>
+
+                <div className="space-y-2.5 pt-4 border-t border-slate-800 text-xs sm:text-sm font-semibold text-slate-300">
+                  <div className="flex items-center space-x-3 text-emerald-400">
+                    <Clock className="w-4 h-4 shrink-0" />
+                    <span>Friday, October 24, 2026 &bull; 9:00 PM GMT</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-slate-300">
+                    <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Main Auditorium, RCCG Glorious Church Parish</span>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    onClick={() => {
+                      setSelectedEventName('Annual Praise & Worship Night 2026');
+                      setEventModalOpen(true);
+                    }}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-xl transition transform hover:scale-[1.02] flex items-center justify-center space-x-2"
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    <span>Register For Event</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* EVENT 2 */}
+            <div className="bg-slate-950/90 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl hover:border-blue-500/50 transition duration-300 flex flex-col justify-between group">
+              <div className="relative h-64 sm:h-72 overflow-hidden bg-slate-900">
+                <img
+                  src="/event_youth_summit.jpg"
+                  alt="Kingdom Youth Leadership Summit"
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/30"></div>
+                <div className="absolute top-4 left-4 flex gap-2">
+                  <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-[11px] font-black uppercase tracking-wider shadow-md">
+                    Youth &amp; Young Adults
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-emerald-950/90 text-emerald-300 text-[11px] font-bold uppercase tracking-wider border border-emerald-400/40 backdrop-blur-md">
+                    Registration Open
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-6 sm:p-8 space-y-5 flex-1 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <h3 className="text-2xl sm:text-3xl font-black text-white group-hover:text-blue-400 transition">
+                    Kingdom Youth Leadership Summit
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+                    Empowering young professionals, students, and leaders with biblical wisdom, career strategies, and spiritual capacity to excel in modern society.
+                  </p>
+                </div>
+
+                <div className="space-y-2.5 pt-4 border-t border-slate-800 text-xs sm:text-sm font-semibold text-slate-300">
+                  <div className="flex items-center space-x-3 text-blue-400">
+                    <Clock className="w-4 h-4 shrink-0" />
+                    <span>Saturday, November 14, 2026 &bull; 10:00 AM GMT</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-slate-300">
+                    <MapPin className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span>Youth Center &amp; Online Virtual Live Stream</span>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    onClick={() => {
+                      setSelectedEventName('Kingdom Youth Leadership Summit');
+                      setEventModalOpen(true);
+                    }}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-xl transition transform hover:scale-[1.02] flex items-center justify-center space-x-2"
+                  >
+                    <UserCheck className="w-4 h-4 text-blue-200" />
+                    <span>Register For Event</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
       </section>
 
       {/* ------------------------------------------------------------- */}
@@ -1856,6 +2040,124 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                 >
                   <UserCheck className="w-4 h-4 text-emerald-300" />
                   <span>Submit Application</span>
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* EVENT REGISTRATION MODAL */}
+      {eventModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 border border-slate-200 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+            
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <span className="text-[11px] font-mono font-black text-emerald-700 uppercase tracking-widest block">
+                  PARISH EVENT REGISTRATION
+                </span>
+                <h3 className="text-xl font-black text-slate-900 leading-snug">
+                  {selectedEventName}
+                </h3>
+              </div>
+              <button
+                onClick={() => setEventModalOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEventRegistrationSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Brother John Doe"
+                  value={eventForm.fullName}
+                  onChange={(e) => setEventForm({ ...eventForm, fullName: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 focus:outline-none focus:border-emerald-600 font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="john@example.com"
+                    value={eventForm.email}
+                    onChange={(e) => setEventForm({ ...eventForm, email: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 focus:outline-none focus:border-emerald-600 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="+234..."
+                    value={eventForm.phone}
+                    onChange={(e) => setEventForm({ ...eventForm, phone: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 focus:outline-none focus:border-emerald-600 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Number of Attendees / Seats
+                </label>
+                <select
+                  value={eventForm.seats}
+                  onChange={(e) => setEventForm({ ...eventForm, seats: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 focus:outline-none focus:border-emerald-600 font-medium"
+                >
+                  <option value="1">1 Person (Single)</option>
+                  <option value="2">2 People</option>
+                  <option value="3">3 People</option>
+                  <option value="4">4 People</option>
+                  <option value="5+">Family / Group (5+)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Special Requests / Prayer Focus (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Any special accommodations or prayer requests..."
+                  value={eventForm.notes}
+                  onChange={(e) => setEventForm({ ...eventForm, notes: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 focus:outline-none focus:border-emerald-600 font-medium"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEventModalOpen(false)}
+                  className="w-1/3 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold uppercase tracking-wider text-xs transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-2/3 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-black uppercase tracking-wider text-xs shadow-lg transition transform hover:scale-[1.02] flex items-center justify-center space-x-2"
+                >
+                  <UserCheck className="w-4 h-4 text-emerald-300" />
+                  <span>Confirm Registration</span>
                 </button>
               </div>
             </form>

@@ -85,3 +85,54 @@
   animation-play-state: paused;
 }
 
+/* PWA & Mobile Responsiveness Utilities */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+@keyframes slide-up-mobile {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up-mobile {
+  animation: slide-up-mobile 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes bounce-short {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-bounce-short {
+  animation: bounce-short 3s ease-in-out infinite;
+}
+
+/* Custom scrollbar styling for data tables on mobile */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.6);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.9);
+}

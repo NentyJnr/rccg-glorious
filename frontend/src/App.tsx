@@ -50,11 +50,13 @@ import {
   User,
   Receipt,
   Send,
-  Printer
+  Printer,
+  Gift
 } from 'lucide-react';
 import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
 import { PortalComingSoonPage } from './components/PortalComingSoonPage';
+import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 
 interface OrganizationSetting {
   parishName: string;
@@ -239,7 +241,7 @@ const getHodDepartment = (user: User | null): string => {
 export default function App() {
   const [viewMode, setViewMode] = useState<'website' | 'portal'>('website');
   const [showDraftLogin, setShowDraftLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'service-report' | 'users' | 'fellowship' | 'setup'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'service-report' | 'membership' | 'departments' | 'users' | 'fellowship' | 'setup'>('dashboard');
   
   // Organization Branding State
   const [org, setOrg] = useState<OrganizationSetting>({
@@ -248,9 +250,15 @@ export default function App() {
     baseCurrency: 'NGN'
   });
 
-  // --- SETUP & USER MANAGEMENT SUB-TABS & DATA COLLECTIONS ---
+  // --- SUB-TAB & SECTION NAVIGATION STATES ---
+  const [membershipSubTab, setMembershipSubTab] = useState<'directory' | 'registration' | 'birthdays' | 'workforce-upload'>('directory');
+  const [selectedBirthdayMonth, setSelectedBirthdayMonth] = useState<string>(new Date().toLocaleString('default', { month: 'long' }));
   const [userSubTab, setUserSubTab] = useState<'portal-users' | 'ministers' | 'member-upload' | 'role-assignment' | 'workers-registration' | 'assignment'>('portal-users');
-  const [setupSubTab, setSetupSubTab] = useState<'service-types' | 'offering-categories' | 'departments' | 'branding'>('service-types');
+  const [setupSubTab, setSetupSubTab] = useState<'service-types' | 'offering-categories' | 'branding'>('service-types');
+  const [departmentSubTab, setDepartmentSubTab] = useState<'departments-list' | 'assign-hod' | 'department-report'>('departments-list');
+  const [selectedReportDept, setSelectedReportDept] = useState<string>('All');
+  const [assignHodDept, setAssignHodDept] = useState<string>('Ushering Department');
+  const [assignHodPerson, setAssignHodPerson] = useState<string>('');
 
   // Duty Roster State & Interfaces
   const [rosters, setRosters] = useState<any[]>([
@@ -570,6 +578,12 @@ export default function App() {
   const [parsedPreviewMembers, setParsedPreviewMembers] = useState<Member[]>([]);
   const [uploadSuccessBanner, setUploadSuccessBanner] = useState<string | null>(null);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [memberStatusFilter, setMemberStatusFilter] = useState('All');
+
+  const handleDeleteMember = (id: string) => {
+    setMembers(prev => prev.filter(m => m.id !== id));
+    showNotification('Member removed from directory.', 'success');
+  };
 
   // Members Inner Tab & Department Leadership State
   const [membersInnerTab, setMembersInnerTab] = useState<'members-list' | 'dept-leadership'>('members-list');
@@ -1938,6 +1952,12 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
+    if (activeTab === 'membership' && userSubTab !== 'portal-users') {
+      setUserSubTab('portal-users');
+    }
+    if (activeTab === 'departments' && departmentSubTab !== 'departments-list' && departmentSubTab !== 'assign-hod' && departmentSubTab !== 'department-report') {
+      setDepartmentSubTab('departments-list');
+    }
     if (currentUser?.role === 'HOD') {
       const dept = getHodDepartment(currentUser);
       if (activeTab === 'service-report' && dept !== 'Ushering & Protocol') {
@@ -1950,7 +1970,7 @@ export default function App() {
         setActiveTab('users');
       }
     }
-  }, [currentUser, activeTab]);
+  }, [currentUser, activeTab, userSubTab, setupSubTab]);
 
   // Sidebar Layout State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -2765,7 +2785,35 @@ export default function App() {
             </button>
           )}
 
-          {/* USER MANAGEMENT / DEPARTMENT */}
+          {/* MEMBERSHIP */}
+          <button
+            onClick={() => { setActiveTab('membership'); setUserSubTab('portal-users'); setMobileSidebarOpen(false); }}
+            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+              activeTab === 'membership' 
+                ? 'bg-emerald-500/20 text-white border border-emerald-400/40 shadow-inner' 
+                : 'text-slate-200 hover:bg-white/10'
+            }`}
+            title="Membership"
+          >
+            <UserCheck className="w-5 h-5 text-emerald-300 flex-shrink-0" />
+            {!isSidebarCollapsed && <span>Membership</span>}
+          </button>
+
+          {/* DEPARTMENTS */}
+          <button
+            onClick={() => { setActiveTab('departments'); setDepartmentSubTab('departments-list'); setMobileSidebarOpen(false); }}
+            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+              activeTab === 'departments' 
+                ? 'bg-indigo-500/20 text-white border border-indigo-400/40 shadow-inner' 
+                : 'text-slate-200 hover:bg-white/10'
+            }`}
+            title="Departments"
+          >
+            <Building2 className="w-5 h-5 text-indigo-300 flex-shrink-0" />
+            {!isSidebarCollapsed && <span>Departments</span>}
+          </button>
+
+          {/* USER MANAGEMENT / SYSTEM ACCESS */}
           <button
             onClick={() => { setActiveTab('users'); setMobileSidebarOpen(false); }}
             className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
@@ -2773,10 +2821,10 @@ export default function App() {
                 ? 'bg-sky-500/20 text-white border border-sky-400/40 shadow-inner' 
                 : 'text-slate-200 hover:bg-white/10'
             }`}
-            title={currentUser?.role === 'HOD' ? "Department" : "User Management"}
+            title={currentUser?.role === 'HOD' ? "Department Roles" : "User Management"}
           >
             <Users className="w-5 h-5 text-sky-300 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>{currentUser?.role === 'HOD' ? "Department" : "User Management"}</span>}
+            {!isSidebarCollapsed && <span>{currentUser?.role === 'HOD' ? "Department Roles" : "User Management"}</span>}
           </button>
 
           {/* FELLOWSHIP & OUTREACH - ADMINS, PASTOR, HOD FELLOWSHIP, HOD OUTREACH ONLY */}
@@ -2867,6 +2915,8 @@ export default function App() {
               <h2 className="text-sm sm:text-base font-bold text-slate-900 capitalize tracking-tight flex items-center gap-2">
                 {activeTab === 'dashboard' && <Church className="w-4 h-4 text-emerald-600" />}
                 {activeTab === 'service-report' && <FileText className="w-4 h-4 text-emerald-600" />}
+                {activeTab === 'membership' && <UserCheck className="w-4 h-4 text-emerald-600" />}
+                {activeTab === 'departments' && <Building2 className="w-4 h-4 text-indigo-600" />}
                 {activeTab === 'users' && <Users className="w-4 h-4 text-sky-600" />}
                 {activeTab === 'fellowship' && <HeartHandshake className="w-4 h-4 text-teal-600" />}
                 {activeTab === 'setup' && <Settings className="w-4 h-4 text-blue-600" />}
@@ -2904,7 +2954,7 @@ export default function App() {
         )}
 
         {/* Main Content Body */}
-        <main className="p-4 sm:p-8 flex-1 w-full overflow-y-auto min-h-0 bg-slate-100">
+        <main className="p-3 sm:p-8 flex-1 w-full overflow-y-auto min-h-0 bg-slate-100 pb-24 md:pb-8 touch-scroll">
           <div className="max-w-7xl mx-auto">
         {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
@@ -3786,15 +3836,474 @@ export default function App() {
           </div>
         )}
 
-        {/* USER MANAGEMENT / DEPARTMENT TAB */}
+        {/* DEDICATED PARISH MEMBERSHIP TAB */}
+        {activeTab === 'membership' && (
+          <div className="space-y-6">
+            {/* MEMBERSHIP HEADER CARD */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                  <UserCheck className="w-6 h-6 text-emerald-600" />
+                  <span>Parish Membership Portal</span>
+                </h2>
+                <p className="text-slate-500 text-sm mt-1">
+                  Comprehensive directory, online member enrollment, birthday celebrants, and bulk workforce spreadsheet uploads.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => setMembershipSubTab('registration')}
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>New Member Registration</span>
+                </button>
+                <button
+                  onClick={() => setMembershipSubTab('workforce-upload')}
+                  className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Bulk Upload Members</span>
+                </button>
+              </div>
+            </div>
+
+            {/* MEMBERSHIP TABS BAR */}
+            <div className="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
+              <button
+                onClick={() => setMembershipSubTab('directory')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  membershipSubTab === 'directory' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>Parish Member Directory ({members.length})</span>
+              </button>
+
+              <button
+                onClick={() => setMembershipSubTab('registration')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  membershipSubTab === 'registration' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Member Registration</span>
+              </button>
+
+              <button
+                onClick={() => setMembershipSubTab('birthdays')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  membershipSubTab === 'birthdays' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <Gift className="w-4 h-4 text-amber-300 animate-pulse" />
+                <span>Birthdays ({members.filter(m => m.dobMonth === selectedBirthdayMonth).length})</span>
+              </button>
+
+              <button
+                onClick={() => setMembershipSubTab('workforce-upload')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  membershipSubTab === 'workforce-upload' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>Workforce Uploads ({workerRegistrations.length})</span>
+              </button>
+            </div>
+
+            {/* SUB-TAB 1: PARISH MEMBER DIRECTORY */}
+            {membershipSubTab === 'directory' && (
+              <div className="space-y-6">
+                {/* MEMBER STATISTICS SUMMARY CARDS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">{members.length}</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Members</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center flex-shrink-0">
+                      <UserCheck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">{members.filter(m => m.role === 'Workforce' || m.role === 'Minister').length}</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Workforce &amp; Ministers</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">{members.filter(m => m.membershipStatus === 'New Convert').length}</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">New Converts</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">{members.filter(m => m.membershipStatus === 'First Timer').length}</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">First Timers</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SEARCH & FILTERS BAR */}
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <div className="relative w-full sm:w-80">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      placeholder="Search member name, phone, email..."
+                      value={memberSearchQuery}
+                      onChange={(e) => setMemberSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto">
+                    <select
+                      value={memberStatusFilter}
+                      onChange={(e) => setMemberStatusFilter(e.target.value)}
+                      className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    >
+                      <option value="All">All Membership Status</option>
+                      <option value="Full Member">Full Member</option>
+                      <option value="New Convert">New Convert</option>
+                      <option value="First Timer">First Timer</option>
+                      <option value="Under Follow-up">Under Follow-up</option>
+                    </select>
+
+                    <button
+                      onClick={() => handleDownloadCSVTemplate()}
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Export CSV Template</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* MEMBERS DATA TABLE */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="py-3.5 px-4">Member Name</th>
+                          <th className="py-3.5 px-4">Contact Details</th>
+                          <th className="py-3.5 px-4">Status &amp; Role</th>
+                          <th className="py-3.5 px-4">Department</th>
+                          <th className="py-3.5 px-4">Birthday</th>
+                          <th className="py-3.5 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs font-medium">
+                        {members
+                          .filter(m => {
+                            const matchSearch = memberSearchQuery === '' || 
+                              m.fullName.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+                              m.whatsappNumber.includes(memberSearchQuery) ||
+                              m.email.toLowerCase().includes(memberSearchQuery.toLowerCase());
+                            const matchStatus = memberStatusFilter === 'All' || m.membershipStatus === memberStatusFilter;
+                            return matchSearch && matchStatus;
+                          })
+                          .map((member) => (
+                            <tr key={member.id} className="hover:bg-slate-50/80 transition">
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-extrabold flex items-center justify-center text-xs flex-shrink-0">
+                                    {member.firstname.charAt(0)}{member.surname.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-slate-900">{member.fullName}</div>
+                                    <div className="text-[10px] text-slate-400 font-mono">{member.gender} • Joined {member.dateJoined}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <div className="text-slate-800 font-mono text-[11px]">{member.whatsappNumber}</div>
+                                <div className="text-[10px] text-slate-500 truncate">{member.email}</div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <div className="flex flex-col gap-1 items-start">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    member.membershipStatus === 'Full Member' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                                    member.membershipStatus === 'New Convert' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                                    'bg-purple-100 text-purple-800 border border-purple-200'
+                                  }`}>
+                                    {member.membershipStatus}
+                                  </span>
+                                  <span className="text-[10px] font-mono text-slate-500 font-semibold uppercase">{member.role}</span>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                {member.assignedDepartment ? (
+                                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[11px] font-medium border border-slate-200">
+                                    {member.assignedDepartment}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 italic text-[11px]">Unassigned</span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4 font-bold text-slate-700">
+                                🎂 {member.dobMonth} {member.dobDay}
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                <div className="flex items-center justify-end space-x-1">
+                                  <button
+                                    onClick={() => setRoleAssignModalMember(member)}
+                                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                                    title="Assign Department / Role"
+                                  >
+                                    <Sliders className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteMember(member.id)}
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                    title="Delete Member"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: MEMBER REGISTRATION */}
+            {membershipSubTab === 'registration' && (
+              <div className="space-y-6">
+                {/* SHAREABLE REGISTRATION LINK BOX */}
+                <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white p-6 rounded-2xl shadow-md border border-emerald-700/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2 text-emerald-400">
+                      <Share2 className="w-5 h-5" />
+                      <h3 className="text-sm font-extrabold uppercase tracking-wider">Shareable Online Member Registration Form</h3>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Send this link to new converts, first-timers, or church members to fill out their profile online.
+                    </p>
+                    <div className="mt-3 bg-slate-950/70 border border-emerald-500/30 px-3.5 py-2 rounded-xl text-xs font-mono text-emerald-300 flex items-center justify-between gap-2 max-w-xl">
+                      <span className="truncate">https://rccggloriouschurch.org/portal?register=member</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText('https://rccggloriouschurch.org/portal?register=member');
+                          showNotification('Member registration link copied to clipboard!', 'success');
+                        }}
+                        className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg text-[11px] transition flex items-center gap-1 flex-shrink-0 cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Link</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setShowPublicMemberForm(true)}
+                    className="px-4 py-2.5 bg-white text-slate-900 hover:bg-slate-100 font-extrabold text-xs rounded-xl shadow transition flex items-center space-x-2 cursor-pointer flex-shrink-0"
+                  >
+                    <ExternalLink className="w-4 h-4 text-emerald-600" />
+                    <span>Open Registration Form Preview</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 3: BIRTHDAYS & CELEBRANTS */}
+            {membershipSubTab === 'birthdays' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <Gift className="w-5 h-5 text-amber-500" />
+                      <span>Monthly Birthday Celebrants</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Send birthday goodwill messages and pastoral blessings to celebrants.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <label className="text-xs font-bold text-slate-600">Select Month:</label>
+                    <select
+                      value={selectedBirthdayMonth}
+                      onChange={(e) => setSelectedBirthdayMonth(e.target.value)}
+                      className="bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    >
+                      {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* CELEBRANTS GRID */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {members
+                    .filter(m => m.dobMonth === selectedBirthdayMonth)
+                    .map((m) => (
+                      <div key={m.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between hover:border-emerald-300 transition">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 font-black flex items-center justify-center text-sm shadow-inner flex-shrink-0">
+                            🎂
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900 text-sm">{m.fullName}</div>
+                            <div className="text-xs font-semibold text-emerald-700 mt-0.5">🎂 {m.dobMonth} {m.dobDay}</div>
+                            <div className="text-[10px] text-slate-400">{m.assignedDepartment || 'Parish Member'}</div>
+                          </div>
+                        </div>
+
+                        <a
+                          href={`https://wa.me/${m.whatsappNumber.replace(/[^0-9]/g, '')}?text=Happy%20Birthday%20${encodeURIComponent(m.firstname)}!%20May%20God's%20grace%20and%20blessings%20multiply%20in%20your%20new%20age!%20-%20From%20${encodeURIComponent(org.parishName)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 transition flex items-center space-x-1 text-xs font-bold cursor-pointer"
+                          title="Send Birthday Wish via WhatsApp"
+                        >
+                          <Send className="w-4 h-4" />
+                          <span className="hidden sm:inline">Wish</span>
+                        </a>
+                      </div>
+                    ))}
+                  {members.filter(m => m.dobMonth === selectedBirthdayMonth).length === 0 && (
+                    <div className="col-span-full bg-white p-8 rounded-2xl shadow-xs border border-slate-200 text-center text-slate-500 text-sm font-medium">
+                      No birthday celebrants recorded for <strong>{selectedBirthdayMonth}</strong>.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 4: WORKFORCE UPLOADS */}
+            {membershipSubTab === 'workforce-upload' && (
+              <div className="space-y-6">
+                {/* FILE UPLOAD CARD */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                        <span>Bulk Member Spreadsheet Upload</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Import member lists directly from Excel or CSV files into the parish database.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDownloadCSVTemplate()}
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Download Sample CSV</span>
+                    </button>
+                  </div>
+
+                  <input
+                    type="file"
+                    id="member-bulk-upload-input"
+                    accept=".csv,.xlsx,.xls"
+                    className="hidden"
+                    onChange={handleFileSelectForMemberUpload}
+                  />
+
+                  <div 
+                    className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-8 text-center bg-slate-50/50 hover:bg-emerald-50/20 transition cursor-pointer group"
+                    onClick={() => document.getElementById('member-bulk-upload-input')?.click()}
+                  >
+                    <Upload className="w-10 h-10 text-slate-400 group-hover:text-emerald-600 mx-auto transition mb-2" />
+                    <h4 className="text-sm font-bold text-slate-800">
+                      {bulkFileName ? `Selected File: ${bulkFileName}` : 'Click to Select Excel / CSV File'}
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-1">Supports .xlsx, .xls, .csv format files</p>
+
+                    {parsedPreviewMembers.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col items-center gap-2">
+                        <span className="text-xs font-bold text-emerald-700">
+                          ✓ {parsedPreviewMembers.length} member records parsed and ready for import!
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleProcessMemberBatchImport(); }}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition"
+                        >
+                          Confirm &amp; Import {parsedPreviewMembers.length} Members into Directory
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* WORKFORCE APPLICATIONS LIST */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-slate-900">Workforce Training &amp; Applications ({workerRegistrations.length})</h3>
+                  </div>
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="py-3.5 px-4">Applicant Name</th>
+                          <th className="py-3.5 px-4">Phone / Email</th>
+                          <th className="py-3.5 px-4">Preferred Dept</th>
+                          <th className="py-3.5 px-4">Current Stage</th>
+                          <th className="py-3.5 px-4">Certificates</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs font-medium">
+                        {workerRegistrations.map((worker) => (
+                          <tr key={worker.id} className="hover:bg-slate-50/80 transition">
+                            <td className="py-3.5 px-4 font-bold text-slate-900">{worker.fullName}</td>
+                            <td className="py-3.5 px-4 font-mono text-slate-700">{worker.phone}</td>
+                            <td className="py-3.5 px-4">
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[11px] font-bold border border-slate-200">
+                                {worker.preferredDepartment}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                {worker.currentStage}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-slate-600 font-mono text-[11px]">
+                              {worker.certificates?.baptismCertName ? '✓ Baptismal' : 'No Cert'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* USER MANAGEMENT & ACCESS CONTROL TAB */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">
                   {currentUser?.role === 'HOD' 
-                    ? `My Department (${getHodDepartment(currentUser)})` 
-                    : "User Management & Department Rosters"}
+                    ? `My Department Personnel (${getHodDepartment(currentUser)})` 
+                    : "User Management & System Access Roles"}
                 </h2>
                 <p className="text-slate-500 text-sm mt-1">
                   {currentUser?.role === 'HOD' 
@@ -6099,7 +6608,487 @@ export default function App() {
           </div>
         )}
 
-        {/* SETUP TAB - SYSTEM ADMIN & PASTOR ONLY */}
+        {/* DEPARTMENTS TAB */}
+        {activeTab === 'departments' && (
+          <div className="space-y-6 max-w-6xl mx-auto">
+            {/* DEPARTMENTS HEADER & CONTROL BAR */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <Building2 className="w-6 h-6 text-rccg-blue" />
+                  <h2 className="text-xl font-bold text-slate-900">Parish Departments & Ministries</h2>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Configure operational units, assign Heads of Departments (HODs), and filter department member reports.
+                </p>
+              </div>
+
+              {departmentSubTab === 'departments-list' && (
+                <button
+                  onClick={() => setShowAddSetupForm(!showAddSetupForm)}
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-sm rounded-xl shadow-md transition cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4 text-emerald-300" />
+                  <span>{showAddSetupForm ? 'Close Add Form' : 'Add New Department'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* DEPARTMENTS SUB-TAB NAVIGATION */}
+            <div className="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
+              <button
+                onClick={() => { setDepartmentSubTab('departments-list'); setShowAddSetupForm(false); }}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  departmentSubTab === 'departments-list' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <Building2 className="w-4 h-4" />
+                <span>Departments ({departments.length})</span>
+              </button>
+
+              <button
+                onClick={() => { setDepartmentSubTab('assign-hod'); setShowAddSetupForm(false); }}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  departmentSubTab === 'assign-hod' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <UserCheck className="w-4 h-4 text-emerald-400" />
+                <span>Assign Department Head (HOD)</span>
+              </button>
+
+              <button
+                onClick={() => { setDepartmentSubTab('department-report'); setShowAddSetupForm(false); }}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  departmentSubTab === 'department-report' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <Users className="w-4 h-4 text-amber-300" />
+                <span>Department Member Report & Filter</span>
+              </button>
+            </div>
+
+            {/* SUB-TAB 1: PARISH DEPARTMENTS LIST */}
+            {departmentSubTab === 'departments-list' && (
+              <div className="space-y-6">
+                {showAddSetupForm && (
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 animate-fadeIn">
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <PlusCircle className="w-5 h-5 text-rccg-blue" />
+                      <span>Configure New Parish Department / Ministry</span>
+                    </h3>
+                    <form onSubmit={handleAddDepartment} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Department Name *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newDepartmentName}
+                            onChange={(e) => setNewDepartmentName(e.target.value)}
+                            placeholder="e.g. Media & Technical Unit"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Department Code</label>
+                          <input
+                            type="text"
+                            value={newDepartmentCode}
+                            onChange={(e) => setNewDepartmentCode(e.target.value)}
+                            placeholder="e.g. TEC-01 (Auto-generated if empty)"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Head of Department (HOD)</label>
+                          <select
+                            value={newDepartmentHod}
+                            onChange={(e) => setNewDepartmentHod(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
+                          >
+                            <option value="">-- Select HOD / Leader --</option>
+                            {ministers.map((m) => (
+                              <option key={m.id} value={m.fullName}>
+                                {m.fullName} ({m.title})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Meeting Schedule</label>
+                          <input
+                            type="text"
+                            value={newDepartmentSchedule}
+                            onChange={(e) => setNewDepartmentSchedule(e.target.value)}
+                            placeholder="e.g. Saturdays at 05:00 PM"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Brief Description / Mandate</label>
+                          <input
+                            type="text"
+                            value={newDepartmentDescription}
+                            onChange={(e) => setNewDepartmentDescription(e.target.value)}
+                            placeholder="e.g. Sound engineering, live streaming, and media production."
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button type="submit" className="px-6 py-2.5 bg-rccg-green text-white font-bold text-sm rounded-xl shadow hover:bg-emerald-700 transition cursor-pointer">
+                          Save Department Setup
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div className="px-6 py-4 bg-slate-50 border-b flex justify-between items-center">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">CONFIGURED PARISH DEPARTMENTS & DIRECTORATES</h3>
+                      <p className="text-xs text-slate-500">Departments configured for workforce management and roster scheduling.</p>
+                    </div>
+                    <span className="px-3 py-1 bg-blue-100 text-rccg-blue rounded-full text-xs font-bold font-mono">
+                      {departments.length} Units Active
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
+                    {departments.map((dep) => {
+                      const deptMembersCount = members.filter(m => m.assignedDepartment === dep.name).length;
+                      return (
+                        <div key={dep.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="p-3 bg-rccg-blue text-white rounded-xl shadow-sm">
+                                <Users className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-bold text-slate-900">{dep.name}</h4>
+                                <span className="text-[11px] font-mono font-bold text-slate-500">Code: {dep.code}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Active Unit
+                              </span>
+                              <button
+                                onClick={() => handleStartEditDepartment(dep)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition border border-transparent hover:border-blue-200 cursor-pointer"
+                                title="Edit Department"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteDepartment(dep.id, dep.name)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200 cursor-pointer"
+                                title="Delete Department"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {dep.description && (
+                            <p className="text-xs text-slate-600 line-clamp-2">{dep.description}</p>
+                          )}
+
+                          <div className="pt-2 border-t border-slate-200/80 grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Head of Dept (HOD)</span>
+                              <span className="font-semibold text-slate-800">{dep.headOfDepartment || 'Unassigned'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Meeting Schedule</span>
+                              <span className="font-semibold text-slate-800">{dep.meetingSchedule || 'Flexible'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Assigned Members</span>
+                              <span className="font-bold text-rccg-blue">{deptMembersCount} Members</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: ASSIGN DEPARTMENT HEAD (HOD) */}
+            {departmentSubTab === 'assign-hod' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                  <div className="flex items-center space-x-3 border-b pb-4">
+                    <div className="p-3 bg-blue-100 text-rccg-blue rounded-xl">
+                      <UserCheck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">Assign & Update Department Head (HOD)</h3>
+                      <p className="text-xs text-slate-500">Designate leaders/ministers as Head of Department for parish units.</p>
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!assignHodDept || !assignHodPerson) {
+                        showNotification('Please select both a Department and a Head of Department.', 'error');
+                        return;
+                      }
+                      setDepartments(prev => prev.map(d => {
+                        if (d.name === assignHodDept || d.id === assignHodDept) {
+                          return { ...d, headOfDepartment: assignHodPerson };
+                        }
+                        return d;
+                      }));
+                      showNotification(`Assigned "${assignHodPerson}" as HOD for "${assignHodDept}"!`);
+                      setAssignHodPerson('');
+                    }}
+                    className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200"
+                  >
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Department *</label>
+                      <select
+                        value={assignHodDept}
+                        onChange={(e) => setAssignHodDept(e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rccg-blue"
+                      >
+                        {departments.map((d) => (
+                          <option key={d.id} value={d.name}>
+                            {d.name} ({d.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Assign HOD Leader *</label>
+                      <select
+                        value={assignHodPerson}
+                        onChange={(e) => setAssignHodPerson(e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rccg-blue"
+                      >
+                        <option value="">-- Select Minister or Member --</option>
+                        <optgroup label="Ordained Ministers / Pastors">
+                          {ministers.map((m) => (
+                            <option key={m.id} value={`${m.title} ${m.fullName}`}>
+                              {m.title} {m.fullName}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Parish Members & Workforce">
+                          {members.map((mem) => (
+                            <option key={mem.id} value={mem.fullName}>
+                              {mem.fullName} ({mem.role} - {mem.assignedDepartment || 'No Dept'})
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    <div className="flex items-end">
+                      <button
+                        type="submit"
+                        className="w-full py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow transition cursor-pointer"
+                      >
+                        Confirm HOD Assignment
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* CURRENT HOD ASSIGNMENT ROSTER TABLE */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Current Department HOD Summary</h4>
+                    <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-700 font-bold uppercase border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-4">Department Name</th>
+                            <th className="py-3 px-4">Code</th>
+                            <th className="py-3 px-4">Head of Department (HOD)</th>
+                            <th className="py-3 px-4">Meeting Schedule</th>
+                            <th className="py-3 px-4 text-right">Quick Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                          {departments.map((d) => (
+                            <tr key={d.id} className="hover:bg-slate-50">
+                              <td className="py-3 px-4 font-bold text-slate-900">{d.name}</td>
+                              <td className="py-3 px-4 font-mono font-bold text-slate-500">{d.code}</td>
+                              <td className="py-3 px-4 font-bold text-rccg-blue">
+                                <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-rccg-blue border border-blue-200">
+                                  👑 {d.headOfDepartment || 'Unassigned'}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-slate-600">{d.meetingSchedule || 'Flexible'}</td>
+                              <td className="py-3 px-4 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAssignHodDept(d.name);
+                                    setAssignHodPerson(d.headOfDepartment || '');
+                                  }}
+                                  className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition cursor-pointer"
+                                >
+                                  Re-assign HOD
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 3: DEPARTMENT MEMBER REPORT & FILTER */}
+            {departmentSubTab === 'department-report' && (
+              <div className="space-y-6">
+                {/* FILTER CONTROL BAR & STATS CARDS */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-amber-500" />
+                        <span>Department Membership Filter & Personnel Report</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Filter by department to view member count breakdowns and personnel rosters.</p>
+                    </div>
+
+                    <div className="flex items-center space-x-3 w-full sm:w-auto">
+                      <label className="text-xs font-bold text-slate-700 whitespace-nowrap">Filter Department:</label>
+                      <select
+                        value={selectedReportDept}
+                        onChange={(e) => setSelectedReportDept(e.target.value)}
+                        className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rccg-blue cursor-pointer w-full sm:w-64"
+                      >
+                        <option value="All">All Parish Departments</option>
+                        {departments.map((d) => (
+                          <option key={d.id} value={d.name}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* SUMMARY METRIC CARDS */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-blue-50/60 p-4 rounded-2xl border border-blue-200 space-y-1">
+                      <div className="text-[10px] font-bold text-rccg-blue uppercase tracking-wider">Active Units</div>
+                      <div className="text-2xl font-black text-slate-900">{departments.length}</div>
+                      <div className="text-[11px] text-slate-500 font-medium">Departments Configured</div>
+                    </div>
+
+                    <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200 space-y-1">
+                      <div className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Assigned Members</div>
+                      <div className="text-2xl font-black text-emerald-900">
+                        {selectedReportDept === 'All' 
+                          ? members.filter(m => !!m.assignedDepartment).length 
+                          : members.filter(m => m.assignedDepartment === selectedReportDept).length}
+                      </div>
+                      <div className="text-[11px] text-emerald-700 font-medium">
+                        {selectedReportDept === 'All' ? 'In any department' : `In ${selectedReportDept}`}
+                      </div>
+                    </div>
+
+                    <div className="bg-purple-50/60 p-4 rounded-2xl border border-purple-200 space-y-1">
+                      <div className="text-[10px] font-bold text-purple-800 uppercase tracking-wider">Workforce Personnel</div>
+                      <div className="text-2xl font-black text-purple-900">
+                        {selectedReportDept === 'All'
+                          ? members.filter(m => m.role === 'Workforce' || m.role === 'Minister').length
+                          : members.filter(m => m.assignedDepartment === selectedReportDept && (m.role === 'Workforce' || m.role === 'Minister')).length}
+                      </div>
+                      <div className="text-[11px] text-purple-700 font-medium">Workforce & Ministers</div>
+                    </div>
+
+                    <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200 space-y-1">
+                      <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Unassigned Members</div>
+                      <div className="text-2xl font-black text-amber-900">
+                        {members.filter(m => !m.assignedDepartment).length}
+                      </div>
+                      <div className="text-[11px] text-amber-700 font-medium">Awaiting Department</div>
+                    </div>
+                  </div>
+
+                  {/* FILTERED DEPARTMENT PERSONNEL TABLE */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Personnel Roster — {selectedReportDept === 'All' ? 'All Departments' : selectedReportDept}
+                      </h4>
+                      <span className="text-xs text-slate-500 font-mono">
+                        Showing {members.filter(m => selectedReportDept === 'All' || m.assignedDepartment === selectedReportDept).length} Members
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-700 font-bold uppercase border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-4">Member Name</th>
+                            <th className="py-3 px-4">Department</th>
+                            <th className="py-3 px-4">Member Role</th>
+                            <th className="py-3 px-4">Whatsapp / Phone</th>
+                            <th className="py-3 px-4">Email</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                          {members
+                            .filter(m => selectedReportDept === 'All' || m.assignedDepartment === selectedReportDept)
+                            .map((m) => (
+                              <tr key={m.id} className="hover:bg-slate-50">
+                                <td className="py-3 px-4 font-bold text-slate-900 flex items-center space-x-2">
+                                  <div className="w-7 h-7 rounded-full bg-rccg-blue text-white flex items-center justify-center font-bold text-[10px]">
+                                    {m.surname[0]}{m.firstname[0]}
+                                  </div>
+                                  <div>
+                                    <span>{m.fullName}</span>
+                                    {m.isHod && <span className="ml-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">👑 HOD</span>}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 font-bold text-rccg-blue">
+                                  {m.assignedDepartment ? (
+                                    <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-rccg-blue border border-blue-200">
+                                      {m.assignedDepartment}
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 italic">Unassigned</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    m.role === 'Minister' ? 'bg-purple-100 text-purple-800' :
+                                    m.role === 'Workforce' ? 'bg-emerald-100 text-emerald-800' :
+                                    'bg-slate-100 text-slate-700'
+                                  }`}>
+                                    {m.role}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 font-mono font-bold text-slate-700">{m.whatsappNumber}</td>
+                                <td className="py-3 px-4 text-slate-600">{m.email}</td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SYSTEM SETUP TAB */}
         {activeTab === 'setup' && (currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'SystemAdmin' || currentUser?.role === 'Admin') && (
           <div className="space-y-6 max-w-6xl mx-auto">
             {/* SETUP HEADER & CONTROL BAR */}
@@ -6110,14 +7099,14 @@ export default function App() {
                   <h2 className="text-xl font-bold text-slate-900">System Setup & Configuration</h2>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Manage Service Types, Offering Categories, Ministers Directory, and Parish Branding.
+                  Manage Service Types, Offering Categories, and Parish Branding settings.
                 </p>
               </div>
 
               {setupSubTab === 'service-types' ? (
                 <button
                   onClick={() => setIsAddSetupModalOpen(true)}
-                  className="flex items-center space-x-2 px-4 py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-sm rounded-xl shadow-md transition"
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-sm rounded-xl shadow-md transition cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4 text-emerald-300" />
                   <span>Configure Service Type & Category</span>
@@ -6125,7 +7114,7 @@ export default function App() {
               ) : setupSubTab !== 'branding' ? (
                 <button
                   onClick={() => setShowAddSetupForm(!showAddSetupForm)}
-                  className="flex items-center space-x-2 px-4 py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-sm rounded-xl shadow-md transition"
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-sm rounded-xl shadow-md transition cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4 text-emerald-300" />
                   <span>{showAddSetupForm ? 'Close Add Form' : 'Add New Setup'}</span>
@@ -6137,7 +7126,7 @@ export default function App() {
             <div className="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
               <button
                 onClick={() => { setSetupSubTab('service-types'); setShowAddSetupForm(false); }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
                   setupSubTab === 'service-types' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
@@ -6147,7 +7136,7 @@ export default function App() {
 
               <button
                 onClick={() => { setSetupSubTab('offering-categories'); setShowAddSetupForm(false); }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
                   setupSubTab === 'offering-categories' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
@@ -6156,18 +7145,8 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setSetupSubTab('departments'); setShowAddSetupForm(false); }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap ${
-                  setupSubTab === 'departments' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                <span>Departments ({departments.length})</span>
-              </button>
-
-              <button
                 onClick={() => { setSetupSubTab('branding'); setShowAddSetupForm(false); }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
                   setupSubTab === 'branding' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
@@ -6188,7 +7167,7 @@ export default function App() {
                     </div>
                     <button
                       onClick={() => setIsAddCategoryModalOpen(true)}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-rccg-blue font-bold text-xs rounded-xl transition flex items-center gap-1"
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-rccg-blue font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Add Service Category</span>
@@ -6234,7 +7213,7 @@ export default function App() {
                     </div>
                     <button
                       onClick={() => setIsAddSetupModalOpen(true)}
-                      className="px-4 py-2 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5"
+                      className="px-4 py-2 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer"
                     >
                       <PlusCircle className="w-3.5 h-3.5 text-emerald-300" />
                       <span>Configure New Service Type</span>
@@ -6344,7 +7323,7 @@ export default function App() {
                         />
                       </div>
                       <div className="flex items-end">
-                        <button type="submit" className="w-full py-2.5 bg-rccg-green text-white font-bold text-sm rounded-xl shadow hover:bg-emerald-700 transition">
+                        <button type="submit" className="w-full py-2.5 bg-rccg-green text-white font-bold text-sm rounded-xl shadow hover:bg-emerald-700 transition cursor-pointer">
                           Save Offering Category
                         </button>
                       </div>
@@ -6396,156 +7375,7 @@ export default function App() {
               </div>
             )}
 
-
-
-            {/* SUB-TAB 4: PARISH DEPARTMENTS SETUP */}
-            {setupSubTab === 'departments' && (
-              <div className="space-y-6">
-                {showAddSetupForm && (
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 animate-fadeIn">
-                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <PlusCircle className="w-5 h-5 text-rccg-blue" />
-                      <span>Configure New Parish Department / Ministry</span>
-                    </h3>
-                    <form onSubmit={handleAddDepartment} className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Department Name *</label>
-                          <input
-                            type="text"
-                            required
-                            value={newDepartmentName}
-                            onChange={(e) => setNewDepartmentName(e.target.value)}
-                            placeholder="e.g. Media & Technical Unit"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Department Code</label>
-                          <input
-                            type="text"
-                            value={newDepartmentCode}
-                            onChange={(e) => setNewDepartmentCode(e.target.value)}
-                            placeholder="e.g. TEC-01 (Auto-generated if empty)"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-rccg-blue focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Head of Department (HOD)</label>
-                          <select
-                            value={newDepartmentHod}
-                            onChange={(e) => setNewDepartmentHod(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
-                          >
-                            <option value="">-- Select HOD / Leader --</option>
-                            {ministers.map((m) => (
-                              <option key={m.id} value={m.fullName}>
-                                {m.fullName} ({m.title})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Meeting Schedule</label>
-                          <input
-                            type="text"
-                            value={newDepartmentSchedule}
-                            onChange={(e) => setNewDepartmentSchedule(e.target.value)}
-                            placeholder="e.g. Saturdays at 05:00 PM"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Brief Description / Mandate</label>
-                          <input
-                            type="text"
-                            value={newDepartmentDescription}
-                            onChange={(e) => setNewDepartmentDescription(e.target.value)}
-                            placeholder="e.g. Sound engineering, live streaming, and media production."
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end pt-2">
-                        <button type="submit" className="px-6 py-2.5 bg-rccg-green text-white font-bold text-sm rounded-xl shadow hover:bg-emerald-700 transition">
-                          Save Department Setup
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                  <div className="px-6 py-4 bg-slate-50 border-b flex justify-between items-center">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Configured Parish Departments & Directorates</h3>
-                      <p className="text-xs text-slate-500">Departments configured for workforce management and roster scheduling.</p>
-                    </div>
-                    <span className="px-3 py-1 bg-blue-100 text-rccg-blue rounded-full text-xs font-bold font-mono">
-                      {departments.length} Units Active
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
-                    {departments.map((dep) => (
-                      <div key={dep.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="p-3 bg-rccg-blue text-white rounded-xl shadow-sm">
-                              <Users className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-bold text-slate-900">{dep.name}</h4>
-                              <span className="text-[11px] font-mono font-bold text-slate-500">Code: {dep.code}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              Active Unit
-                            </span>
-                            <button
-                              onClick={() => handleStartEditDepartment(dep)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition border border-transparent hover:border-blue-200 cursor-pointer"
-                              title="Edit Department"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDepartment(dep.id, dep.name)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200 cursor-pointer"
-                              title="Delete Department"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {dep.description && (
-                          <p className="text-xs text-slate-600 line-clamp-2">{dep.description}</p>
-                        )}
-
-                        <div className="pt-2 border-t border-slate-200/80 grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase block">Head of Dept (HOD)</span>
-                            <span className="font-semibold text-slate-800">{dep.headOfDepartment || 'Unassigned'}</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase block">Meeting Schedule</span>
-                            <span className="font-semibold text-slate-800">{dep.meetingSchedule || 'Flexible'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* SUB-TAB 4: PARISH BRANDING SETUP */}
+            {/* SUB-TAB 3: PARISH BRANDING SETUP */}
             {setupSubTab === 'branding' && (
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
                 <h3 className="text-lg font-bold text-slate-900 border-b pb-3 flex items-center space-x-2">
@@ -6598,7 +7428,7 @@ export default function App() {
                             <button
                               type="button"
                               onClick={() => setOrg({ ...org, logoUrl: '' })}
-                              className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+                              className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                               <span>Remove</span>
@@ -6628,7 +7458,7 @@ export default function App() {
                     <select
                       value={org.baseCurrency}
                       onChange={(e) => setOrg({ ...org, baseCurrency: e.target.value })}
-                      className="w-full sm:w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900"
+                      className="w-full sm:w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 cursor-pointer"
                     >
                       <option value="NGN">NGN (Nigerian Naira - ₦)</option>
                       <option value="USD">USD (US Dollar - $)</option>
@@ -6638,7 +7468,7 @@ export default function App() {
                   </div>
 
                   <div className="pt-4">
-                    <button type="submit" className="px-8 py-3 bg-rccg-blue text-white text-sm font-bold rounded-xl shadow-md">
+                    <button type="submit" className="px-8 py-3 bg-rccg-blue text-white text-sm font-bold rounded-xl shadow-md cursor-pointer">
                       Save Branding Settings
                     </button>
                   </div>
@@ -8287,6 +9117,110 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* MOBILE BOTTOM NAVIGATION BAR (FIXED ON SMARTPHONES FOR PWA) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-white/10 text-white px-2 py-1.5 pb-safe flex items-center justify-around shadow-2xl">
+        {/* Dashboard */}
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition min-h-[44px] ${
+            activeTab === 'dashboard' ? 'text-emerald-400 bg-emerald-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Dashboard"
+        >
+          <Church className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Dashboard</span>
+        </button>
+
+        {/* Service Reports */}
+        {(currentUser?.role === 'SuperAdmin' || 
+          currentUser?.role === 'Pastor' || 
+          currentUser?.role === 'SystemAdmin' || 
+          currentUser?.role === 'Admin' || 
+          currentUser?.role === 'ServiceCoordinator' || 
+          (currentUser?.role === 'HOD' && getHodDepartment(currentUser) === 'Ushering & Protocol')) && (
+          <button
+            onClick={() => setActiveTab('service-report')}
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition min-h-[44px] ${
+              activeTab === 'service-report' ? 'text-emerald-300 bg-emerald-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Service Reports"
+          >
+            <FileText className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Reports</span>
+          </button>
+        )}
+
+        {/* Membership */}
+        <button
+          onClick={() => { setActiveTab('membership'); setUserSubTab('portal-users'); }}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition min-h-[44px] ${
+            activeTab === 'membership' ? 'text-emerald-300 bg-emerald-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Membership"
+        >
+          <UserCheck className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Members</span>
+        </button>
+
+        {/* Departments */}
+        <button
+          onClick={() => { setActiveTab('departments'); setDepartmentSubTab('departments-list'); }}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition min-h-[44px] ${
+            activeTab === 'departments' ? 'text-indigo-300 bg-indigo-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Departments"
+        >
+          <Building2 className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Depts</span>
+        </button>
+
+        {/* Users */}
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition min-h-[44px] ${
+            activeTab === 'users' ? 'text-sky-300 bg-sky-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title={currentUser?.role === 'HOD' ? "Department Roles" : "Users"}
+        >
+          <Users className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">{currentUser?.role === 'HOD' ? 'Roles' : 'Users'}</span>
+        </button>
+
+        {/* Fellowship */}
+        {(currentUser?.role === 'SuperAdmin' || 
+          currentUser?.role === 'Pastor' || 
+          currentUser?.role === 'SystemAdmin' || 
+          currentUser?.role === 'Admin' || 
+          (currentUser?.role === 'HOD' && (getHodDepartment(currentUser) === 'Follow-up & Welfare' || getHodDepartment(currentUser) === 'Evangelism & Outreach'))) && (
+          <button
+            onClick={() => setActiveTab('fellowship')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition min-h-[44px] ${
+              activeTab === 'fellowship' ? 'text-teal-300 bg-teal-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Fellowship & Outreach"
+          >
+            <HeartHandshake className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Outreach</span>
+          </button>
+        )}
+
+        {/* Setup */}
+        {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'SystemAdmin' || currentUser?.role === 'Admin') && (
+          <button
+            onClick={() => setActiveTab('setup')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition min-h-[44px] ${
+              activeTab === 'setup' ? 'text-blue-300 bg-blue-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="System Setup"
+          >
+            <Settings className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Setup</span>
+          </button>
+        )}
+      </nav>
+
+      {/* PWA Install Prompt Banner */}
+      <PwaInstallPrompt />
     </div>
   </div>
   );
