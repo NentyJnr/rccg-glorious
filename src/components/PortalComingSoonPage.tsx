@@ -87,7 +87,7 @@ export const PortalComingSoonPage: React.FC<PortalComingSoonPageProps> = ({
           }}
           className="w-full h-full object-cover filter brightness-110 contrast-105 opacity-85"
         >
-          <source src="https://summitchurch.com/GetFile.ashx?Guid=f6e6e89c-bfa7-4e46-9a9f-ee6c0f05a7b4" type="video/mp4" />
+          <source src="/video1.mp4" type="video/mp4" />
         </video>
         {/* LIGHT & VIVID CINEMATIC OVERLAY */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-slate-950/60"></div>
