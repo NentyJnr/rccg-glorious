@@ -944,7 +944,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                 {/* PORTRAIT */}
                 <div className="w-full sm:w-48 h-64 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-slate-100">
                   <img
-                    src="https://www.rccg.org/wp-content/uploads/2025/01/kj-799x1024.png"
+                    src="/adeboye-enoch-jpeg.webp"
                     alt="Pastor E. A. Adeboye"
                     className="w-full h-full object-cover object-top transition transform hover:scale-105"
                     onError={(e) => {
