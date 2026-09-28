@@ -874,7 +874,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
             }}
             className="w-full h-full object-cover filter brightness-110 contrast-105 opacity-60"
           >
-            <source src="/video1.mp4" type="video/mp4" />
+            <source src="https://summitchurch.com/GetFile.ashx?Guid=f6e6e89c-bfa7-4e46-9a9f-ee6c0f05a7b4" type="video/mp4" />
           </video>
           {/* CINEMATIC OVERLAY */}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-blue-950/80 to-slate-950/90"></div>
@@ -1238,7 +1238,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
             }}
             className="w-full h-full object-cover filter brightness-110 contrast-105 opacity-60"
           >
-            <source src="/video1.mp4" type="video/mp4" />
+            <source src="https://summitchurch.com/GetFile.ashx?Guid=f6e6e89c-bfa7-4e46-9a9f-ee6c0f05a7b4" type="video/mp4" />
           </video>
           {/* CINEMATIC OVERLAY FOR CRISP TEXT READABILITY */}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-blue-950/85 to-slate-950/90"></div>
