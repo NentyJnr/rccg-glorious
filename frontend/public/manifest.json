@@ -1,12 +1,12 @@
 {
-  "short_name": "ParishPortal",
-  "name": "RCCG Parish Portal - Church Management System",
-  "description": "Church Management System & Member Portal for RCCG Parish",
+  "short_name": "Glorious Church",
+  "name": "RCCG Glorious Church Parish",
+  "description": "Welcome to RCCG Glorious Church Parish",
   "icons": [
     {
-      "src": "/pwa-icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
+      "src": "/glorious_church_logo.png",
+      "type": "image/png",
+      "sizes": "512x512",
       "purpose": "any maskable"
     },
     {
