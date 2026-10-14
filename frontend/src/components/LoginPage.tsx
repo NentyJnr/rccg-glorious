@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../services/apiClient';
+import { api, setAuthSession, API_BASE_URL } from '../services/apiClient';
 import { 
   Church, 
   Lock, 
@@ -26,6 +26,7 @@ export interface User {
   assignedDepartment?: string;
   mustChangePassword: boolean;
   isActive: boolean;
+  token?: string;
 }
 
 export interface OrganizationSetting {
@@ -83,35 +84,43 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, availableU
     setIsLoading(true);
 
     try {
-      // 1. Try real API Login
-      const response = await fetch(`${API_BASE_URL}/Auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+      // 1. Try real live API Login (MonsterASP / local)
+      const result = await api.post<any>('/Auth/login', { email, password });
 
-      if (response.ok) {
-        const envelope = await response.json();
-        if (envelope.success && envelope.data) {
-          const apiUser: User = {
-            id: envelope.data.userId || 'u-api',
-            fullName: envelope.data.fullName || email.split('@')[0],
-            email: envelope.data.email || email,
-            phone: '+2348000000000',
-            role: envelope.data.role || 'SystemAdmin',
-            mustChangePassword: envelope.data.mustChangePassword || false,
-            isActive: true
-          };
-          setIsLoading(false);
-          onLoginSuccess(apiUser);
-          return;
+      if (result.success && result.data) {
+        const token = result.data.token || '';
+        const apiUser: User = {
+          id: result.data.userId || 'u-api',
+          fullName: result.data.fullName || email.split('@')[0],
+          email: result.data.email || email,
+          phone: result.data.phone || '+2348000000000',
+          role: result.data.role || 'SystemAdmin',
+          mustChangePassword: result.data.mustChangePassword || false,
+          isActive: true,
+          token
+        };
+
+        // Persist JWT token and user info to localStorage
+        if (token) {
+          setAuthSession(token, apiUser);
         }
+
+        setIsLoading(false);
+        onLoginSuccess(apiUser);
+        return;
       }
-    } catch {
-      // API call failed or not reachable -> fallback to local preset check
+
+      // If backend explicitly rejected credentials (400 / 401)
+      if (result.status === 401 || result.status === 400) {
+        setIsLoading(false);
+        setErrorMessage(result.message || 'Invalid email or password. Please verify your credentials.');
+        return;
+      }
+    } catch (err) {
+      console.warn('[LoginPage] API call failed, evaluating local offline fallback:', err);
     }
 
-    // 2. Local Fallback Verification
+    // 2. Offline / Local Fallback Verification (only if network unreachable)
     setTimeout(() => {
       setIsLoading(false);
       const matchedUser = availableUsers.find(
@@ -119,23 +128,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, availableU
       );
 
       if (matchedUser) {
+        setAuthSession('demo-token-local', matchedUser);
         onLoginSuccess(matchedUser);
-      } else if (email.trim().length > 3) {
-        // Fallback for custom dev login
-        const devUser: User = {
-          id: 'u-dev-' + Date.now(),
-          fullName: email.split('@')[0].toUpperCase(),
-          email: email.trim(),
-          phone: '+2348011112222',
-          role: 'SystemAdmin',
-          mustChangePassword: false,
-          isActive: true
-        };
-        onLoginSuccess(devUser);
       } else {
-        setErrorMessage('Invalid credentials. Please verify your email and password.');
+        setErrorMessage('Unable to connect to live API and no matching demo preset found.');
       }
-    }, 800);
+    }, 600);
   };
 
   return (

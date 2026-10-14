@@ -57,7 +57,7 @@ import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
 import { PortalComingSoonPage } from './components/PortalComingSoonPage';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
-import { API_BASE_URL } from './services/apiClient';
+import { api, API_BASE_URL, clearAuthSession } from './services/apiClient';
 
 export interface EventSpeakerItem {
   id?: string;
@@ -761,6 +761,19 @@ export default function App() {
 
     setMembers(prev => [newMember, ...prev]);
     setUploadSuccessBanner(`Successfully registered ${newMember.fullName} into parish records!`);
+
+    // Sync to central database
+    api.post('/Members', {
+      fullName: newMember.fullName,
+      email: newMember.email,
+      phone: newMember.whatsappNumber,
+      role: newMember.role,
+      department: newMember.assignedDepartment
+    }).then(res => {
+      if (res.success) {
+        showNotification(`${newMember.fullName} synchronized to central membership database!`, 'success');
+      }
+    }).catch(e => console.warn('Member live sync error:', e));
     setRegSurname('');
     setRegFirstname('');
     setRegWhatsapp('');
@@ -1142,12 +1155,9 @@ export default function App() {
   useEffect(() => {
     const fetchParishEvents = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/Events`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-            setEvents(json.data);
-          }
+        const res = await api.get<any[]>('/Events');
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setEvents(res.data);
         }
       } catch (err) {
         console.warn('Events API unavailable, using initialized state:', err);
@@ -1275,11 +1285,10 @@ export default function App() {
       setIsEventModalOpen(false);
 
       try {
-        await fetch(`${API_BASE_URL}/Events/${editingEvent.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(eventPayload)
-        });
+        const res = await api.put(`/Events/${editingEvent.id}`, eventPayload);
+        if (res.success) {
+          showNotification(`Event "${updatedEvent.title}" updated in central database!`, 'success');
+        }
       } catch (err) {
         console.warn('API update offline, saved locally');
       }
@@ -1295,11 +1304,10 @@ export default function App() {
       setIsEventModalOpen(false);
 
       try {
-        await fetch(`${API_BASE_URL}/Events`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(eventPayload)
-        });
+        const res = await api.post('/Events', eventPayload);
+        if (res.success) {
+          showNotification(`Parish Event "${newEvent.title}" saved to central database!`, 'success');
+        }
       } catch (err) {
         console.warn('API post offline, saved locally');
       }
@@ -1316,7 +1324,7 @@ export default function App() {
         setEvents(prev => prev.filter(e => e.id !== id));
         showNotification(`Event "${title}" has been removed.`);
         try {
-          await fetch(`${API_BASE_URL}/Events/${id}`, { method: 'DELETE' });
+          await api.delete(`/Events/${id}`);
         } catch {}
       }
     });
@@ -1422,11 +1430,7 @@ export default function App() {
     setIsAddSetupModalOpen(false);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/service-types`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newItem.name, category: newItem.category, isActive: true })
-      });
+      await api.post('/Setup/service-types', { name: newItem.name, category: newItem.category, isActive: true });
     } catch {}
   };
 
@@ -1534,11 +1538,7 @@ export default function App() {
     setEditingServiceType(null);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/service-types/${editingServiceType.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated)
-      });
+      await api.put(`/Setup/service-types/${editingServiceType.id}`, updated);
     } catch {}
   };
 
@@ -1553,9 +1553,7 @@ export default function App() {
         showNotification(`Service Type "${name}" deleted.`);
 
         try {
-          await fetch(`${API_BASE_URL}/Setup/service-types/${id}`, {
-            method: 'DELETE'
-          });
+          await api.delete(`/Setup/service-types/${id}`);
         } catch {}
       }
     });
@@ -1583,11 +1581,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/offering-categories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newItem.name, code: code, isActive: true })
-      });
+      await api.post('/Setup/offering-categories', { name: newItem.name, code: code, isActive: true });
     } catch {}
   };
 
@@ -1622,11 +1616,7 @@ export default function App() {
     setEditingOfferingCategory(null);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/offering-categories/${editingOfferingCategory.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: updatedItem.name, code: updatedCode, isActive: true })
-      });
+      await api.put(`/Setup/offering-categories/${editingOfferingCategory.id}`, { name: updatedItem.name, code: updatedCode, isActive: true });
     } catch {}
   };
 
@@ -1641,9 +1631,7 @@ export default function App() {
         showNotification(`Offering Category "${name}" deleted successfully.`);
 
         try {
-          await fetch(`${API_BASE_URL}/Setup/offering-categories/${id}`, {
-            method: 'DELETE'
-          });
+          await api.delete(`/Setup/offering-categories/${id}`);
         } catch {}
       }
     });
@@ -1668,11 +1656,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/ministers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newItem.title, fullName: newItem.fullName })
-      });
+      await api.post('/Setup/ministers', { title: newItem.title, fullName: newItem.fullName });
     } catch {}
   };
 
@@ -1704,11 +1688,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/departments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newDep)
-      });
+      await api.post('/Setup/departments', newDep);
     } catch {}
   };
 
@@ -1749,11 +1729,7 @@ export default function App() {
     setEditingDepartment(null);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/departments/${editingDepartment.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedItem)
-      });
+      await api.put(`/Setup/departments/${editingDepartment.id}`, updatedItem);
     } catch {}
   };
 
@@ -1768,9 +1744,7 @@ export default function App() {
         showNotification(`Department "${name}" deleted successfully.`);
 
         try {
-          await fetch(`${API_BASE_URL}/Setup/departments/${id}`, {
-            method: 'DELETE'
-          });
+          await api.delete(`/Setup/departments/${id}`);
         } catch {}
       }
     });
@@ -1903,6 +1877,34 @@ export default function App() {
 
     setReports([newReport, ...reports]);
     showNotification(`Service Report submitted! Gross: ${org.baseCurrency} ${totalCalculatedGrossOffering.toLocaleString()} | Expenses: -${org.baseCurrency} ${totalCalculatedExpenses.toLocaleString()} | Net Remittance: ${org.baseCurrency} ${totalCalculatedNetOffering.toLocaleString()}`);
+
+    // Submit directly to live API database
+    try {
+      const matchedServiceType = serviceTypes.find(st => st.name === serviceTypeName);
+      const matchedMinister = ministers.find(m => m.fullName === selectedPreacher);
+      
+      const reportPayload = {
+        serviceTypeId: matchedServiceType?.id && !matchedServiceType.id.startsWith('st_') ? matchedServiceType.id : '00000000-0000-0000-0000-000000000000',
+        serviceDate: new Date(serviceDate).toISOString(),
+        menCount: Number(menCount) || 0,
+        womenCount: Number(womenCount) || 0,
+        childrenCount: Number(childrenCount) || 0,
+        firstTimersCount: Number(firstTimers) || 0,
+        newConvertsCount: Number(newConverts) || 0,
+        preacherMinisterId: matchedMinister?.id && !matchedMinister.id.startsWith('m_') ? matchedMinister.id : null,
+        singleOfferingAmount: totalCalculatedNetOffering,
+        createdByUserId: currentUser?.id && !currentUser.id.startsWith('u-') ? currentUser.id : '00000000-0000-0000-0000-000000000000'
+      };
+
+      api.post('/service-reports', reportPayload).then(res => {
+        if (res.success) {
+          showNotification('Service Report successfully persisted to central database!', 'success');
+        }
+      }).catch(err => console.warn('Service report background sync:', err));
+    } catch (err) {
+      console.warn('Report submission fallback:', err);
+    }
+
     setActiveTab('dashboard');
   };
 
@@ -2271,6 +2273,38 @@ export default function App() {
 
   // Current Authenticated User Session
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Hydrate user session from localStorage on initial load
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('cms_auth_user');
+      const savedToken = localStorage.getItem('cms_auth_token');
+      if (savedUser && savedToken) {
+        setCurrentUser(JSON.parse(savedUser));
+      }
+    } catch (err) {
+      console.warn('[Session] Failed to hydrate user session:', err);
+    }
+
+    const handleUnauthorized = () => {
+      clearAuthSession();
+      setCurrentUser(null);
+      showNotification('Session expired or unauthorized. Please sign in again.', 'error');
+    };
+    window.addEventListener('cms:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('cms:unauthorized', handleUnauthorized);
+  }, []);
+
+  // Live API Connection Monitor
+  const [apiOnline, setApiOnline] = useState<boolean>(true);
+
+  useEffect(() => {
+    api.checkHealth().then(res => setApiOnline(res.online));
+    const interval = setInterval(() => {
+      api.checkHealth().then(res => setApiOnline(res.online));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'membership' && userSubTab !== 'portal-users') {
@@ -3226,6 +3260,7 @@ export default function App() {
 
             <button
               onClick={() => {
+                clearAuthSession();
                 setCurrentUser(null);
                 showNotification('Signed out of portal session.', 'success');
               }}
@@ -3275,6 +3310,19 @@ export default function App() {
               <Globe className="w-3.5 h-3.5 text-blue-600" />
               <span className="hidden sm:inline">Public Website</span>
             </button>
+
+            {/* Live API Health Status Badge */}
+            <div 
+              title={`API Backend: ${API_BASE_URL}`}
+              className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition shadow-xs ${
+                apiOnline 
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                  : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${apiOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span>{apiOnline ? 'MonsterASP API' : 'Offline Mode'}</span>
+            </div>
 
             <div className="hidden sm:flex items-center space-x-2 text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
               <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />

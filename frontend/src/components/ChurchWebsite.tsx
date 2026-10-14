@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../services/apiClient';
+import { api, API_BASE_URL } from '../services/apiClient';
 import {
   Church,
   Search,
@@ -220,18 +220,39 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
   useEffect(() => {
     const loadParishEvents = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/Events`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-            setParishEvents(json.data);
-          }
+        const res = await api.get<any[]>('/Events?status=Upcoming');
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setParishEvents(res.data);
         }
       } catch (err) {
         console.warn('[ChurchWebsite] Events API unavailable, running in resilient offline fallback mode.');
       }
     };
+
+    const loadLiveTestimonies = async () => {
+      try {
+        const res = await api.get<any[]>('/Testimonies');
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const mapped = res.data.map((t: any, idx: number) => ({
+            id: t.id || `test-${idx}`,
+            category: t.category || 'General Grace',
+            title: t.title || 'Divine Testimony',
+            content: t.content,
+            fullName: t.fullName,
+            subText: 'Parish Member',
+            date: t.submittedAt ? new Date(t.submittedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Recently',
+            initials: (t.fullName || 'TM').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2),
+            color: idx % 3 === 0 ? 'from-blue-600 to-emerald-500' : idx % 3 === 1 ? 'from-purple-500 to-blue-500' : 'from-blue-600 to-emerald-600'
+          }));
+          setTestimonies(mapped);
+        }
+      } catch (err) {
+        console.warn('[ChurchWebsite] Testimonies API unavailable, using offline fallback:', err);
+      }
+    };
+
     loadParishEvents();
+    loadLiveTestimonies();
   }, []);
 
   // Event Registration Modal State
@@ -286,6 +307,16 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
     };
 
     try {
+      // 1. Submit directly to API database
+      api.post('/Members', {
+        fullName: workforceForm.fullName,
+        email: workforceForm.email,
+        phone: workforceForm.phone,
+        department: workforceForm.department,
+        role: 'WorkforceApplicant'
+      }).catch(e => console.warn('[Workforce API] Background sync failed, fallback active:', e));
+
+      // 2. Mirror in localStorage for offline resiliency
       const existing = JSON.parse(localStorage.getItem('rccg_workforce_applications') || '[]');
       localStorage.setItem('rccg_workforce_applications', JSON.stringify([newApp, ...existing]));
     } catch (err) {
@@ -384,11 +415,10 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
 
     // 2. Persist to API backend
     try {
-      await fetch('/api/Testimonies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(testimonyForm)
-      });
+      const res = await api.post('/Testimonies', testimonyForm);
+      if (res.success) {
+        showSiteToast('Praise God! Your testimony has been submitted for review.', 'success');
+      }
     } catch (err) {
       console.warn('API save fallback:', err);
     }
@@ -404,7 +434,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
       allowPublicSharing: true
     });
     setTestimonyModalOpen(false);
-    setTestimonySuccessMessage('Praise the Lord! Your testimony has been recorded and published on the Praise Wall.');
+    setTestimonySuccessMessage('Praise the Lord! Your testimony has been recorded and submitted for administrative review before appearing publicly on the Praise Wall.');
     setTimeout(() => setTestimonySuccessMessage(null), 6000);
   };
 
