@@ -20,4 +20,8 @@
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="web.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
