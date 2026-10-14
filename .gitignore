@@ -32,3 +32,7 @@ obj/
 # OS / Misc
 .DS_Store
 Thumbs.db
+
+# Environment-specific configuration & secrets
+appsettings.Production.json
+appsettings.Development.json
