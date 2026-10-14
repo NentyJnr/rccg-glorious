@@ -329,11 +329,11 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
       {/* 1. FLOATING OVERLAY NAVIGATION HEADER ON HERO IMAGE           */}
       {/* ------------------------------------------------------------- */}
       <header className="absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-slate-950/85 via-slate-950/40 to-transparent border-b border-white/10">
-        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32">
+        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 lg:px-6 xl:px-10">
           <div className="flex items-center justify-between h-28 sm:h-32">
             
             {/* BRANDING: ENLARGED DUAL LOGOS DIRECTLY ON HERO BACKGROUND */}
-            <div className="flex items-center space-x-4 sm:space-x-5">
+            <div className="flex items-center space-x-3 sm:space-x-5 shrink-0">
               {/* Official RCCG Logo */}
               <a href="#" className="flex-shrink-0 transition transform hover:scale-105" title="RCCG Official Crest">
                 <img
@@ -358,32 +358,32 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
               </a>
             </div>
 
-            {/* DESKTOP NAV MENU WITH LARGER FONTS & HIGHER CONTRAST */}
-            <nav className="hidden lg:flex items-center space-x-3 text-sm sm:text-base font-black tracking-wider">
+            {/* DESKTOP NAV MENU WITH RESPONSIVE SPACING & NON-WRAPPING LABELS */}
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-2.5 text-xs xl:text-sm font-black tracking-wider shrink-0">
               {/* Home */}
               <a
                 href="#"
-                className="px-4 py-2 text-emerald-400 border-b-2 border-emerald-400 transition font-black uppercase tracking-wider"
+                className="px-3 xl:px-3.5 py-2 text-emerald-400 border-b-2 border-emerald-400 transition font-black uppercase tracking-wider whitespace-nowrap"
               >
                 HOME
               </a>
 
               {/* Who We Are Dropdown */}
-              <div className="relative" onMouseLeave={() => setActiveDropdown(null)}>
+              <div className="relative shrink-0" onMouseLeave={() => setActiveDropdown(null)}>
                 <button
                   onMouseEnter={() => setActiveDropdown('whoWeAre')}
                   onClick={() => setActiveDropdown(activeDropdown === 'whoWeAre' ? null : 'whoWeAre')}
-                  className="px-4 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-1.5 font-black uppercase tracking-wider"
+                  className="px-3 xl:px-3.5 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-1.5 font-black uppercase tracking-wider whitespace-nowrap"
                 >
-                  <span>WHO WE ARE</span>
-                  <ChevronDown className="w-4 h-4 text-slate-300" />
+                  <span className="whitespace-nowrap">WHO WE ARE</span>
+                  <ChevronDown className="w-4 h-4 text-slate-300 shrink-0" />
                 </button>
 
                 {activeDropdown === 'whoWeAre' && (
-                  <div className="absolute left-0 mt-2 w-60 bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl backdrop-blur-xl py-2 z-50 animate-fadeIn">
-                    <button onClick={() => handleNavClick('history')} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block">OUR HISTORY</button>
-                    <button onClick={() => handleNavClick('vision')} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block">MISSION &amp; VISION</button>
-                    <button onClick={() => handleNavClick('beliefs')} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block">OUR BELIEFS AND DOCTRINE</button>
+                  <div className="absolute left-0 mt-2 w-64 bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl backdrop-blur-xl py-2 z-50 animate-fadeIn">
+                    <button onClick={() => handleNavClick('history')} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block whitespace-nowrap">OUR HISTORY</button>
+                    <button onClick={() => handleNavClick('vision')} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block whitespace-nowrap">MISSION &amp; VISION</button>
+                    <button onClick={() => handleNavClick('beliefs')} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block whitespace-nowrap">Our Belief &amp; Doctrine</button>
                   </div>
                 )}
               </div>
@@ -391,45 +391,45 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
               {/* Events */}
               <a
                 href="#events"
-                className="px-4 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-2 font-black uppercase tracking-wider"
+                className="px-3 xl:px-3.5 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-1.5 font-black uppercase tracking-wider whitespace-nowrap"
               >
-                <Calendar className="w-5 h-5 text-emerald-400" />
+                <Calendar className="w-4 h-4 xl:w-5 xl:h-5 text-emerald-400 shrink-0" />
                 <span>EVENTS</span>
               </a>
 
               {/* Give Your Life to Christ */}
               <a
                 href="#salvation"
-                className="px-4 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-2 font-black uppercase tracking-wider"
+                className="px-3 xl:px-3.5 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-1.5 font-black uppercase tracking-wider whitespace-nowrap"
               >
-                <BookOpen className="w-5 h-5 text-emerald-400" />
+                <BookOpen className="w-4 h-4 xl:w-5 xl:h-5 text-emerald-400 shrink-0" />
                 <span>GIVE YOUR LIFE TO CHRIST</span>
               </a>
 
               {/* Online Giving */}
               <button
                 onClick={() => setGivingModalOpen(true)}
-                className="px-4 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-2 font-black uppercase tracking-wider"
+                className="px-3 xl:px-3.5 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-1.5 font-black uppercase tracking-wider whitespace-nowrap"
               >
-                <HeartHandshake className="w-5 h-5 text-emerald-400" />
+                <HeartHandshake className="w-4 h-4 xl:w-5 xl:h-5 text-emerald-400 shrink-0" />
                 <span>ONLINE GIVING</span>
               </button>
 
               {/* Useful Links */}
-              <div className="relative" onMouseLeave={() => setActiveDropdown(null)}>
+              <div className="relative shrink-0" onMouseLeave={() => setActiveDropdown(null)}>
                 <button
                   onMouseEnter={() => setActiveDropdown('usefulLinks')}
                   onClick={() => setActiveDropdown(activeDropdown === 'usefulLinks' ? null : 'usefulLinks')}
-                  className="px-4 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-1.5 font-black uppercase tracking-wider"
+                  className="px-3 xl:px-3.5 py-2 text-white hover:text-emerald-300 transition flex items-center space-x-1.5 font-black uppercase tracking-wider whitespace-nowrap"
                 >
-                  <span>USEFUL LINKS</span>
-                  <ChevronDown className="w-4 h-4 text-slate-300" />
+                  <span className="whitespace-nowrap">USEFUL LINKS</span>
+                  <ChevronDown className="w-4 h-4 text-slate-300 shrink-0" />
                 </button>
 
                 {activeDropdown === 'usefulLinks' && (
                   <div className="absolute right-0 mt-2 w-56 bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl backdrop-blur-xl py-2 z-50 animate-fadeIn">
-                    <button onClick={() => { handleNavClick('blog'); }} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block">BLOG</button>
-                    <button onClick={() => { handleNavClick('announcements'); }} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block">ANNOUNCEMENTS</button>
+                    <button onClick={() => { handleNavClick('blog'); }} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block whitespace-nowrap">BLOG</button>
+                    <button onClick={() => { handleNavClick('announcements'); }} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block whitespace-nowrap">ANNOUNCEMENTS</button>
                   </div>
                 )}
               </div>
@@ -463,7 +463,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
               <span className="text-xs text-emerald-400 uppercase tracking-wider font-mono">WHO WE ARE</span>
               <button onClick={() => handleNavClick('history')} className="w-full text-left block px-3 py-1.5 text-slate-200 hover:text-emerald-400">OUR HISTORY</button>
               <button onClick={() => handleNavClick('vision')} className="w-full text-left block px-3 py-1.5 text-slate-200 hover:text-emerald-400">MISSION &amp; VISION</button>
-              <button onClick={() => handleNavClick('beliefs')} className="w-full text-left block px-3 py-1.5 text-slate-200 hover:text-emerald-400">OUR BELIEFS</button>
+              <button onClick={() => handleNavClick('beliefs')} className="w-full text-left block px-3 py-1.5 text-slate-200 hover:text-emerald-400">OUR BELIEF &amp; DOCTRINE</button>
             </div>
             <a
               href="#events"
@@ -1399,7 +1399,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
               <div className="space-y-4">
                 <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 text-xs font-mono font-bold">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Doctrine &amp; Beliefs</span>
+                  <span>Our Belief &amp; Doctrine</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900">Our Fundamental Beliefs</h3>
                 <div className="space-y-3 text-sm text-slate-600 font-medium">
