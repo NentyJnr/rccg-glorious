@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/apiClient';
 import { 
   Church, 
   Lock, 
@@ -83,7 +84,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, availableU
 
     try {
       // 1. Try real API Login
-      const response = await fetch('http://localhost:5230/api/v1/Auth/login', {
+      const response = await fetch(`${API_BASE_URL}/Auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

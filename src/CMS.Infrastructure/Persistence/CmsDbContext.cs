@@ -21,6 +21,14 @@ public class CmsDbContext : DbContext, ICmsDbContext
     public DbSet<OutreachReport> OutreachReports => Set<OutreachReport>();
     public DbSet<HouseFellowshipReport> HouseFellowshipReports => Set<HouseFellowshipReport>();
     public DbSet<Testimony> Testimonies => Set<Testimony>();
+    public DbSet<ParishEvent> ParishEvents => Set<ParishEvent>();
+    public DbSet<EventSpeaker> EventSpeakers => Set<EventSpeaker>();
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+        configurationBuilder.Properties<decimal>().HavePrecision(18, 2);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,9 +42,18 @@ public class CmsDbContext : DbContext, ICmsDbContext
             entity.Property(u => u.Email).IsRequired().HasMaxLength(150);
         });
 
-        // ServiceReport & ServiceReportOffering relationships
+        // HouseFellowshipReport financial precision
+        modelBuilder.Entity<HouseFellowshipReport>(entity =>
+        {
+            entity.Property(h => h.OfferingAmount).HasPrecision(18, 2);
+        });
+
+        // ServiceReport & ServiceReportOffering relationships and precisions
         modelBuilder.Entity<ServiceReport>(entity =>
         {
+            entity.Property(s => s.SingleOfferingAmount).HasPrecision(18, 2);
+            entity.Property(s => s.TotalSundayOffering).HasPrecision(18, 2);
+
             entity.HasOne(s => s.ServiceType)
                 .WithMany()
                 .HasForeignKey(s => s.ServiceTypeId)
@@ -50,6 +67,8 @@ public class CmsDbContext : DbContext, ICmsDbContext
 
         modelBuilder.Entity<ServiceReportOffering>(entity =>
         {
+            entity.Property(s => s.Amount).HasPrecision(18, 2);
+
             entity.HasOne(s => s.ServiceReport)
                 .WithMany(r => r.OfferingBreakdown)
                 .HasForeignKey(s => s.ServiceReportId)
@@ -59,6 +78,27 @@ public class CmsDbContext : DbContext, ICmsDbContext
                 .WithMany()
                 .HasForeignKey(s => s.OfferingCategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ParishEvent & EventSpeaker relationships
+        modelBuilder.Entity<ParishEvent>(entity =>
+        {
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(250);
+            entity.Property(e => e.Venue).IsRequired().HasMaxLength(250);
+            entity.Property(e => e.Category).HasMaxLength(100);
+            entity.Property(e => e.Status).HasMaxLength(50);
+            entity.HasMany(e => e.Speakers)
+                .WithOne(s => s.ParishEvent)
+                .HasForeignKey(s => s.ParishEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventSpeaker>(entity =>
+        {
+            entity.Property(s => s.FullName).IsRequired().HasMaxLength(150);
+            entity.Property(s => s.EcclesiasticalTitle).HasMaxLength(50);
+            entity.Property(s => s.MinistryRole).HasMaxLength(100);
+            entity.Property(s => s.Organization).HasMaxLength(200);
         });
     }
 

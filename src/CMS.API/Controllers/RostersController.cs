@@ -1,149 +1,63 @@
 using CMS.API.Common;
+using CMS.Application.DTOs;
+using CMS.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CMS.API.Controllers;
-
-public record DutyAssignmentDto(
-    string Id,
-    string ServiceDate,
-    string ServiceTypeName,
-    string DepartmentName,
-    string DutyRole,
-    string AssignedPersonName,
-    string? AssignedPersonEmail,
-    string Status
-);
-
-public record MonthlyDepartmentRosterDto(
-    string Id,
-    string MonthYear,
-    string DepartmentName,
-    string HodName,
-    string Status,
-    List<DutyAssignmentDto> Assignments,
-    string? SubmittedAt,
-    string? ApprovedAt,
-    string? ApprovedBy
-);
 
 [ApiController]
 [Route("api/v1/[controller]")]
 public class RostersController : ControllerBase
 {
-    private static readonly List<MonthlyDepartmentRosterDto> MockRosters = new()
+    private readonly IRosterService _rosterService;
+
+    public RostersController(IRosterService rosterService)
     {
-        new MonthlyDepartmentRosterDto(
-            "ros_1",
-            "2026-10",
-            "Ushering Department",
-            "Sister Grace Usang",
-            "Approved",
-            new List<DutyAssignmentDto>
-            {
-                new("d1", "2026-10-04", "Sunday 1st Service", "Ushering Department", "Lead Usher", "Sister Grace Usang", "grace@rccgvictory.org", "Approved"),
-                new("d2", "2026-10-04", "Sunday 1st Service", "Ushering Department", "Offering Collection Lead", "Brother Emmanuel", "emmanuel@gmail.com", "Approved"),
-                new("d3", "2026-10-11", "Sunday 1st Service", "Ushering Department", "Sanctuary Protocol", "Sister Blessing Grace", "grace.b@yahoo.com", "Approved")
-            },
-            "2026-09-20T10:00:00Z",
-            "2026-09-21T14:30:00Z",
-            "Minister Emmanuel (Service Coordinator)"
-        ),
-        new MonthlyDepartmentRosterDto(
-            "ros_2",
-            "2026-10",
-            "Choir & Praise Team",
-            "Minister David Okafor",
-            "SubmittedForApproval",
-            new List<DutyAssignmentDto>
-            {
-                new("d4", "2026-10-04", "Sunday 1st Service", "Choir & Praise Team", "Worship Leader", "Minister David Okafor", "david@rccgvictory.org", "Submitted"),
-                new("d5", "2026-10-04", "Sunday 1st Service", "Choir & Praise Team", "Backing Vocalist", "Sister Mary Johnson", "mary@rccgvictory.org", "Submitted")
-            },
-            "2026-09-22T08:15:00Z",
-            null,
-            null
-        )
-    };
+        _rosterService = rosterService;
+    }
 
     [HttpGet]
-    public IActionResult GetRosters([FromQuery] string? departmentName, [FromQuery] string? monthYear)
+    public async Task<IActionResult> GetRosters([FromQuery] string? departmentName, [FromQuery] string? monthYear, CancellationToken ct)
     {
-        var query = MockRosters.AsEnumerable();
-
-        if (!string.IsNullOrWhiteSpace(departmentName) && !string.Equals(departmentName, "All", StringComparison.OrdinalIgnoreCase))
-        {
-            query = query.Where(r => string.Equals(r.DepartmentName, departmentName, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (!string.IsNullOrWhiteSpace(monthYear))
-        {
-            query = query.Where(r => string.Equals(r.MonthYear, monthYear, StringComparison.OrdinalIgnoreCase));
-        }
-
-        return Ok(ApiResponseEnvelope<List<MonthlyDepartmentRosterDto>>.Ok(query.ToList()));
+        var rosters = await _rosterService.GetRostersAsync(departmentName, monthYear, ct);
+        return Ok(ApiResponseEnvelope<List<MonthlyDepartmentRosterDto>>.Ok(rosters, "Department rosters retrieved successfully."));
     }
 
     [HttpPost]
-    public IActionResult CreateOrUpdateRoster([FromBody] MonthlyDepartmentRosterDto request)
+    public async Task<IActionResult> CreateOrUpdateRoster([FromBody] MonthlyDepartmentRosterDto request, CancellationToken ct)
     {
-        var existingIdx = MockRosters.FindIndex(r => r.Id == request.Id || (r.DepartmentName == request.DepartmentName && r.MonthYear == request.MonthYear));
-        if (existingIdx >= 0)
-        {
-            MockRosters[existingIdx] = request;
-        }
-        else
-        {
-            MockRosters.Add(request);
-        }
-
-        return Ok(ApiResponseEnvelope<MonthlyDepartmentRosterDto>.Ok(request, "Monthly duty roster saved successfully."));
+        var saved = await _rosterService.SaveRosterAsync(request, ct);
+        return Ok(ApiResponseEnvelope<MonthlyDepartmentRosterDto>.Ok(saved, "Monthly duty roster saved successfully."));
     }
 
     [HttpPost("{id}/submit")]
-    public IActionResult SubmitRosterForApproval(string id)
+    public async Task<IActionResult> SubmitRosterForApproval(string id, CancellationToken ct)
     {
-        var roster = MockRosters.FirstOrDefault(r => r.Id == id);
-        if (roster == null)
+        var updated = await _rosterService.SubmitRosterForApprovalAsync(id, ct);
+        if (updated == null)
+        {
             return NotFound(ApiResponseEnvelope<bool>.Fail("Roster not found."));
-
-        var updated = roster with { Status = "SubmittedForApproval", SubmittedAt = DateTime.UtcNow.ToString("o") };
-        var idx = MockRosters.IndexOf(roster);
-        MockRosters[idx] = updated;
+        }
 
         return Ok(ApiResponseEnvelope<MonthlyDepartmentRosterDto>.Ok(updated, "Roster submitted to Service Coordinator for approval."));
     }
 
     [HttpPost("{id}/approve")]
-    public IActionResult ApproveRoster(string id, [FromQuery] string approvedBy)
+    public async Task<IActionResult> ApproveRoster(string id, [FromQuery] string approvedBy, CancellationToken ct)
     {
-        var roster = MockRosters.FirstOrDefault(r => r.Id == id);
-        if (roster == null)
-            return NotFound(ApiResponseEnvelope<bool>.Fail("Roster not found."));
-
-        var updatedAssignments = roster.Assignments.Select(a => a with { Status = "Approved" }).ToList();
-        var updated = roster with
+        var updated = await _rosterService.ApproveRosterAsync(id, approvedBy, ct);
+        if (updated == null)
         {
-            Status = "Approved",
-            ApprovedAt = DateTime.UtcNow.ToString("o"),
-            ApprovedBy = string.IsNullOrWhiteSpace(approvedBy) ? "Service Coordinator" : approvedBy,
-            Assignments = updatedAssignments
-        };
+            return NotFound(ApiResponseEnvelope<bool>.Fail("Roster not found."));
+        }
 
-        var idx = MockRosters.IndexOf(roster);
-        MockRosters[idx] = updated;
-
-        return Ok(ApiResponseEnvelope<MonthlyDepartmentRosterDto>.Ok(updated, $"Roster approved successfully. Email notifications dispatched to {updatedAssignments.Count} assigned workers/ministers."));
+        return Ok(ApiResponseEnvelope<MonthlyDepartmentRosterDto>.Ok(updated, "Roster approved successfully."));
     }
 
     [HttpGet("my-duties")]
-    public IActionResult GetMyAssignedDuties([FromQuery] string personName)
+    public async Task<IActionResult> GetMyAssignedDuties([FromQuery] string personName, CancellationToken ct)
     {
-        var assignments = MockRosters
-            .SelectMany(r => r.Assignments)
-            .Where(a => string.Equals(a.AssignedPersonName, personName, StringComparison.OrdinalIgnoreCase) ||
-                        (a.AssignedPersonEmail != null && a.AssignedPersonEmail.Contains(personName, StringComparison.OrdinalIgnoreCase)))
-            .ToList();
-
-        return Ok(ApiResponseEnvelope<List<DutyAssignmentDto>>.Ok(assignments));
+        var assignments = await _rosterService.GetMyAssignedDutiesAsync(personName, ct);
+        return Ok(ApiResponseEnvelope<List<DutyAssignmentDto>>.Ok(assignments, "Assigned duties retrieved successfully."));
     }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/apiClient';
 import { 
   Church, 
   Lock, 
@@ -22,6 +23,7 @@ export interface User {
   email: string;
   phone: string;
   role: string;
+  assignedDepartment?: string;
   mustChangePassword: boolean;
   isActive: boolean;
 }
@@ -82,7 +84,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, availableU
 
     try {
       // 1. Try real API Login
-      const response = await fetch('http://localhost:5230/api/v1/Auth/login', {
+      const response = await fetch(`${API_BASE_URL}/Auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -235,7 +237,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, availableU
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="pastor@rccgvictory.org"
+                placeholder="user@rccgglorious.org"
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50/80 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition duration-200 font-medium"
               />
             </div>
@@ -310,58 +312,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, availableU
           </button>
         </form>
 
-        {/* INSTANT PRESET ACCOUNTS */}
-        <div className="mt-6 pt-5 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
-              <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-              Instant Preset Accounts
-            </span>
-            <span className="text-[10px] text-slate-400 font-semibold tracking-wide uppercase">1-Click Login</span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleSelectPreset('admin@rccgvictory.org')}
-              className="p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-emerald-50/60 hover:border-emerald-200 transition-all text-left group cursor-pointer"
-            >
-              <div className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5 group-hover:text-emerald-700">
-                <span>🛡️</span>
-                <span>Admin</span>
-              </div>
-              <div className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">admin@rccgvictor...</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSelectPreset('grace@rccgvictory.org')}
-              className="p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-emerald-50/60 hover:border-emerald-200 transition-all text-left group cursor-pointer"
-            >
-              <div className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5 group-hover:text-emerald-700">
-                <span>📋</span>
-                <span>Usher Lead</span>
-              </div>
-              <div className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">grace@rccgvictory...</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSelectPreset('samuel@rccgvictory.org')}
-              className="p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-emerald-50/60 hover:border-emerald-200 transition-all text-left group cursor-pointer"
-            >
-              <div className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5 group-hover:text-emerald-700">
-                <span>🏫</span>
-                <span>Fellowship</span>
-              </div>
-              <div className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">samuel@rccgvicto...</div>
-            </button>
-          </div>
-        </div>
-
         {/* FOOTER */}
         <div className="mt-6 text-center text-[11px] text-slate-400 font-medium">
-          RCCG Victory Parish Management System • All rights reserved
+          RCCG Glorious Parish Management System • All rights reserved
         </div>
       </div>
     </div>

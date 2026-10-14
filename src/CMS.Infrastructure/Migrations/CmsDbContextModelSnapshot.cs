@@ -122,6 +122,62 @@ namespace CMS.Infrastructure.Migrations
                     b.ToTable("Departments");
                 });
 
+            modelBuilder.Entity("CMS.Domain.Entities.EventSpeaker", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EcclesiasticalTitle")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("MinistryRole")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Organization")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("ParishEventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PhotoUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShortBio")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParishEventId");
+
+                    b.ToTable("EventSpeakers");
+                });
+
             modelBuilder.Entity("CMS.Domain.Entities.HouseFellowshipReport", b =>
                 {
                     b.Property<Guid>("Id")
@@ -155,6 +211,7 @@ namespace CMS.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("OfferingAmount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("StudyTopic")
@@ -327,6 +384,77 @@ namespace CMS.Infrastructure.Migrations
                     b.ToTable("OutreachReports");
                 });
 
+            modelBuilder.Entity("CMS.Domain.Entities.ParishEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CoverImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EventDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsFeatured")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MaxCapacity")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("RegistrationRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TimeString")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Venue")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ParishEvents");
+                });
+
             modelBuilder.Entity("CMS.Domain.Entities.ServiceReport", b =>
                 {
                     b.Property<Guid>("Id")
@@ -361,9 +489,11 @@ namespace CMS.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal?>("SingleOfferingAmount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal?>("TotalSundayOffering")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
@@ -391,6 +521,7 @@ namespace CMS.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("OfferingCategoryId")
@@ -486,6 +617,17 @@ namespace CMS.Infrastructure.Migrations
                     b.ToTable("Testimonies");
                 });
 
+            modelBuilder.Entity("CMS.Domain.Entities.EventSpeaker", b =>
+                {
+                    b.HasOne("CMS.Domain.Entities.ParishEvent", "ParishEvent")
+                        .WithMany("Speakers")
+                        .HasForeignKey("ParishEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ParishEvent");
+                });
+
             modelBuilder.Entity("CMS.Domain.Entities.ServiceReport", b =>
                 {
                     b.HasOne("CMS.Domain.Entities.Minister", "PreacherMinister")
@@ -521,6 +663,11 @@ namespace CMS.Infrastructure.Migrations
                     b.Navigation("OfferingCategory");
 
                     b.Navigation("ServiceReport");
+                });
+
+            modelBuilder.Entity("CMS.Domain.Entities.ParishEvent", b =>
+                {
+                    b.Navigation("Speakers");
                 });
 
             modelBuilder.Entity("CMS.Domain.Entities.ServiceReport", b =>

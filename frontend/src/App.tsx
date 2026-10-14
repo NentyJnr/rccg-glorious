@@ -57,6 +57,112 @@ import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
 import { PortalComingSoonPage } from './components/PortalComingSoonPage';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
+import { API_BASE_URL } from './services/apiClient';
+
+export interface EventSpeakerItem {
+  id?: string;
+  fullName: string;
+  ecclesiasticalTitle: string;
+  ministryRole: string;
+  photoUrl?: string;
+  organization?: string;
+  shortBio?: string;
+  displayOrder?: number;
+}
+
+export interface ParishEventItem {
+  id: string;
+  title: string;
+  theme?: string;
+  description: string;
+  coverImageUrl: string;
+  eventDate: string;
+  timeString: string;
+  venue: string;
+  category: string;
+  isFeatured: boolean;
+  registrationRequired: boolean;
+  status: 'Upcoming' | 'Completed' | 'Cancelled';
+  maxCapacity?: number;
+  speakers?: EventSpeakerItem[];
+}
+
+const INITIAL_ADMIN_EVENTS: ParishEventItem[] = [
+  {
+    id: 'evt-1',
+    title: 'Annual Praise & Worship Night 2026',
+    theme: 'Sounds of Victory & Divine Exaltation',
+    description: "Join us for an unforgettable night of high praise, deep worship, and prophetic ministrations as we celebrate God's divine faithfulness across the zone.",
+    coverImageUrl: '/event_praise_night.jpg',
+    eventDate: '2026-10-24',
+    timeString: 'Friday, October 24, 2026 • 9:00 PM GMT',
+    venue: 'Main Sanctuary Auditorium, RCCG Glorious Church Parish',
+    category: 'Praise & Worship',
+    isFeatured: true,
+    registrationRequired: true,
+    status: 'Upcoming',
+    maxCapacity: 500,
+    speakers: [
+      {
+        fullName: 'Pastor E. A. Adeboye',
+        ecclesiasticalTitle: 'Pastor',
+        ministryRole: 'General Overseer / Apostolic Blessings',
+        organization: 'RCCG Worldwide',
+        photoUrl: '/adeboye-enoch-jpeg.webp',
+        shortBio: 'General Overseer of the Redeemed Christian Church of God.'
+      },
+      {
+        fullName: 'Pastor (Dr.) Taiwo Adetunji',
+        ecclesiasticalTitle: 'Pastor (Dr.)',
+        ministryRole: 'Host Pastor & Convener',
+        organization: 'RCCG Glorious Church',
+        photoUrl: '/dr_taiwo_adetunji.jpg',
+        shortBio: 'Pastor-in-Charge of RCCG Glorious Church Parish.'
+      },
+      {
+        fullName: 'Minister David Okafor',
+        ecclesiasticalTitle: 'Minister',
+        ministryRole: 'Guest Worship Minister',
+        organization: 'RCCG National Praise Team',
+        photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+        shortBio: 'Anointed worship leader and recording psalmist.'
+      }
+    ]
+  },
+  {
+    id: 'evt-2',
+    title: 'Kingdom Youth Leadership Summit',
+    theme: 'Empowered for Dominion & Excellence',
+    description: 'Empowering young professionals, students, and emerging kingdom leaders with biblical wisdom, career strategies, and spiritual capacity to excel.',
+    coverImageUrl: '/event_youth_summit.jpg',
+    eventDate: '2026-11-14',
+    timeString: 'Saturday, November 14, 2026 • 10:00 AM GMT',
+    venue: 'Youth Center & Online Virtual Live Stream',
+    category: 'Youth & Leadership',
+    isFeatured: true,
+    registrationRequired: true,
+    status: 'Upcoming',
+    maxCapacity: 350,
+    speakers: [
+      {
+        fullName: 'Pastor (Dr.) Taiwo Adetunji',
+        ecclesiasticalTitle: 'Pastor (Dr.)',
+        ministryRole: 'Host & Keynote Speaker',
+        organization: 'RCCG Glorious Church',
+        photoUrl: '/dr_taiwo_adetunji.jpg',
+        shortBio: 'Spiritual mentor and leadership coach equipping the next generation.'
+      },
+      {
+        fullName: 'Sister Grace Usang',
+        ecclesiasticalTitle: 'Sister',
+        ministryRole: 'Guest Speaker / Career Panelist',
+        organization: 'Vatebra Enterprise Tech',
+        photoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
+        shortBio: 'Enterprise technology leader and youth career mentor.'
+      }
+    ]
+  }
+];
 
 interface OrganizationSetting {
   parishName: string;
@@ -241,7 +347,7 @@ const getHodDepartment = (user: User | null): string => {
 export default function App() {
   const [viewMode, setViewMode] = useState<'website' | 'portal'>('website');
   const [showDraftLogin, setShowDraftLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'service-report' | 'membership' | 'departments' | 'users' | 'fellowship' | 'setup'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'service-report' | 'events' | 'membership' | 'departments' | 'users' | 'fellowship' | 'setup'>('dashboard');
   
   // Organization Branding State
   const [org, setOrg] = useState<OrganizationSetting>({
@@ -1001,6 +1107,221 @@ export default function App() {
 
   const [reports, setReports] = useState<ServiceReport[]>([]);
 
+  // --- PARISH EVENTS & CONFERENCES STATE ---
+  const [events, setEvents] = useState<ParishEventItem[]>(INITIAL_ADMIN_EVENTS);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<ParishEventItem | null>(null);
+  const [eventSearchQuery, setEventSearchQuery] = useState('');
+  const [eventCategoryFilter, setEventCategoryFilter] = useState('All');
+  const [eventStatusFilter, setEventStatusFilter] = useState('All');
+
+  // Event Form State
+  const [formEventTitle, setFormEventTitle] = useState('');
+  const [formEventTheme, setFormEventTheme] = useState('');
+  const [formEventDescription, setFormEventDescription] = useState('');
+  const [formEventCoverImageUrl, setFormEventCoverImageUrl] = useState('/event_praise_night.jpg');
+  const [formEventDate, setFormEventDate] = useState('2026-10-24');
+  const [formEventTimeString, setFormEventTimeString] = useState('Friday, October 24, 2026 • 9:00 PM GMT');
+  const [formEventVenue, setFormEventVenue] = useState('Main Sanctuary Auditorium, RCCG Glorious Church Parish');
+  const [formEventCategory, setFormEventCategory] = useState('Praise & Worship');
+  const [formEventIsFeatured, setFormEventIsFeatured] = useState(true);
+  const [formEventRegistrationRequired, setFormEventRegistrationRequired] = useState(true);
+  const [formEventStatus, setFormEventStatus] = useState<'Upcoming' | 'Completed' | 'Cancelled'>('Upcoming');
+  const [formEventMaxCapacity, setFormEventMaxCapacity] = useState<number | ''>(500);
+  const [formEventSpeakers, setFormEventSpeakers] = useState<EventSpeakerItem[]>([
+    {
+      fullName: 'Pastor (Dr.) Taiwo Adetunji',
+      ecclesiasticalTitle: 'Pastor (Dr.)',
+      ministryRole: 'Host Pastor & Convener',
+      photoUrl: '/dr_taiwo_adetunji.jpg',
+      organization: 'RCCG Glorious Church',
+      shortBio: 'Pastor-in-Charge of RCCG Glorious Church Parish.'
+    }
+  ]);
+
+  useEffect(() => {
+    const fetchParishEvents = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/Events`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setEvents(json.data);
+          }
+        }
+      } catch (err) {
+        console.warn('Events API unavailable, using initialized state:', err);
+      }
+    };
+    fetchParishEvents();
+  }, []);
+
+  const handleOpenAddEventModal = () => {
+    setEditingEvent(null);
+    setFormEventTitle('');
+    setFormEventTheme('');
+    setFormEventDescription('');
+    setFormEventCoverImageUrl('/event_praise_night.jpg');
+    setFormEventDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
+    setFormEventTimeString('Friday, 6:00 PM GMT');
+    setFormEventVenue('Main Sanctuary Auditorium, RCCG Glorious Church Parish');
+    setFormEventCategory('Praise & Worship');
+    setFormEventIsFeatured(true);
+    setFormEventRegistrationRequired(true);
+    setFormEventStatus('Upcoming');
+    setFormEventMaxCapacity(500);
+    setFormEventSpeakers([
+      {
+        fullName: 'Pastor (Dr.) Taiwo Adetunji',
+        ecclesiasticalTitle: 'Pastor (Dr.)',
+        ministryRole: 'Host Pastor & Convener',
+        photoUrl: '/dr_taiwo_adetunji.jpg',
+        organization: 'RCCG Glorious Church',
+        shortBio: 'Pastor-in-Charge of RCCG Glorious Church Parish.'
+      }
+    ]);
+    setIsEventModalOpen(true);
+  };
+
+  const handleOpenEditEventModal = (ev: ParishEventItem) => {
+    setEditingEvent(ev);
+    setFormEventTitle(ev.title);
+    setFormEventTheme(ev.theme || '');
+    setFormEventDescription(ev.description || '');
+    setFormEventCoverImageUrl(ev.coverImageUrl || '/event_praise_night.jpg');
+    setFormEventDate(ev.eventDate ? ev.eventDate.split('T')[0] : '');
+    setFormEventTimeString(ev.timeString || '');
+    setFormEventVenue(ev.venue || '');
+    setFormEventCategory(ev.category || 'General');
+    setFormEventIsFeatured(ev.isFeatured);
+    setFormEventRegistrationRequired(ev.registrationRequired);
+    setFormEventStatus(ev.status);
+    setFormEventMaxCapacity(ev.maxCapacity ?? '');
+    setFormEventSpeakers(
+      ev.speakers && ev.speakers.length > 0
+        ? ev.speakers.map(s => ({ ...s }))
+        : [
+            {
+              fullName: '',
+              ecclesiasticalTitle: 'Pastor',
+              ministryRole: 'Guest Speaker',
+              photoUrl: '',
+              organization: '',
+              shortBio: ''
+            }
+          ]
+    );
+    setIsEventModalOpen(true);
+  };
+
+  const handleAddSpeakerRow = () => {
+    setFormEventSpeakers(prev => [
+      ...prev,
+      {
+        fullName: '',
+        ecclesiasticalTitle: 'Pastor',
+        ministryRole: 'Guest Speaker',
+        photoUrl: '',
+        organization: '',
+        shortBio: '',
+        displayOrder: prev.length + 1
+      }
+    ]);
+  };
+
+  const handleRemoveSpeakerRow = (index: number) => {
+    setFormEventSpeakers(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleSpeakerChange = (index: number, field: keyof EventSpeakerItem, value: any) => {
+    setFormEventSpeakers(prev =>
+      prev.map((spk, idx) => (idx === index ? { ...spk, [field]: value } : spk))
+    );
+  };
+
+  const handleSaveEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formEventTitle.trim() || !formEventVenue.trim()) {
+      showNotification('Event Title and Venue are required.', 'error');
+      return;
+    }
+
+    const validSpeakers = formEventSpeakers.filter(s => s.fullName && s.fullName.trim() !== '');
+
+    const eventPayload: Partial<ParishEventItem> = {
+      title: formEventTitle.trim(),
+      theme: formEventTheme.trim(),
+      description: formEventDescription.trim(),
+      coverImageUrl: formEventCoverImageUrl.trim() || '/event_praise_night.jpg',
+      eventDate: formEventDate ? new Date(formEventDate).toISOString() : new Date().toISOString(),
+      timeString: formEventTimeString.trim(),
+      venue: formEventVenue.trim(),
+      category: formEventCategory.trim(),
+      isFeatured: formEventIsFeatured,
+      registrationRequired: formEventRegistrationRequired,
+      status: formEventStatus,
+      maxCapacity: formEventMaxCapacity ? Number(formEventMaxCapacity) : undefined,
+      speakers: validSpeakers
+    };
+
+    if (editingEvent) {
+      const updatedEvent: ParishEventItem = {
+        ...editingEvent,
+        ...eventPayload
+      } as ParishEventItem;
+
+      setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? updatedEvent : ev));
+      showNotification(`Event "${updatedEvent.title}" updated successfully!`);
+      setIsEventModalOpen(false);
+
+      try {
+        await fetch(`${API_BASE_URL}/Events/${editingEvent.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(eventPayload)
+        });
+      } catch (err) {
+        console.warn('API update offline, saved locally');
+      }
+    } else {
+      const newId = 'evt-' + Date.now();
+      const newEvent: ParishEventItem = {
+        id: newId,
+        ...eventPayload
+      } as ParishEventItem;
+
+      setEvents(prev => [newEvent, ...prev]);
+      showNotification(`Parish Event "${newEvent.title}" published!`);
+      setIsEventModalOpen(false);
+
+      try {
+        await fetch(`${API_BASE_URL}/Events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(eventPayload)
+        });
+      } catch (err) {
+        console.warn('API post offline, saved locally');
+      }
+    }
+  };
+
+  const handleDeleteEvent = (id: string, title: string) => {
+    askConfirmation({
+      title: 'Delete Parish Event',
+      message: `Are you sure you want to delete "${title}"? All scheduled guest speakers and registration capacities will be removed.`,
+      confirmText: 'Yes, Delete',
+      type: 'danger',
+      onConfirm: async () => {
+        setEvents(prev => prev.filter(e => e.id !== id));
+        showNotification(`Event "${title}" has been removed.`);
+        try {
+          await fetch(`${API_BASE_URL}/Events/${id}`, { method: 'DELETE' });
+        } catch {}
+      }
+    });
+  };
+
   // Notifications
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -1101,7 +1422,7 @@ export default function App() {
     setIsAddSetupModalOpen(false);
 
     try {
-      await fetch('http://localhost:5230/api/v1/Setup/service-types', {
+      await fetch(`${API_BASE_URL}/Setup/service-types`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newItem.name, category: newItem.category, isActive: true })
@@ -1213,7 +1534,7 @@ export default function App() {
     setEditingServiceType(null);
 
     try {
-      await fetch(`http://localhost:5230/api/v1/Setup/service-types/${editingServiceType.id}`, {
+      await fetch(`${API_BASE_URL}/Setup/service-types/${editingServiceType.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated)
@@ -1232,7 +1553,7 @@ export default function App() {
         showNotification(`Service Type "${name}" deleted.`);
 
         try {
-          await fetch(`http://localhost:5230/api/v1/Setup/service-types/${id}`, {
+          await fetch(`${API_BASE_URL}/Setup/service-types/${id}`, {
             method: 'DELETE'
           });
         } catch {}
@@ -1262,7 +1583,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch('http://localhost:5230/api/v1/Setup/offering-categories', {
+      await fetch(`${API_BASE_URL}/Setup/offering-categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newItem.name, code: code, isActive: true })
@@ -1301,7 +1622,7 @@ export default function App() {
     setEditingOfferingCategory(null);
 
     try {
-      await fetch(`http://localhost:5230/api/v1/Setup/offering-categories/${editingOfferingCategory.id}`, {
+      await fetch(`${API_BASE_URL}/Setup/offering-categories/${editingOfferingCategory.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: updatedItem.name, code: updatedCode, isActive: true })
@@ -1320,7 +1641,7 @@ export default function App() {
         showNotification(`Offering Category "${name}" deleted successfully.`);
 
         try {
-          await fetch(`http://localhost:5230/api/v1/Setup/offering-categories/${id}`, {
+          await fetch(`${API_BASE_URL}/Setup/offering-categories/${id}`, {
             method: 'DELETE'
           });
         } catch {}
@@ -1347,7 +1668,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch('http://localhost:5230/api/v1/Setup/ministers', {
+      await fetch(`${API_BASE_URL}/Setup/ministers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newItem.title, fullName: newItem.fullName })
@@ -1383,7 +1704,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch('http://localhost:5230/api/v1/Setup/departments', {
+      await fetch(`${API_BASE_URL}/Setup/departments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newDep)
@@ -1428,7 +1749,7 @@ export default function App() {
     setEditingDepartment(null);
 
     try {
-      await fetch(`http://localhost:5230/api/v1/Setup/departments/${editingDepartment.id}`, {
+      await fetch(`${API_BASE_URL}/Setup/departments/${editingDepartment.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedItem)
@@ -1447,7 +1768,7 @@ export default function App() {
         showNotification(`Department "${name}" deleted successfully.`);
 
         try {
-          await fetch(`http://localhost:5230/api/v1/Setup/departments/${id}`, {
+          await fetch(`${API_BASE_URL}/Setup/departments/${id}`, {
             method: 'DELETE'
           });
         } catch {}
@@ -2785,6 +3106,25 @@ export default function App() {
             </button>
           )}
 
+          {/* EVENTS & CONFERENCES - ALL LEADERSHIP & WORKFORCE */}
+          <button
+            onClick={() => { setActiveTab('events'); setMobileSidebarOpen(false); }}
+            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+              activeTab === 'events' 
+                ? 'bg-amber-500/20 text-white border border-amber-400/40 shadow-inner' 
+                : 'text-slate-200 hover:bg-white/10'
+            }`}
+            title="Events & Conferences"
+          >
+            <Calendar className="w-5 h-5 text-amber-300 flex-shrink-0" />
+            {!isSidebarCollapsed && (
+              <div className="flex-1 flex items-center justify-between">
+                <span>Events &amp; Programs</span>
+                <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-400 text-slate-950 rounded">New</span>
+              </div>
+            )}
+          </button>
+
           {/* MEMBERSHIP */}
           <button
             onClick={() => { setActiveTab('membership'); setUserSubTab('portal-users'); setMobileSidebarOpen(false); }}
@@ -2915,6 +3255,7 @@ export default function App() {
               <h2 className="text-sm sm:text-base font-bold text-slate-900 capitalize tracking-tight flex items-center gap-2">
                 {activeTab === 'dashboard' && <Church className="w-4 h-4 text-emerald-600" />}
                 {activeTab === 'service-report' && <FileText className="w-4 h-4 text-emerald-600" />}
+                {activeTab === 'events' && <Calendar className="w-4 h-4 text-amber-600" />}
                 {activeTab === 'membership' && <UserCheck className="w-4 h-4 text-emerald-600" />}
                 {activeTab === 'departments' && <Building2 className="w-4 h-4 text-indigo-600" />}
                 {activeTab === 'users' && <Users className="w-4 h-4 text-sky-600" />}
@@ -3833,6 +4174,748 @@ export default function App() {
                 </div>
               );
             })()}
+          </div>
+        )}
+
+        {/* PARISH EVENTS & CONFERENCES MANAGEMENT TAB */}
+        {activeTab === 'events' && (
+          <div className="space-y-6">
+            {/* EVENTS HEADER CARD */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                  <Calendar className="w-6 h-6 text-amber-500" />
+                  <span>Parish Events &amp; Conferences Manager</span>
+                </h2>
+                <p className="text-slate-500 text-sm mt-1">
+                  Schedule kingdom gatherings, manage high-impact flyers, and allocate guest ministers and keynote speakers.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleOpenAddEventModal}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer transform hover:scale-102"
+                >
+                  <PlusCircle className="w-4 h-4 text-slate-950" />
+                  <span>Create New Event</span>
+                </button>
+              </div>
+            </div>
+
+            {/* METRIC STATS CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-2 h-full bg-amber-500"></div>
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Total Gatherings</span>
+                  <Calendar className="w-4 h-4 text-amber-500" />
+                </div>
+                <div className="text-2xl font-extrabold text-slate-900">{events.length}</div>
+                <span className="text-xs text-slate-400 mt-1 block">Scheduled programs</span>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-2 h-full bg-emerald-500"></div>
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Upcoming Events</span>
+                  <Clock className="w-4 h-4 text-emerald-500" />
+                </div>
+                <div className="text-2xl font-extrabold text-emerald-600">
+                  {events.filter(e => e.status === 'Upcoming').length}
+                </div>
+                <span className="text-xs text-slate-400 mt-1 block">Active on public site</span>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Featured Flyers</span>
+                  <Sparkles className="w-4 h-4 text-blue-500" />
+                </div>
+                <div className="text-2xl font-extrabold text-blue-600">
+                  {events.filter(e => e.isFeatured).length}
+                </div>
+                <span className="text-xs text-slate-400 mt-1 block">Homepage banner tier</span>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-2 h-full bg-purple-500"></div>
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Speakers Roster</span>
+                  <Users className="w-4 h-4 text-purple-500" />
+                </div>
+                <div className="text-2xl font-extrabold text-purple-600">
+                  {events.reduce((sum, e) => sum + (e.speakers?.length || 0), 0)}
+                </div>
+                <span className="text-xs text-slate-400 mt-1 block">Allocated ministers</span>
+              </div>
+            </div>
+
+            {/* SEARCH & FILTERS BAR */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search events, theme, venue, or ministers..."
+                  value={eventSearchQuery}
+                  onChange={(e) => setEventSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3.5 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                <div className="flex items-center space-x-1.5 shrink-0">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase">Category:</span>
+                  <select
+                    value={eventCategoryFilter}
+                    onChange={(e) => setEventCategoryFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700"
+                  >
+                    <option value="All">All Categories</option>
+                    <option value="Praise & Worship">Praise &amp; Worship</option>
+                    <option value="Youth & Leadership">Youth &amp; Leadership</option>
+                    <option value="Conference">Conference</option>
+                    <option value="Special Vigil">Special Vigil</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center space-x-1.5 shrink-0">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase">Status:</span>
+                  <select
+                    value={eventStatusFilter}
+                    onChange={(e) => setEventStatusFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700"
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Upcoming">Upcoming</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* EVENTS CARDS GRID */}
+            {(() => {
+              const filtered = events.filter((ev) => {
+                const matchQuery =
+                  !eventSearchQuery.trim() ||
+                  ev.title.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
+                  (ev.theme && ev.theme.toLowerCase().includes(eventSearchQuery.toLowerCase())) ||
+                  ev.venue.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
+                  (ev.speakers && ev.speakers.some(s => s.fullName.toLowerCase().includes(eventSearchQuery.toLowerCase())));
+
+                const matchCat = eventCategoryFilter === 'All' || ev.category === eventCategoryFilter;
+                const matchStatus = eventStatusFilter === 'All' || ev.status === eventStatusFilter;
+
+                return matchQuery && matchCat && matchStatus;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 space-y-4">
+                    <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto border border-amber-200">
+                      <Calendar className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-800">No Parish Events Found</h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      No events match your current filter parameters. Try clearing your filters or create a new event.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddEventModal}
+                      className="px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 transition cursor-pointer"
+                    >
+                      + Create First Event
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {filtered.map((ev) => (
+                    <div
+                      key={ev.id}
+                      className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between"
+                    >
+                      {/* CARD FLYER COVER */}
+                      <div className="relative h-56 bg-slate-900 overflow-hidden group">
+                        <img
+                          src={ev.coverImageUrl || '/event_praise_night.jpg'}
+                          alt={ev.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        
+                        <div className="absolute top-3 left-3 flex gap-2">
+                          <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow">
+                            {ev.category}
+                          </span>
+                          {ev.isFeatured && (
+                            <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow flex items-center space-x-1">
+                              <Sparkles className="w-3 h-3" />
+                              <span>Featured</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="absolute top-3 right-3">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase backdrop-blur-md border ${
+                            ev.status === 'Upcoming'
+                              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
+                              : ev.status === 'Completed'
+                              ? 'bg-slate-800/80 text-slate-300 border-slate-600'
+                              : 'bg-red-950/80 text-red-300 border-red-500/40'
+                          }`}>
+                            {ev.status}
+                          </span>
+                        </div>
+
+                        <div className="absolute bottom-3 left-3 right-3 text-white">
+                          <h4 className="text-xl font-black drop-shadow truncate">
+                            {ev.title}
+                          </h4>
+                          {ev.theme && (
+                            <p className="text-xs font-semibold text-emerald-300 italic truncate">
+                              "{ev.theme}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* CARD BODY */}
+                      <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                        <div className="space-y-2.5">
+                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                            {ev.description || 'No description provided.'}
+                          </p>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 pt-2 border-t border-slate-100">
+                            <div className="flex items-center space-x-2 text-slate-600">
+                              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span className="truncate">{ev.timeString || ev.eventDate}</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-slate-600">
+                              <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span className="truncate">{ev.venue}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* MINISTERS & GUEST SPEAKERS LIST */}
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 uppercase">
+                            <span className="font-bold flex items-center space-x-1.5 text-slate-800">
+                              <Users className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Ministers &amp; Guest Speakers</span>
+                            </span>
+                            <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                              {ev.speakers?.length || 0} Listed
+                            </span>
+                          </div>
+
+                          {(!ev.speakers || ev.speakers.length === 0) ? (
+                            <p className="text-[11px] text-slate-400 italic">
+                              No ministers/speakers allocated yet. Click "Edit" to assign ministers.
+                            </p>
+                          ) : (
+                            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                              {ev.speakers.map((spk, idx) => (
+                                <div
+                                  key={spk.id || idx}
+                                  className="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200/80 text-xs shadow-2xs"
+                                >
+                                  <div className="flex items-center space-x-2.5 min-w-0">
+                                    <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-[10px] shrink-0 overflow-hidden border border-amber-300">
+                                      {spk.photoUrl ? (
+                                        <img src={spk.photoUrl} alt={spk.fullName} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span>{spk.fullName.slice(0, 2).toUpperCase()}</span>
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <span className="font-bold text-slate-900 block truncate">
+                                        {spk.fullName}
+                                      </span>
+                                      <span className="text-[10px] text-slate-500 block truncate">
+                                        {spk.ecclesiasticalTitle} &bull; {spk.organization || 'RCCG'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold shrink-0">
+                                    {spk.ministryRole}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* CARD ACTION BUTTONS */}
+                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditEventModal(ev)}
+                              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Edit Event</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEvent(ev.id, ev.title)}
+                              className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                              title="Delete Event"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="text-[11px] text-slate-500 font-medium">
+                            {ev.maxCapacity ? `Max Capacity: ${ev.maxCapacity} Seats` : 'Open Seating'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ADD / EDIT PARISH EVENT MODAL */}
+        {isEventModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-hidden flex flex-col border border-slate-200">
+              
+              {/* MODAL HEADER */}
+              <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-400/20 text-amber-400 flex items-center justify-center border border-amber-400/30">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold tracking-tight">
+                      {editingEvent ? 'Edit Parish Event & Ministers' : 'Create New Parish Event'}
+                    </h3>
+                    <p className="text-[11px] text-slate-300">
+                      Configure cover flyer artwork, venue details, and guest ministers roster.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsEventModalOpen(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* MODAL FORM BODY */}
+              <form onSubmit={handleSaveEvent} className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+                
+                {/* 1. BASIC DETAILS */}
+                <div className="space-y-4">
+                  <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
+                    1. Event Information &amp; Theme
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Event Title *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formEventTitle}
+                        onChange={(e) => setFormEventTitle(e.target.value)}
+                        placeholder="e.g. Annual Praise & Worship Night 2026"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Theme (Scripture / Subtitle)
+                      </label>
+                      <input
+                        type="text"
+                        value={formEventTheme}
+                        onChange={(e) => setFormEventTheme(e.target.value)}
+                        placeholder="e.g. Sounds of Victory & Divine Exaltation"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 focus:bg-white focus:outline-amber-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={formEventCategory}
+                        onChange={(e) => setFormEventCategory(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800"
+                      >
+                        <option value="Praise & Worship">Praise &amp; Worship</option>
+                        <option value="Youth & Leadership">Youth &amp; Leadership</option>
+                        <option value="Conference">Conference</option>
+                        <option value="Special Vigil">Special Vigil</option>
+                        <option value="Revival & Healing">Revival &amp; Healing</option>
+                        <option value="General">General</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Event Description / Overview
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formEventDescription}
+                      onChange={(e) => setFormEventDescription(e.target.value)}
+                      placeholder="Write an inviting description of the program, expectations, and instructions for attendees..."
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 focus:bg-white focus:outline-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. COVER FLYER ARTWORK */}
+                <div className="space-y-4">
+                  <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
+                    2. Cover Flyer Artwork
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                    <div className="sm:col-span-2 space-y-2">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Cover Image / Flyer URL
+                      </label>
+                      <input
+                        type="text"
+                        value={formEventCoverImageUrl}
+                        onChange={(e) => setFormEventCoverImageUrl(e.target.value)}
+                        placeholder="/event_praise_night.jpg or https://..."
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 focus:bg-white focus:outline-amber-500"
+                      />
+                      
+                      {/* SAMPLE FLYER PRESET BUTTONS */}
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <span className="text-[11px] text-slate-400 font-semibold self-center">Presets:</span>
+                        <button
+                          type="button"
+                          onClick={() => setFormEventCoverImageUrl('/event_praise_night.jpg')}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
+                        >
+                          Praise Night Flyer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormEventCoverImageUrl('/event_youth_summit.jpg')}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
+                        >
+                          Youth Summit Flyer
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* FLYER PREVIEW BOX */}
+                    <div className="h-28 rounded-2xl bg-slate-900 border border-slate-200 overflow-hidden relative shadow-inner flex items-center justify-center">
+                      {formEventCoverImageUrl ? (
+                        <img
+                          src={formEventCoverImageUrl}
+                          alt="Flyer Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-[11px] text-slate-400 font-medium">No flyer set</span>
+                      )}
+                      <div className="absolute bottom-1 right-1 bg-slate-950/70 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
+                        Preview
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. DATE, TIME, VENUE & SETTINGS */}
+                <div className="space-y-4">
+                  <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
+                    3. Date, Venue &amp; Registration
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Event Date (YYYY-MM-DD) *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={formEventDate}
+                        onChange={(e) => setFormEventDate(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Display Time String
+                      </label>
+                      <input
+                        type="text"
+                        value={formEventTimeString}
+                        onChange={(e) => setFormEventTimeString(e.target.value)}
+                        placeholder="e.g. Friday, October 24, 2026 • 9:00 PM GMT"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Venue / Auditorium *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formEventVenue}
+                        onChange={(e) => setFormEventVenue(e.target.value)}
+                        placeholder="e.g. Main Sanctuary Auditorium, RCCG Glorious Church Parish"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Max Seating Capacity
+                      </label>
+                      <input
+                        type="number"
+                        value={formEventMaxCapacity}
+                        onChange={(e) => setFormEventMaxCapacity(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
+                        placeholder="e.g. 500"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
+                      <select
+                        value={formEventStatus}
+                        onChange={(e) => setFormEventStatus(e.target.value as any)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                      >
+                        <option value="Upcoming">Upcoming</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center space-x-2.5 pt-5">
+                      <input
+                        type="checkbox"
+                        id="isFeaturedToggle"
+                        checked={formEventIsFeatured}
+                        onChange={(e) => setFormEventIsFeatured(e.target.checked)}
+                        className="w-4 h-4 text-amber-500 rounded border-slate-300"
+                      />
+                      <label htmlFor="isFeaturedToggle" className="text-xs font-bold text-slate-700 cursor-pointer">
+                        Feature on Website
+                      </label>
+                    </div>
+
+                    <div className="flex items-center space-x-2.5 pt-5">
+                      <input
+                        type="checkbox"
+                        id="regReqToggle"
+                        checked={formEventRegistrationRequired}
+                        onChange={(e) => setFormEventRegistrationRequired(e.target.checked)}
+                        className="w-4 h-4 text-amber-500 rounded border-slate-300"
+                      />
+                      <label htmlFor="regReqToggle" className="text-xs font-bold text-slate-700 cursor-pointer">
+                        Registration Required
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. MINISTERS & GUEST SPEAKERS ROSTER */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                    <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400">
+                      4. Ministers &amp; Keynote Speakers Roster
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddSpeakerRow}
+                      className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition flex items-center space-x-1 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Minister / Speaker</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {formEventSpeakers.map((spk, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-2xl bg-slate-50 border border-slate-200 relative space-y-3"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                          <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider flex items-center space-x-1.5">
+                            <Users className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Speaker #{idx + 1}</span>
+                          </span>
+
+                          {formEventSpeakers.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSpeakerRow(idx)}
+                              className="text-rose-500 hover:text-rose-700 text-xs font-semibold flex items-center space-x-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Ecclesiastical Title
+                            </label>
+                            <select
+                              value={spk.ecclesiasticalTitle}
+                              onChange={(e) => handleSpeakerChange(idx, 'ecclesiasticalTitle', e.target.value)}
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                            >
+                              <option value="Pastor">Pastor</option>
+                              <option value="Pastor (Dr.)">Pastor (Dr.)</option>
+                              <option value="Minister">Minister</option>
+                              <option value="Evangelist">Evangelist</option>
+                              <option value="Deacon">Deacon</option>
+                              <option value="Sister">Sister</option>
+                              <option value="Brother">Brother</option>
+                            </select>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Full Name *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={spk.fullName}
+                              onChange={(e) => handleSpeakerChange(idx, 'fullName', e.target.value)}
+                              placeholder="e.g. Pastor (Dr.) Taiwo Adetunji"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Ministry Role
+                            </label>
+                            <input
+                              type="text"
+                              value={spk.ministryRole}
+                              onChange={(e) => handleSpeakerChange(idx, 'ministryRole', e.target.value)}
+                              placeholder="e.g. Keynote Speaker / Host Pastor"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Church / Organization
+                            </label>
+                            <input
+                              type="text"
+                              value={spk.organization || ''}
+                              onChange={(e) => handleSpeakerChange(idx, 'organization', e.target.value)}
+                              placeholder="e.g. RCCG Worldwide"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Photo URL / Preset
+                            </label>
+                            <input
+                              type="text"
+                              value={spk.photoUrl || ''}
+                              onChange={(e) => handleSpeakerChange(idx, 'photoUrl', e.target.value)}
+                              placeholder="/dr_taiwo_adetunji.jpg"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-800"
+                            />
+                            <div className="flex gap-1.5 mt-1">
+                              <button
+                                type="button"
+                                onClick={() => handleSpeakerChange(idx, 'photoUrl', '/adeboye-enoch-jpeg.webp')}
+                                className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded cursor-pointer"
+                              >
+                                Adeboye
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSpeakerChange(idx, 'photoUrl', '/dr_taiwo_adetunji.jpg')}
+                                className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded cursor-pointer"
+                              >
+                                Dr. Taiwo
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="sm:col-span-3">
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Short Biography / Ministration Focus
+                            </label>
+                            <input
+                              type="text"
+                              value={spk.shortBio || ''}
+                              onChange={(e) => handleSpeakerChange(idx, 'shortBio', e.target.value)}
+                              placeholder="Brief background or ministry calling note..."
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* MODAL ACTIONS FOOTER */}
+                <div className="pt-4 border-t border-slate-200 flex items-center justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsEventModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition cursor-pointer"
+                  >
+                    {editingEvent ? 'Update Event & Speakers' : 'Publish Parish Event'}
+                  </button>
+                </div>
+              </form>
+
+            </div>
           </div>
         )}
 
@@ -9149,6 +10232,18 @@ export default function App() {
             <span className="text-[10px]">Reports</span>
           </button>
         )}
+
+        {/* Events */}
+        <button
+          onClick={() => setActiveTab('events')}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition min-h-[44px] ${
+            activeTab === 'events' ? 'text-amber-300 bg-amber-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Events & Conferences"
+        >
+          <Calendar className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Events</span>
+        </button>
 
         {/* Membership */}
         <button

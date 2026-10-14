@@ -196,8 +196,54 @@ BEGIN
 END;
 GO
 
+-- 11. Create ParishEvents Table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[ParishEvents]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [ParishEvents] (
+        [Id] uniqueidentifier NOT NULL DEFAULT (NEWSEQUENTIALID()),
+        [Title] nvarchar(250) NOT NULL,
+        [Theme] nvarchar(500) NOT NULL DEFAULT N'',
+        [Description] nvarchar(max) NOT NULL DEFAULT N'',
+        [CoverImageUrl] nvarchar(1000) NOT NULL DEFAULT N'',
+        [EventDate] datetime2 NOT NULL,
+        [TimeString] nvarchar(100) NOT NULL DEFAULT N'',
+        [Venue] nvarchar(250) NOT NULL,
+        [Category] nvarchar(100) NOT NULL DEFAULT N'General',
+        [IsFeatured] bit NOT NULL DEFAULT 0,
+        [RegistrationRequired] bit NOT NULL DEFAULT 0,
+        [Status] nvarchar(50) NOT NULL DEFAULT N'Upcoming',
+        [MaxCapacity] int NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (GETUTCDATE()),
+        [UpdatedAtUtc] datetime2 NULL,
+        CONSTRAINT [PK_ParishEvents] PRIMARY KEY ([Id])
+    );
+END;
+GO
+
+-- 12. Create EventSpeakers Table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[EventSpeakers]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [EventSpeakers] (
+        [Id] uniqueidentifier NOT NULL DEFAULT (NEWSEQUENTIALID()),
+        [ParishEventId] uniqueidentifier NOT NULL,
+        [FullName] nvarchar(150) NOT NULL,
+        [EcclesiasticalTitle] nvarchar(50) NOT NULL DEFAULT N'Pastor',
+        [MinistryRole] nvarchar(100) NOT NULL DEFAULT N'Guest Speaker',
+        [PhotoUrl] nvarchar(1000) NULL,
+        [Organization] nvarchar(200) NULL,
+        [ShortBio] nvarchar(1000) NULL,
+        [DisplayOrder] int NOT NULL DEFAULT 0,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (GETUTCDATE()),
+        [UpdatedAtUtc] datetime2 NULL,
+        CONSTRAINT [PK_EventSpeakers] PRIMARY KEY ([Id]),
+        CONSTRAINT [FK_EventSpeakers_ParishEvents_ParishEventId] FOREIGN KEY ([ParishEventId]) REFERENCES [ParishEvents] ([Id]) ON DELETE CASCADE
+    );
+    CREATE INDEX [IX_EventSpeakers_ParishEventId] ON [EventSpeakers] ([ParishEventId]);
+END;
+GO
+
 INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-VALUES (N'20260922050803_InitialCreate', N'9.0.0');
+VALUES (N'20261014163000_AddParishEventsAndSpeakers', N'9.0.0');
 GO
 
 COMMIT;

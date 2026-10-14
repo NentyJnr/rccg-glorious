@@ -1,17 +1,14 @@
+using CMS.API.Common;
+using CMS.Application;
 using CMS.Application.Common.Interfaces;
-using CMS.Application.Services;
-using CMS.Application.Validators;
 using CMS.Infrastructure;
 using CMS.Infrastructure.Persistence;
-using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add Infrastructure & Application Services
 builder.Services.AddInfrastructure(builder.Configuration);
-
-builder.Services.AddScoped<IUserOnboardingService, UserOnboardingService>();
-builder.Services.AddValidatorsFromAssemblyContaining<CreateServiceReportCommandValidator>();
+builder.Services.AddApplication();
 
 // CORS policy configuration
 var allowedOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>() 
@@ -34,27 +31,42 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Global Exception Handling Middleware (Standard Enterprise Error Envelope)
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        context.Response.ContentType = "application/json";
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        var envelope = ApiResponseEnvelope<object>.Fail($"Server error: {ex.Message}");
+        await context.Response.WriteAsJsonAsync(envelope);
+    }
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Ensure Database Created for Local Dev & Seed Initial Accounts
+// Seed Initial Accounts & Events Safely without Bypassing Migrations
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<CmsDbContext>();
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-    dbContext.Database.EnsureCreated();
     await CmsDbSeeder.SeedInitialDataAsync(dbContext, passwordHasher);
 }
 
+app.UseCors("AllowFrontendOrigin");
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseCors("AllowFrontendOrigin");
-
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

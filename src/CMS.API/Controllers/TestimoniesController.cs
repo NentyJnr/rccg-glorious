@@ -1,67 +1,52 @@
-using CMS.Application.Common.Interfaces;
-using CMS.Domain.Entities;
+using CMS.API.Common;
+using CMS.Application.DTOs;
+using CMS.Application.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace CMS.API.Controllers;
 
 [ApiController]
+[Route("api/v1/[controller]")]
 [Route("api/[controller]")]
 public class TestimoniesController : ControllerBase
 {
-    private readonly ICmsDbContext _context;
+    private readonly ITestimonyService _testimonyService;
 
-    public TestimoniesController(ICmsDbContext context)
+    public TestimoniesController(ITestimonyService testimonyService)
     {
-        _context = context;
+        _testimonyService = testimonyService;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetTestimonies()
+    public async Task<IActionResult> GetTestimonies(CancellationToken ct)
     {
-        var testimonies = await _context.Testimonies
-            .Where(t => t.IsApproved)
-            .OrderByDescending(t => t.SubmittedAt)
-            .ToListAsync();
-
-        return Ok(new { success = true, data = testimonies });
+        var testimonies = await _testimonyService.GetApprovedTestimoniesAsync(ct);
+        return Ok(ApiResponseEnvelope<List<TestimonyDto>>.Ok(testimonies, "Approved testimonies retrieved successfully."));
     }
 
     [HttpPost]
-    public async Task<IActionResult> SubmitTestimony([FromBody] TestimonySubmissionDto dto)
+    public async Task<IActionResult> SubmitTestimony([FromBody] TestimonySubmissionDto dto, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(dto.FullName) || string.IsNullOrWhiteSpace(dto.Content))
+        try
         {
-            return BadRequest(new { success = false, message = "Full Name and Testimony Story are required." });
+            var testimony = await _testimonyService.SubmitTestimonyAsync(dto, ct);
+            return Ok(ApiResponseEnvelope<TestimonyDto>.Ok(testimony, "Testimony submitted successfully and is awaiting pastoral review."));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponseEnvelope<TestimonyDto>.Fail(ex.Message));
+        }
+    }
+
+    [HttpPut("{id:guid}/approve")]
+    public async Task<IActionResult> ApproveTestimony(Guid id, CancellationToken ct)
+    {
+        bool approved = await _testimonyService.ApproveTestimonyAsync(id, ct);
+        if (!approved)
+        {
+            return NotFound(ApiResponseEnvelope<bool>.Fail("Testimony not found."));
         }
 
-        var testimony = new Testimony
-        {
-            FullName = dto.FullName.Trim(),
-            Email = dto.Email?.Trim() ?? string.Empty,
-            Phone = dto.Phone?.Trim() ?? string.Empty,
-            Category = string.IsNullOrWhiteSpace(dto.Category) ? "General Grace" : dto.Category.Trim(),
-            Title = string.IsNullOrWhiteSpace(dto.Title) ? "Glory to God for Divine Goodness" : dto.Title.Trim(),
-            Content = dto.Content.Trim(),
-            AllowPublicSharing = dto.AllowPublicSharing,
-            IsApproved = true,
-            SubmittedAt = DateTime.UtcNow
-        };
-
-        _context.Testimonies.Add(testimony);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { success = true, message = "Testimony saved successfully!", data = testimony });
+        return Ok(ApiResponseEnvelope<bool>.Ok(true, "Testimony approved for public church display."));
     }
-}
-
-public class TestimonySubmissionDto
-{
-    public string FullName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string Phone { get; set; } = string.Empty;
-    public string Category { get; set; } = "General Grace";
-    public string Title { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public bool AllowPublicSharing { get; set; } = true;
 }

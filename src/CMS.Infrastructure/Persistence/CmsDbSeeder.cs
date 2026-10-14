@@ -91,6 +91,100 @@ public static class CmsDbSeeder
             );
         }
 
+        // 6. Seed Parish Events & Guest Speakers
+        if (!await dbContext.ParishEvents.AnyAsync())
+        {
+            var praiseNight = new ParishEvent
+            {
+                Title = "Annual Praise & Worship Night 2026",
+                Theme = "Sounds of Victory & Divine Exaltation",
+                Description = "Join us for an unforgettable night of high praise, deep worship, and prophetic ministrations as we celebrate God's divine faithfulness across the zone.",
+                CoverImageUrl = "/event_praise_night.jpg",
+                EventDate = new DateTime(2026, 10, 24, 21, 0, 0, DateTimeKind.Utc),
+                TimeString = "Friday, October 24, 2026 • 9:00 PM GMT",
+                Venue = "Main Sanctuary Auditorium, RCCG Glorious Church Parish",
+                Category = "Praise & Worship",
+                IsFeatured = true,
+                RegistrationRequired = true,
+                Status = "Upcoming",
+                MaxCapacity = 500,
+                Speakers = new List<EventSpeaker>
+                {
+                    new EventSpeaker
+                    {
+                        FullName = "Pastor E. A. Adeboye",
+                        EcclesiasticalTitle = "Pastor",
+                        MinistryRole = "General Overseer / Apostolic Blessings",
+                        Organization = "RCCG Worldwide",
+                        PhotoUrl = "/adeboye-enoch-jpeg.webp",
+                        ShortBio = "General Overseer of the Redeemed Christian Church of God.",
+                        DisplayOrder = 1
+                    },
+                    new EventSpeaker
+                    {
+                        FullName = "Pastor (Dr.) Taiwo Adetunji",
+                        EcclesiasticalTitle = "Pastor (Dr.)",
+                        MinistryRole = "Host Pastor & Convener",
+                        Organization = "RCCG Glorious Church",
+                        PhotoUrl = "/dr_taiwo_adetunji.jpg",
+                        ShortBio = "Pastor-in-Charge of RCCG Glorious Church Parish, passionate about revival and transformative worship.",
+                        DisplayOrder = 2
+                    },
+                    new EventSpeaker
+                    {
+                        FullName = "Minister David Okafor",
+                        EcclesiasticalTitle = "Minister",
+                        MinistryRole = "Guest Worship Minister",
+                        Organization = "RCCG National Praise Team",
+                        PhotoUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300",
+                        ShortBio = "Anointed worship minister and recording psalmist leading atmospheres of praise.",
+                        DisplayOrder = 3
+                    }
+                }
+            };
+
+            var youthSummit = new ParishEvent
+            {
+                Title = "Kingdom Youth Leadership Summit",
+                Theme = "Empowered for Dominion & Excellence",
+                Description = "Empowering young professionals, students, and emerging leaders with biblical wisdom, career strategies, and spiritual capacity to excel in contemporary society.",
+                CoverImageUrl = "/event_youth_summit.jpg",
+                EventDate = new DateTime(2026, 11, 14, 10, 0, 0, DateTimeKind.Utc),
+                TimeString = "Saturday, November 14, 2026 • 10:00 AM GMT",
+                Venue = "Youth Center & Online Virtual Live Stream",
+                Category = "Youth & Leadership",
+                IsFeatured = true,
+                RegistrationRequired = true,
+                Status = "Upcoming",
+                MaxCapacity = 350,
+                Speakers = new List<EventSpeaker>
+                {
+                    new EventSpeaker
+                    {
+                        FullName = "Pastor (Dr.) Taiwo Adetunji",
+                        EcclesiasticalTitle = "Pastor (Dr.)",
+                        MinistryRole = "Host & Keynote Speaker",
+                        Organization = "RCCG Glorious Church",
+                        PhotoUrl = "/dr_taiwo_adetunji.jpg",
+                        ShortBio = "Spiritual mentor and ministry leader dedicated to building youth capacity.",
+                        DisplayOrder = 1
+                    },
+                    new EventSpeaker
+                    {
+                        FullName = "Sister Grace Usang",
+                        EcclesiasticalTitle = "Sister",
+                        MinistryRole = "Guest Speaker / Career Panelist",
+                        Organization = "Vatebra Enterprise Tech",
+                        PhotoUrl = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300",
+                        ShortBio = "Corporate technology executive and youth empowerment advocate.",
+                        DisplayOrder = 2
+                    }
+                }
+            };
+
+            dbContext.ParishEvents.AddRange(praiseNight, youthSummit);
+        }
+
         await dbContext.SaveChangesAsync();
     }
 }

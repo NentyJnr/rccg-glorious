@@ -48,11 +48,121 @@ import {
   ExternalLink,
   Camera,
   User,
-  Receipt
+  Receipt,
+  Send,
+  Printer,
+  Gift
 } from 'lucide-react';
 import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
 import { PortalComingSoonPage } from './components/PortalComingSoonPage';
+import { PwaInstallPrompt } from './components/PwaInstallPrompt';
+import { API_BASE_URL } from './services/apiClient';
+
+export interface EventSpeakerItem {
+  id?: string;
+  fullName: string;
+  ecclesiasticalTitle: string;
+  ministryRole: string;
+  photoUrl?: string;
+  organization?: string;
+  shortBio?: string;
+  displayOrder?: number;
+}
+
+export interface ParishEventItem {
+  id: string;
+  title: string;
+  theme?: string;
+  description: string;
+  coverImageUrl: string;
+  eventDate: string;
+  timeString: string;
+  venue: string;
+  category: string;
+  isFeatured: boolean;
+  registrationRequired: boolean;
+  status: 'Upcoming' | 'Completed' | 'Cancelled';
+  maxCapacity?: number;
+  speakers?: EventSpeakerItem[];
+}
+
+const INITIAL_ADMIN_EVENTS: ParishEventItem[] = [
+  {
+    id: 'evt-1',
+    title: 'Annual Praise & Worship Night 2026',
+    theme: 'Sounds of Victory & Divine Exaltation',
+    description: "Join us for an unforgettable night of high praise, deep worship, and prophetic ministrations as we celebrate God's divine faithfulness across the zone.",
+    coverImageUrl: '/event_praise_night.jpg',
+    eventDate: '2026-10-24',
+    timeString: 'Friday, October 24, 2026 • 9:00 PM GMT',
+    venue: 'Main Sanctuary Auditorium, RCCG Glorious Church Parish',
+    category: 'Praise & Worship',
+    isFeatured: true,
+    registrationRequired: true,
+    status: 'Upcoming',
+    maxCapacity: 500,
+    speakers: [
+      {
+        fullName: 'Pastor E. A. Adeboye',
+        ecclesiasticalTitle: 'Pastor',
+        ministryRole: 'General Overseer / Apostolic Blessings',
+        organization: 'RCCG Worldwide',
+        photoUrl: '/adeboye-enoch-jpeg.webp',
+        shortBio: 'General Overseer of the Redeemed Christian Church of God.'
+      },
+      {
+        fullName: 'Pastor (Dr.) Taiwo Adetunji',
+        ecclesiasticalTitle: 'Pastor (Dr.)',
+        ministryRole: 'Host Pastor & Convener',
+        organization: 'RCCG Glorious Church',
+        photoUrl: '/dr_taiwo_adetunji.jpg',
+        shortBio: 'Pastor-in-Charge of RCCG Glorious Church Parish.'
+      },
+      {
+        fullName: 'Minister David Okafor',
+        ecclesiasticalTitle: 'Minister',
+        ministryRole: 'Guest Worship Minister',
+        organization: 'RCCG National Praise Team',
+        photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+        shortBio: 'Anointed worship leader and recording psalmist.'
+      }
+    ]
+  },
+  {
+    id: 'evt-2',
+    title: 'Kingdom Youth Leadership Summit',
+    theme: 'Empowered for Dominion & Excellence',
+    description: 'Empowering young professionals, students, and emerging kingdom leaders with biblical wisdom, career strategies, and spiritual capacity to excel.',
+    coverImageUrl: '/event_youth_summit.jpg',
+    eventDate: '2026-11-14',
+    timeString: 'Saturday, November 14, 2026 • 10:00 AM GMT',
+    venue: 'Youth Center & Online Virtual Live Stream',
+    category: 'Youth & Leadership',
+    isFeatured: true,
+    registrationRequired: true,
+    status: 'Upcoming',
+    maxCapacity: 350,
+    speakers: [
+      {
+        fullName: 'Pastor (Dr.) Taiwo Adetunji',
+        ecclesiasticalTitle: 'Pastor (Dr.)',
+        ministryRole: 'Host & Keynote Speaker',
+        organization: 'RCCG Glorious Church',
+        photoUrl: '/dr_taiwo_adetunji.jpg',
+        shortBio: 'Spiritual mentor and leadership coach equipping the next generation.'
+      },
+      {
+        fullName: 'Sister Grace Usang',
+        ecclesiasticalTitle: 'Sister',
+        ministryRole: 'Guest Speaker / Career Panelist',
+        organization: 'Vatebra Enterprise Tech',
+        photoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
+        shortBio: 'Enterprise technology leader and youth career mentor.'
+      }
+    ]
+  }
+];
 
 interface OrganizationSetting {
   parishName: string;
@@ -72,6 +182,7 @@ interface User {
   email: string;
   phone: string;
   role: string;
+  assignedDepartment?: string;
   mustChangePassword: boolean;
   isActive: boolean;
 }
@@ -222,10 +333,21 @@ interface DepartmentItem {
   isActive: boolean;
 }
 
+const getHodDepartment = (user: User | null): string => {
+  if (!user) return 'Ushering & Protocol';
+  if (user.assignedDepartment) return user.assignedDepartment;
+  const text = ((user.fullName || '') + ' ' + (user.email || '')).toLowerCase();
+  if (text.includes('ushering') || text.includes('grace usang') || text.includes('hod.ushering')) return 'Ushering & Protocol';
+  if (text.includes('choir') || text.includes('david okafor') || text.includes('hod.choir')) return 'Choir & Praise Team';
+  if (text.includes('fellowship') || text.includes('samuel adebayo') || text.includes('hod.fellowship')) return 'Follow-up & Welfare';
+  if (text.includes('outreach') || text.includes('peter king') || text.includes('hod.outreach')) return 'Evangelism & Outreach';
+  return 'Ushering & Protocol';
+};
+
 export default function App() {
   const [viewMode, setViewMode] = useState<'website' | 'portal'>('website');
   const [showDraftLogin, setShowDraftLogin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'service-report' | 'users' | 'fellowship' | 'setup'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'service-report' | 'events' | 'membership' | 'departments' | 'users' | 'fellowship' | 'setup'>('dashboard');
   
   // Organization Branding State
   const [org, setOrg] = useState<OrganizationSetting>({
@@ -234,9 +356,177 @@ export default function App() {
     baseCurrency: 'NGN'
   });
 
-  // --- SETUP & USER MANAGEMENT SUB-TABS & DATA COLLECTIONS ---
-  const [userSubTab, setUserSubTab] = useState<'portal-users' | 'ministers' | 'member-upload' | 'role-assignment' | 'workers-registration'>('portal-users');
-  const [setupSubTab, setSetupSubTab] = useState<'service-types' | 'offering-categories' | 'departments' | 'branding'>('service-types');
+  // --- SUB-TAB & SECTION NAVIGATION STATES ---
+  const [membershipSubTab, setMembershipSubTab] = useState<'directory' | 'registration' | 'birthdays' | 'workforce-upload'>('directory');
+  const [selectedBirthdayMonth, setSelectedBirthdayMonth] = useState<string>(new Date().toLocaleString('default', { month: 'long' }));
+  const [userSubTab, setUserSubTab] = useState<'portal-users' | 'ministers' | 'member-upload' | 'role-assignment' | 'workers-registration' | 'assignment'>('portal-users');
+  const [setupSubTab, setSetupSubTab] = useState<'service-types' | 'offering-categories' | 'branding'>('service-types');
+  const [departmentSubTab, setDepartmentSubTab] = useState<'departments-list' | 'assign-hod' | 'department-report'>('departments-list');
+  const [selectedReportDept, setSelectedReportDept] = useState<string>('All');
+  const [assignHodDept, setAssignHodDept] = useState<string>('Ushering Department');
+  const [assignHodPerson, setAssignHodPerson] = useState<string>('');
+
+  // Duty Roster State & Interfaces
+  const [rosters, setRosters] = useState<any[]>([
+    {
+      id: 'ros_1',
+      monthYear: '2026-10',
+      departmentName: 'Choir & Praise Team',
+      hodName: 'Minister David Okafor',
+      status: 'SubmittedForApproval',
+      submittedAt: '2026-09-22T08:15:00Z',
+      assignments: [
+        {
+          id: 'd1',
+          serviceDate: '2026-10-04',
+          serviceTypeName: 'Sunday 1st Service (08:00 AM)',
+          departmentName: 'Choir & Praise Team',
+          dutyRole: 'Worship Lead & Praise Team',
+          assignedPersonNames: ['Okon Emmanuel', 'Eze Chukwudi'],
+          ministrationBreakdown: {
+            workersPraise: ['Okon Emmanuel'],
+            mainPraise: ['Okon Emmanuel', 'Eze Chukwudi'],
+            offering: ['Eze Chukwudi'],
+            thanksgiving: ['Okon Emmanuel']
+          },
+          status: 'SubmittedForApproval'
+        },
+        {
+          id: 'd2',
+          serviceDate: '2026-10-04',
+          serviceTypeName: 'Sunday 2nd Service (10:00 AM)',
+          departmentName: 'Choir & Praise Team',
+          dutyRole: 'Choir Ministration',
+          assignedPersonNames: ['Okon Emmanuel'],
+          ministrationBreakdown: {
+            workersPraise: ['Okon Emmanuel'],
+            mainPraise: ['Okon Emmanuel'],
+            offering: ['Okon Emmanuel'],
+            thanksgiving: ['Eze Chukwudi']
+          },
+          status: 'SubmittedForApproval'
+        },
+        {
+          id: 'd3',
+          serviceDate: '2026-10-06',
+          serviceTypeName: 'Tuesday Digging Deep (06:00 PM)',
+          departmentName: 'Choir & Praise Team',
+          dutyRole: 'Worship Ministration',
+          assignedPersonNames: ['Okon Emmanuel'],
+          ministrationBreakdown: {
+            workersPraise: ['Okon Emmanuel'],
+            mainPraise: ['Okon Emmanuel']
+          },
+          status: 'SubmittedForApproval'
+        },
+        {
+          id: 'd4',
+          serviceDate: '2026-10-08',
+          serviceTypeName: 'Thursday Faith Clinic (06:00 PM)',
+          departmentName: 'Choir & Praise Team',
+          dutyRole: 'Praise & Worship',
+          assignedPersonNames: ['Eze Chukwudi'],
+          ministrationBreakdown: {
+            mainPraise: ['Eze Chukwudi']
+          },
+          status: 'SubmittedForApproval'
+        },
+        {
+          id: 'd5',
+          serviceDate: '2026-10-16',
+          serviceTypeName: 'Monthly Night Vigil (10:00 PM) - Special Event',
+          departmentName: 'Choir & Praise Team',
+          dutyRole: 'All Night Ministration',
+          assignedPersonNames: ['Okon Emmanuel', 'Eze Chukwudi'],
+          ministrationBreakdown: {
+            mainPraise: ['Okon Emmanuel', 'Eze Chukwudi']
+          },
+          status: 'SubmittedForApproval'
+        }
+      ]
+    },
+    {
+      id: 'ros_2',
+      monthYear: '2026-10',
+      departmentName: 'Ushering & Protocol',
+      hodName: 'Sister Grace Usang',
+      status: 'SubmittedForApproval',
+      submittedAt: '2026-09-20T10:00:00Z',
+      approvedAt: '2026-09-21T14:30:00Z',
+      approvedBy: 'Pastor / Service Coordinator',
+      assignments: [
+        {
+          id: 'd6',
+          serviceDate: '2026-10-04',
+          serviceTypeName: 'Sunday 1st Service (08:00 AM)',
+          departmentName: 'Ushering & Protocol',
+          dutyRole: 'Sanctuary Ushering',
+          assignedPersonNames: ['Blessing Grace', 'Adams Victoria'],
+          status: 'SubmittedForApproval'
+        },
+        {
+          id: 'd7',
+          serviceDate: '2026-10-04',
+          serviceTypeName: 'Sunday 2nd Service (10:00 AM)',
+          departmentName: 'Ushering & Protocol',
+          dutyRole: 'Sanctuary Ushering & Protocol',
+          assignedPersonNames: ['Blessing Grace'],
+          status: 'SubmittedForApproval'
+        }
+      ]
+    }
+  ]);
+
+  const [rosterSelectedDept, setRosterSelectedDept] = useState<string>('Choir & Praise Team');
+  const [rosterSelectedMonth, setRosterSelectedMonth] = useState<string>('2026-10');
+  const [showAddNightVigilModal, setShowAddNightVigilModal] = useState<boolean>(false);
+  const [nightVigilDate, setNightVigilDate] = useState<string>('2026-10-16');
+  const [nightVigilTitle, setNightVigilTitle] = useState<string>('Monthly Night Vigil');
+  const [nightVigilTime, setNightVigilTime] = useState<string>('10:00 PM');
+  const [showRosterExportModal, setShowRosterExportModal] = useState<boolean>(false);
+  const [rosterSuccessAlert, setRosterSuccessAlert] = useState<string | null>(null);
+
+  // Choir Ministration & Service Editing / Deleting State
+  const [deletedServices, setDeletedServices] = useState<string[]>([]);
+  const [renamedServices, setRenamedServices] = useState<{ [serviceId: string]: string }>({});
+  const [deletedRolesPerService, setDeletedRolesPerService] = useState<{ [serviceId: string]: string[] }>({});
+  const [renamedRolesPerService, setRenamedRolesPerService] = useState<{ [serviceId: string]: { [roleKey: string]: string } }>({});
+  const [customRolesPerService, setCustomRolesPerService] = useState<{ [serviceId: string]: Array<{ key: string; label: string; icon: string; color: string }> }>({});
+
+  const [editingRoleState, setEditingRoleState] = useState<{ serviceId: string; roleKey: string; currentLabel: string } | null>(null);
+  const [newRoleLabelInput, setNewRoleLabelInput] = useState<string>('');
+
+  const [addingRoleServiceId, setAddingRoleServiceId] = useState<string | null>(null);
+  const [newRoleTitleInput, setNewRoleTitleInput] = useState<string>('');
+
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  const [newServiceTitleInput, setNewServiceTitleInput] = useState<string>('');
+
+  // Admin Master Roster & Official PDF Print State
+  const [monthlyRosterTheme, setMonthlyRosterTheme] = useState<string>('WORK IN THE SPIRIT (GALATIANS 5 VS 16)');
+  const [showPrintPdfModal, setShowPrintPdfModal] = useState<boolean>(false);
+  const [adminRosterScheduleData, setAdminRosterScheduleData] = useState<{
+    [serviceId: string]: {
+      coordinator: string;
+      usherInCharge: string;
+      praiseLeader: string;
+      officiatingMinister: string;
+      openHeavensLeader: string;
+    }
+  }>({
+    srv1: { coordinator: 'BRO. PHILLIP', usherInCharge: 'SIS. BLESSING', praiseLeader: 'BRO. JOHNSON GANGAN', officiatingMinister: 'PST. ADETUNJI', openHeavensLeader: '' },
+    srv2: { coordinator: 'BRO. PHILLIP', usherInCharge: 'DEACONESS BISOYE', praiseLeader: 'BRO. OLALEKAN', officiatingMinister: 'DEACON IDOWU', openHeavensLeader: '' },
+    srv3: { coordinator: 'BRO. PHILLIP', usherInCharge: 'USHERS', praiseLeader: 'CHOIR', officiatingMinister: 'DADDY G.O.', openHeavensLeader: '' },
+    srv4: { coordinator: 'BRO. DANIEL', usherInCharge: 'BRO. NENTY', praiseLeader: 'SIS. PRECIOUS', officiatingMinister: 'BRO. SAMUEL EGBA', openHeavensLeader: '' },
+    srv5: { coordinator: 'BRO. PHILLIP', usherInCharge: 'DEACONESS BISOYE', praiseLeader: 'SIS. STEPHANIE', officiatingMinister: 'BRO. MICHAEL SHONIBARE', openHeavensLeader: '' },
+    srv6: { coordinator: 'BRO. PHILLIP', usherInCharge: 'BRO. NENTY', praiseLeader: 'SIS. MARY', officiatingMinister: 'MUMMY CHUKWUMA', openHeavensLeader: 'SIS. PRAISE' },
+    srv7: { coordinator: 'BRO. PHILLIP', usherInCharge: 'SIS. BLESSING', praiseLeader: 'BRO. OLA', officiatingMinister: 'BRO. RAPHAEL', openHeavensLeader: '' },
+    srv8: { coordinator: 'BRO. PHILLIP', usherInCharge: 'USHERS', praiseLeader: 'CHOIR', officiatingMinister: 'SIS. MERCY ZAINAB', openHeavensLeader: '' },
+    srv9: { coordinator: 'VIGIL', usherInCharge: 'VIGIL', praiseLeader: 'VIGIL', officiatingMinister: 'VIGIL', openHeavensLeader: 'VIGIL' },
+    srv10: { coordinator: 'BRO. PHILLIP', usherInCharge: 'SIS. BISOYE', praiseLeader: 'BRO. SAMUEL', officiatingMinister: 'BRO. FELIX', openHeavensLeader: 'BRO. JOHNSON (GANGAN)' },
+    srv11: { coordinator: 'BRO. PHILLIP', usherInCharge: 'BRO. NENTY', praiseLeader: 'BRO. GODWIN', officiatingMinister: 'DEACON TAIWO IDOWU', openHeavensLeader: '' },
+    srv12: { coordinator: 'BRO. PHILLIP', usherInCharge: 'BRO. NENTY', praiseLeader: 'BRO. GODWIN', officiatingMinister: 'PRAISE SUNDAY', openHeavensLeader: 'SIS. BLESSING' }
+  });
 
   // Members Directory & Registration State
   const [members, setMembers] = useState<Member[]>([
@@ -284,8 +574,8 @@ export default function App() {
       dobMonth: 'November',
       gender: 'Male',
       membershipStatus: 'Under Follow-up',
-      assignedDepartment: null,
-      role: 'Member',
+      assignedDepartment: 'Choir & Praise Team',
+      role: 'Workforce',
       dateJoined: '2025-08-01'
     },
     {
@@ -299,9 +589,9 @@ export default function App() {
       dobDay: 19,
       dobMonth: 'December',
       gender: 'Female',
-      membershipStatus: 'New Convert',
-      assignedDepartment: null,
-      role: 'Member',
+      membershipStatus: 'Full Member',
+      assignedDepartment: 'Ushering & Protocol',
+      role: 'Workforce',
       dateJoined: '2025-09-12'
     }
   ]);
@@ -394,6 +684,12 @@ export default function App() {
   const [parsedPreviewMembers, setParsedPreviewMembers] = useState<Member[]>([]);
   const [uploadSuccessBanner, setUploadSuccessBanner] = useState<string | null>(null);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [memberStatusFilter, setMemberStatusFilter] = useState('All');
+
+  const handleDeleteMember = (id: string) => {
+    setMembers(prev => prev.filter(m => m.id !== id));
+    showNotification('Member removed from directory.', 'success');
+  };
 
   // Members Inner Tab & Department Leadership State
   const [membersInnerTab, setMembersInnerTab] = useState<'members-list' | 'dept-leadership'>('members-list');
@@ -801,44 +1097,230 @@ export default function App() {
   const [isEditDepartmentModalOpen, setIsEditDepartmentModalOpen] = useState(false);
 
   const [users, setUsers] = useState<User[]>([
-    { id: 'u1', fullName: 'John Doe (Admin)', email: 'admin@rccgvictory.org', phone: '+2348012345678', role: 'SystemAdmin', mustChangePassword: false, isActive: true },
-    { id: 'u2', fullName: 'Grace Usang', email: 'grace@rccgvictory.org', phone: '+2348023456789', role: 'UsheringDepartment', mustChangePassword: true, isActive: true },
-    { id: 'u3', fullName: 'Brother Samuel', email: 'samuel@rccgvictory.org', phone: '+2348034567890', role: 'HouseFellowshipLeader', mustChangePassword: true, isActive: true }
+    { id: 'u1', fullName: 'System Administrator', email: 'admin@rccgglorious.org', phone: '+2348000000000', role: 'SystemAdmin', mustChangePassword: false, isActive: true },
+    { id: 'u2', fullName: 'Pastor In Charge', email: 'pastor@rccgglorious.org', phone: '+2348000000001', role: 'Pastor', mustChangePassword: false, isActive: true },
+    { id: 'u3', fullName: 'Sister Grace Usang (HOD Ushering)', email: 'hod.ushering@rccgglorious.org', phone: '+2348000000002', role: 'HOD', assignedDepartment: 'Ushering & Protocol', mustChangePassword: false, isActive: true },
+    { id: 'u4', fullName: 'Minister David Okafor (HOD Choir)', email: 'hod.choir@rccgglorious.org', phone: '+2348000000003', role: 'HOD', assignedDepartment: 'Choir & Praise Team', mustChangePassword: false, isActive: true },
+    { id: 'u5', fullName: 'Brother Samuel Adebayo (HOD Fellowship)', email: 'hod.fellowship@rccgglorious.org', phone: '+2348000000004', role: 'HOD', assignedDepartment: 'Follow-up & Welfare', mustChangePassword: false, isActive: true },
+    { id: 'u6', fullName: 'Evangelist Peter King (HOD Outreach)', email: 'hod.outreach@rccgglorious.org', phone: '+2348000000005', role: 'HOD', assignedDepartment: 'Evangelism & Outreach', mustChangePassword: false, isActive: true }
   ]);
 
-  const [reports, setReports] = useState<ServiceReport[]>([
+  const [reports, setReports] = useState<ServiceReport[]>([]);
+
+  // --- PARISH EVENTS & CONFERENCES STATE ---
+  const [events, setEvents] = useState<ParishEventItem[]>(INITIAL_ADMIN_EVENTS);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<ParishEventItem | null>(null);
+  const [eventSearchQuery, setEventSearchQuery] = useState('');
+  const [eventCategoryFilter, setEventCategoryFilter] = useState('All');
+  const [eventStatusFilter, setEventStatusFilter] = useState('All');
+
+  // Event Form State
+  const [formEventTitle, setFormEventTitle] = useState('');
+  const [formEventTheme, setFormEventTheme] = useState('');
+  const [formEventDescription, setFormEventDescription] = useState('');
+  const [formEventCoverImageUrl, setFormEventCoverImageUrl] = useState('/event_praise_night.jpg');
+  const [formEventDate, setFormEventDate] = useState('2026-10-24');
+  const [formEventTimeString, setFormEventTimeString] = useState('Friday, October 24, 2026 • 9:00 PM GMT');
+  const [formEventVenue, setFormEventVenue] = useState('Main Sanctuary Auditorium, RCCG Glorious Church Parish');
+  const [formEventCategory, setFormEventCategory] = useState('Praise & Worship');
+  const [formEventIsFeatured, setFormEventIsFeatured] = useState(true);
+  const [formEventRegistrationRequired, setFormEventRegistrationRequired] = useState(true);
+  const [formEventStatus, setFormEventStatus] = useState<'Upcoming' | 'Completed' | 'Cancelled'>('Upcoming');
+  const [formEventMaxCapacity, setFormEventMaxCapacity] = useState<number | ''>(500);
+  const [formEventSpeakers, setFormEventSpeakers] = useState<EventSpeakerItem[]>([
     {
-      id: 'r1',
-      serviceTypeName: 'Sunday 1st Service',
-      category: 'Sunday',
-      serviceDate: '2026-09-13',
-      menCount: 140,
-      womenCount: 180,
-      childrenCount: 95,
-      totalAttendance: 415,
-      firstTimersCount: 18,
-      newConvertsCount: 6,
-      totalOffering: 245000,
-      totalExpenses: 27000,
-      netOffering: 218000
-    },
-    {
-      id: 'r2',
-      serviceTypeName: 'Digging Deep (Midweek)',
-      category: 'Midweek',
-      serviceDate: '2026-09-16',
-      menCount: 65,
-      womenCount: 85,
-      childrenCount: 20,
-      totalAttendance: 170,
-      firstTimersCount: 4,
-      newConvertsCount: 1,
-      preacherName: 'Pastor Oluwaseun Adeleke',
-      totalOffering: 68500,
-      totalExpenses: 8500,
-      netOffering: 60000
+      fullName: 'Pastor (Dr.) Taiwo Adetunji',
+      ecclesiasticalTitle: 'Pastor (Dr.)',
+      ministryRole: 'Host Pastor & Convener',
+      photoUrl: '/dr_taiwo_adetunji.jpg',
+      organization: 'RCCG Glorious Church',
+      shortBio: 'Pastor-in-Charge of RCCG Glorious Church Parish.'
     }
   ]);
+
+  useEffect(() => {
+    const fetchParishEvents = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/Events`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setEvents(json.data);
+          }
+        }
+      } catch (err) {
+        console.warn('Events API unavailable, using initialized state:', err);
+      }
+    };
+    fetchParishEvents();
+  }, []);
+
+  const handleOpenAddEventModal = () => {
+    setEditingEvent(null);
+    setFormEventTitle('');
+    setFormEventTheme('');
+    setFormEventDescription('');
+    setFormEventCoverImageUrl('/event_praise_night.jpg');
+    setFormEventDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
+    setFormEventTimeString('Friday, 6:00 PM GMT');
+    setFormEventVenue('Main Sanctuary Auditorium, RCCG Glorious Church Parish');
+    setFormEventCategory('Praise & Worship');
+    setFormEventIsFeatured(true);
+    setFormEventRegistrationRequired(true);
+    setFormEventStatus('Upcoming');
+    setFormEventMaxCapacity(500);
+    setFormEventSpeakers([
+      {
+        fullName: 'Pastor (Dr.) Taiwo Adetunji',
+        ecclesiasticalTitle: 'Pastor (Dr.)',
+        ministryRole: 'Host Pastor & Convener',
+        photoUrl: '/dr_taiwo_adetunji.jpg',
+        organization: 'RCCG Glorious Church',
+        shortBio: 'Pastor-in-Charge of RCCG Glorious Church Parish.'
+      }
+    ]);
+    setIsEventModalOpen(true);
+  };
+
+  const handleOpenEditEventModal = (ev: ParishEventItem) => {
+    setEditingEvent(ev);
+    setFormEventTitle(ev.title);
+    setFormEventTheme(ev.theme || '');
+    setFormEventDescription(ev.description || '');
+    setFormEventCoverImageUrl(ev.coverImageUrl || '/event_praise_night.jpg');
+    setFormEventDate(ev.eventDate ? ev.eventDate.split('T')[0] : '');
+    setFormEventTimeString(ev.timeString || '');
+    setFormEventVenue(ev.venue || '');
+    setFormEventCategory(ev.category || 'General');
+    setFormEventIsFeatured(ev.isFeatured);
+    setFormEventRegistrationRequired(ev.registrationRequired);
+    setFormEventStatus(ev.status);
+    setFormEventMaxCapacity(ev.maxCapacity ?? '');
+    setFormEventSpeakers(
+      ev.speakers && ev.speakers.length > 0
+        ? ev.speakers.map(s => ({ ...s }))
+        : [
+            {
+              fullName: '',
+              ecclesiasticalTitle: 'Pastor',
+              ministryRole: 'Guest Speaker',
+              photoUrl: '',
+              organization: '',
+              shortBio: ''
+            }
+          ]
+    );
+    setIsEventModalOpen(true);
+  };
+
+  const handleAddSpeakerRow = () => {
+    setFormEventSpeakers(prev => [
+      ...prev,
+      {
+        fullName: '',
+        ecclesiasticalTitle: 'Pastor',
+        ministryRole: 'Guest Speaker',
+        photoUrl: '',
+        organization: '',
+        shortBio: '',
+        displayOrder: prev.length + 1
+      }
+    ]);
+  };
+
+  const handleRemoveSpeakerRow = (index: number) => {
+    setFormEventSpeakers(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleSpeakerChange = (index: number, field: keyof EventSpeakerItem, value: any) => {
+    setFormEventSpeakers(prev =>
+      prev.map((spk, idx) => (idx === index ? { ...spk, [field]: value } : spk))
+    );
+  };
+
+  const handleSaveEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formEventTitle.trim() || !formEventVenue.trim()) {
+      showNotification('Event Title and Venue are required.', 'error');
+      return;
+    }
+
+    const validSpeakers = formEventSpeakers.filter(s => s.fullName && s.fullName.trim() !== '');
+
+    const eventPayload: Partial<ParishEventItem> = {
+      title: formEventTitle.trim(),
+      theme: formEventTheme.trim(),
+      description: formEventDescription.trim(),
+      coverImageUrl: formEventCoverImageUrl.trim() || '/event_praise_night.jpg',
+      eventDate: formEventDate ? new Date(formEventDate).toISOString() : new Date().toISOString(),
+      timeString: formEventTimeString.trim(),
+      venue: formEventVenue.trim(),
+      category: formEventCategory.trim(),
+      isFeatured: formEventIsFeatured,
+      registrationRequired: formEventRegistrationRequired,
+      status: formEventStatus,
+      maxCapacity: formEventMaxCapacity ? Number(formEventMaxCapacity) : undefined,
+      speakers: validSpeakers
+    };
+
+    if (editingEvent) {
+      const updatedEvent: ParishEventItem = {
+        ...editingEvent,
+        ...eventPayload
+      } as ParishEventItem;
+
+      setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? updatedEvent : ev));
+      showNotification(`Event "${updatedEvent.title}" updated successfully!`);
+      setIsEventModalOpen(false);
+
+      try {
+        await fetch(`${API_BASE_URL}/Events/${editingEvent.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(eventPayload)
+        });
+      } catch (err) {
+        console.warn('API update offline, saved locally');
+      }
+    } else {
+      const newId = 'evt-' + Date.now();
+      const newEvent: ParishEventItem = {
+        id: newId,
+        ...eventPayload
+      } as ParishEventItem;
+
+      setEvents(prev => [newEvent, ...prev]);
+      showNotification(`Parish Event "${newEvent.title}" published!`);
+      setIsEventModalOpen(false);
+
+      try {
+        await fetch(`${API_BASE_URL}/Events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(eventPayload)
+        });
+      } catch (err) {
+        console.warn('API post offline, saved locally');
+      }
+    }
+  };
+
+  const handleDeleteEvent = (id: string, title: string) => {
+    askConfirmation({
+      title: 'Delete Parish Event',
+      message: `Are you sure you want to delete "${title}"? All scheduled guest speakers and registration capacities will be removed.`,
+      confirmText: 'Yes, Delete',
+      type: 'danger',
+      onConfirm: async () => {
+        setEvents(prev => prev.filter(e => e.id !== id));
+        showNotification(`Event "${title}" has been removed.`);
+        try {
+          await fetch(`${API_BASE_URL}/Events/${id}`, { method: 'DELETE' });
+        } catch {}
+      }
+    });
+  };
 
   // Notifications
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -940,7 +1422,7 @@ export default function App() {
     setIsAddSetupModalOpen(false);
 
     try {
-      await fetch('http://localhost:5230/api/v1/Setup/service-types', {
+      await fetch(`${API_BASE_URL}/Setup/service-types`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newItem.name, category: newItem.category, isActive: true })
@@ -1052,7 +1534,7 @@ export default function App() {
     setEditingServiceType(null);
 
     try {
-      await fetch(`http://localhost:5230/api/v1/Setup/service-types/${editingServiceType.id}`, {
+      await fetch(`${API_BASE_URL}/Setup/service-types/${editingServiceType.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated)
@@ -1071,7 +1553,7 @@ export default function App() {
         showNotification(`Service Type "${name}" deleted.`);
 
         try {
-          await fetch(`http://localhost:5230/api/v1/Setup/service-types/${id}`, {
+          await fetch(`${API_BASE_URL}/Setup/service-types/${id}`, {
             method: 'DELETE'
           });
         } catch {}
@@ -1101,7 +1583,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch('http://localhost:5230/api/v1/Setup/offering-categories', {
+      await fetch(`${API_BASE_URL}/Setup/offering-categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newItem.name, code: code, isActive: true })
@@ -1140,7 +1622,7 @@ export default function App() {
     setEditingOfferingCategory(null);
 
     try {
-      await fetch(`http://localhost:5230/api/v1/Setup/offering-categories/${editingOfferingCategory.id}`, {
+      await fetch(`${API_BASE_URL}/Setup/offering-categories/${editingOfferingCategory.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: updatedItem.name, code: updatedCode, isActive: true })
@@ -1159,7 +1641,7 @@ export default function App() {
         showNotification(`Offering Category "${name}" deleted successfully.`);
 
         try {
-          await fetch(`http://localhost:5230/api/v1/Setup/offering-categories/${id}`, {
+          await fetch(`${API_BASE_URL}/Setup/offering-categories/${id}`, {
             method: 'DELETE'
           });
         } catch {}
@@ -1186,7 +1668,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch('http://localhost:5230/api/v1/Setup/ministers', {
+      await fetch(`${API_BASE_URL}/Setup/ministers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newItem.title, fullName: newItem.fullName })
@@ -1222,7 +1704,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch('http://localhost:5230/api/v1/Setup/departments', {
+      await fetch(`${API_BASE_URL}/Setup/departments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newDep)
@@ -1267,7 +1749,7 @@ export default function App() {
     setEditingDepartment(null);
 
     try {
-      await fetch(`http://localhost:5230/api/v1/Setup/departments/${editingDepartment.id}`, {
+      await fetch(`${API_BASE_URL}/Setup/departments/${editingDepartment.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedItem)
@@ -1286,7 +1768,7 @@ export default function App() {
         showNotification(`Department "${name}" deleted successfully.`);
 
         try {
-          await fetch(`http://localhost:5230/api/v1/Setup/departments/${id}`, {
+          await fetch(`${API_BASE_URL}/Setup/departments/${id}`, {
             method: 'DELETE'
           });
         } catch {}
@@ -1789,6 +2271,27 @@ export default function App() {
 
   // Current Authenticated User Session
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'membership' && userSubTab !== 'portal-users') {
+      setUserSubTab('portal-users');
+    }
+    if (activeTab === 'departments' && departmentSubTab !== 'departments-list' && departmentSubTab !== 'assign-hod' && departmentSubTab !== 'department-report') {
+      setDepartmentSubTab('departments-list');
+    }
+    if (currentUser?.role === 'HOD') {
+      const dept = getHodDepartment(currentUser);
+      if (activeTab === 'service-report' && dept !== 'Ushering & Protocol') {
+        setActiveTab('users');
+      }
+      if (activeTab === 'fellowship' && dept !== 'Follow-up & Welfare' && dept !== 'Evangelism & Outreach') {
+        setActiveTab('users');
+      }
+      if (activeTab === 'setup') {
+        setActiveTab('users');
+      }
+    }
+  }, [currentUser, activeTab, userSubTab, setupSubTab]);
 
   // Sidebar Layout State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -2514,7 +3017,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex font-sans overflow-x-hidden">
+    <div className="h-screen w-screen overflow-hidden bg-slate-100 flex font-sans select-none">
       {/* MOBILE SIDEBAR OVERLAY */}
       {mobileSidebarOpen && (
         <div 
@@ -2524,7 +3027,7 @@ export default function App() {
       )}
 
       {/* SIDEBAR NAVIGATION CONTAINER */}
-      <aside className={`rccg-gradient-header text-white flex flex-col justify-between fixed md:sticky top-0 h-screen z-50 transition-all duration-300 shadow-xl ${
+      <aside className={`rccg-gradient-header text-white flex flex-col justify-between h-screen fixed md:relative z-50 flex-shrink-0 transition-all duration-300 shadow-xl ${
         mobileSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'
       } ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'}`}>
         
@@ -2577,26 +3080,80 @@ export default function App() {
             {!isSidebarCollapsed && <span>Dashboard</span>}
           </button>
 
-          {/* SERVICE REPORTS */}
+          {/* SERVICE REPORTS - SUPERADMIN, PASTOR, & HOD USHERING ONLY */}
+          {(currentUser?.role === 'SuperAdmin' || 
+            currentUser?.role === 'Pastor' || 
+            currentUser?.role === 'SystemAdmin' || 
+            currentUser?.role === 'Admin' || 
+            currentUser?.role === 'ServiceCoordinator' || 
+            (currentUser?.role === 'HOD' && getHodDepartment(currentUser) === 'Ushering & Protocol')) && (
+            <button
+              onClick={() => { setActiveTab('service-report'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+                activeTab === 'service-report' 
+                  ? 'bg-emerald-500/20 text-white border border-emerald-400/40 shadow-inner' 
+                  : 'text-slate-200 hover:bg-white/10'
+              }`}
+              title="Service Reports"
+            >
+              <FileText className="w-5 h-5 text-emerald-300 flex-shrink-0" />
+              {!isSidebarCollapsed && (
+                <div className="flex-1 flex items-center justify-between">
+                  <span>Service Reports</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-400 text-slate-950 rounded">New</span>
+                </div>
+              )}
+            </button>
+          )}
+
+          {/* EVENTS & CONFERENCES - ALL LEADERSHIP & WORKFORCE */}
           <button
-            onClick={() => { setActiveTab('service-report'); setMobileSidebarOpen(false); }}
+            onClick={() => { setActiveTab('events'); setMobileSidebarOpen(false); }}
             className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
-              activeTab === 'service-report' 
-                ? 'bg-emerald-500/20 text-white border border-emerald-400/40 shadow-inner' 
+              activeTab === 'events' 
+                ? 'bg-amber-500/20 text-white border border-amber-400/40 shadow-inner' 
                 : 'text-slate-200 hover:bg-white/10'
             }`}
-            title="Service Reports"
+            title="Events & Conferences"
           >
-            <FileText className="w-5 h-5 text-emerald-300 flex-shrink-0" />
+            <Calendar className="w-5 h-5 text-amber-300 flex-shrink-0" />
             {!isSidebarCollapsed && (
               <div className="flex-1 flex items-center justify-between">
-                <span>Service Reports</span>
-                <span className="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-400 text-slate-950 rounded">New</span>
+                <span>Events &amp; Programs</span>
+                <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-400 text-slate-950 rounded">New</span>
               </div>
             )}
           </button>
 
-          {/* USER MANAGEMENT */}
+          {/* MEMBERSHIP */}
+          <button
+            onClick={() => { setActiveTab('membership'); setUserSubTab('portal-users'); setMobileSidebarOpen(false); }}
+            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+              activeTab === 'membership' 
+                ? 'bg-emerald-500/20 text-white border border-emerald-400/40 shadow-inner' 
+                : 'text-slate-200 hover:bg-white/10'
+            }`}
+            title="Membership"
+          >
+            <UserCheck className="w-5 h-5 text-emerald-300 flex-shrink-0" />
+            {!isSidebarCollapsed && <span>Membership</span>}
+          </button>
+
+          {/* DEPARTMENTS */}
+          <button
+            onClick={() => { setActiveTab('departments'); setDepartmentSubTab('departments-list'); setMobileSidebarOpen(false); }}
+            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+              activeTab === 'departments' 
+                ? 'bg-indigo-500/20 text-white border border-indigo-400/40 shadow-inner' 
+                : 'text-slate-200 hover:bg-white/10'
+            }`}
+            title="Departments"
+          >
+            <Building2 className="w-5 h-5 text-indigo-300 flex-shrink-0" />
+            {!isSidebarCollapsed && <span>Departments</span>}
+          </button>
+
+          {/* USER MANAGEMENT / SYSTEM ACCESS */}
           <button
             onClick={() => { setActiveTab('users'); setMobileSidebarOpen(false); }}
             className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
@@ -2604,44 +3161,52 @@ export default function App() {
                 ? 'bg-sky-500/20 text-white border border-sky-400/40 shadow-inner' 
                 : 'text-slate-200 hover:bg-white/10'
             }`}
-            title="User Management"
+            title={currentUser?.role === 'HOD' ? "Department Roles" : "User Management"}
           >
             <Users className="w-5 h-5 text-sky-300 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>User Management</span>}
+            {!isSidebarCollapsed && <span>{currentUser?.role === 'HOD' ? "Department Roles" : "User Management"}</span>}
           </button>
 
-          {/* FELLOWSHIP & OUTREACH */}
-          <button
-            onClick={() => { setActiveTab('fellowship'); setMobileSidebarOpen(false); }}
-            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
-              activeTab === 'fellowship' 
-                ? 'bg-teal-500/20 text-white border border-teal-400/40 shadow-inner' 
-                : 'text-slate-200 hover:bg-white/10'
-            }`}
-            title="Fellowship & Outreach"
-          >
-            <HeartHandshake className="w-5 h-5 text-teal-300 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>Fellowship & Outreach</span>}
-          </button>
+          {/* FELLOWSHIP & OUTREACH - ADMINS, PASTOR, HOD FELLOWSHIP, HOD OUTREACH ONLY */}
+          {(currentUser?.role === 'SuperAdmin' || 
+            currentUser?.role === 'Pastor' || 
+            currentUser?.role === 'SystemAdmin' || 
+            currentUser?.role === 'Admin' || 
+            (currentUser?.role === 'HOD' && (getHodDepartment(currentUser) === 'Follow-up & Welfare' || getHodDepartment(currentUser) === 'Evangelism & Outreach'))) && (
+            <button
+              onClick={() => { setActiveTab('fellowship'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+                activeTab === 'fellowship' 
+                  ? 'bg-teal-500/20 text-white border border-teal-400/40 shadow-inner' 
+                  : 'text-slate-200 hover:bg-white/10'
+              }`}
+              title="Fellowship & Outreach"
+            >
+              <HeartHandshake className="w-5 h-5 text-teal-300 flex-shrink-0" />
+              {!isSidebarCollapsed && <span>Fellowship & Outreach</span>}
+            </button>
+          )}
 
-          {/* SYSTEM SETUP */}
-          <button
-            onClick={() => { setActiveTab('setup'); setMobileSidebarOpen(false); }}
-            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
-              activeTab === 'setup' 
-                ? 'bg-blue-500/20 text-white border border-blue-400/40 shadow-inner' 
-                : 'text-slate-200 hover:bg-white/10'
-            }`}
-            title="System Setup"
-          >
-            <Settings className="w-5 h-5 text-slate-300 flex-shrink-0" />
-            {!isSidebarCollapsed && (
-              <div className="flex-1 flex items-center justify-between">
-                <span>System Setup</span>
-                <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-              </div>
-            )}
-          </button>
+          {/* SYSTEM SETUP - SYSTEM ADMIN & PASTOR ONLY */}
+          {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'SystemAdmin' || currentUser?.role === 'Admin') && (
+            <button
+              onClick={() => { setActiveTab('setup'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'} py-3 rounded-xl text-xs font-bold transition ${
+                activeTab === 'setup' 
+                  ? 'bg-blue-500/20 text-white border border-blue-400/40 shadow-inner' 
+                  : 'text-slate-200 hover:bg-white/10'
+              }`}
+              title="System Setup"
+            >
+              <Settings className="w-5 h-5 text-slate-300 flex-shrink-0" />
+              {!isSidebarCollapsed && (
+                <div className="flex-1 flex items-center justify-between">
+                  <span>System Setup</span>
+                  <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                </div>
+              )}
+            </button>
+          )}
         </div>
 
         {/* USER PROFILE & LOGOUT FOOTER */}
@@ -2674,9 +3239,9 @@ export default function App() {
       </aside>
 
       {/* MAIN CONTENT WORKSPACE AREA */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
         {/* TOP WORKSPACE HEADER BAR */}
-        <header className="bg-white border-b border-slate-200 h-16 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+        <header className="bg-white border-b border-slate-200 h-16 px-4 sm:px-8 flex items-center justify-between flex-shrink-0 z-30 shadow-xs">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setMobileSidebarOpen(true)}
@@ -2690,6 +3255,9 @@ export default function App() {
               <h2 className="text-sm sm:text-base font-bold text-slate-900 capitalize tracking-tight flex items-center gap-2">
                 {activeTab === 'dashboard' && <Church className="w-4 h-4 text-emerald-600" />}
                 {activeTab === 'service-report' && <FileText className="w-4 h-4 text-emerald-600" />}
+                {activeTab === 'events' && <Calendar className="w-4 h-4 text-amber-600" />}
+                {activeTab === 'membership' && <UserCheck className="w-4 h-4 text-emerald-600" />}
+                {activeTab === 'departments' && <Building2 className="w-4 h-4 text-indigo-600" />}
                 {activeTab === 'users' && <Users className="w-4 h-4 text-sky-600" />}
                 {activeTab === 'fellowship' && <HeartHandshake className="w-4 h-4 text-teal-600" />}
                 {activeTab === 'setup' && <Settings className="w-4 h-4 text-blue-600" />}
@@ -2718,7 +3286,7 @@ export default function App() {
 
         {/* Global Notification Banner */}
         {notification && (
-          <div className={`py-3 px-4 shadow-md text-white text-sm font-medium flex items-center justify-center space-x-2 transition ${
+          <div className={`py-3 px-4 shadow-md text-white text-sm font-medium flex items-center justify-center space-x-2 transition flex-shrink-0 ${
             notification.type === 'success' ? 'bg-rccg-green' : 'bg-rccg-red'
           }`}>
             {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
@@ -2727,7 +3295,8 @@ export default function App() {
         )}
 
         {/* Main Content Body */}
-        <main className="p-4 sm:p-8 flex-1 w-full max-w-7xl mx-auto">
+        <main className="p-3 sm:p-8 flex-1 w-full overflow-y-auto min-h-0 bg-slate-100 pb-24 md:pb-8 touch-scroll">
+          <div className="max-w-7xl mx-auto">
         {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
@@ -2736,13 +3305,20 @@ export default function App() {
                 <h2 className="text-2xl font-bold text-slate-900">Parish Analytics Overview</h2>
                 <p className="text-slate-500 text-sm mt-1">Real-time attendance, financial metrics, and souls won across parish services.</p>
               </div>
-              <button
-                onClick={() => setActiveTab('service-report')}
-                className="bg-rccg-blue hover:bg-rccg-navy text-white font-semibold px-5 py-2.5 rounded-xl shadow-md flex items-center space-x-2 transition"
-              >
-                <PlusCircle className="w-5 h-5" />
-                <span>Submit Service Report</span>
-              </button>
+              {(currentUser?.role === 'SuperAdmin' || 
+                currentUser?.role === 'Pastor' || 
+                currentUser?.role === 'SystemAdmin' || 
+                currentUser?.role === 'Admin' || 
+                currentUser?.role === 'ServiceCoordinator' || 
+                (currentUser?.role === 'HOD' && getHodDepartment(currentUser) === 'Ushering & Protocol')) && (
+                <button
+                  onClick={() => setActiveTab('service-report')}
+                  className="bg-rccg-blue hover:bg-rccg-navy text-white font-semibold px-5 py-2.5 rounded-xl shadow-md flex items-center space-x-2 transition cursor-pointer"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  <span>Submit Service Report</span>
+                </button>
+              )}
             </div>
 
             {/* Metric Cards Grid */}
@@ -3601,55 +4177,1306 @@ export default function App() {
           </div>
         )}
 
-        {/* USER MANAGEMENT TAB */}
+        {/* PARISH EVENTS & CONFERENCES MANAGEMENT TAB */}
+        {activeTab === 'events' && (
+          <div className="space-y-6">
+            {/* EVENTS HEADER CARD */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                  <Calendar className="w-6 h-6 text-amber-500" />
+                  <span>Parish Events &amp; Conferences Manager</span>
+                </h2>
+                <p className="text-slate-500 text-sm mt-1">
+                  Schedule kingdom gatherings, manage high-impact flyers, and allocate guest ministers and keynote speakers.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleOpenAddEventModal}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer transform hover:scale-102"
+                >
+                  <PlusCircle className="w-4 h-4 text-slate-950" />
+                  <span>Create New Event</span>
+                </button>
+              </div>
+            </div>
+
+            {/* METRIC STATS CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-2 h-full bg-amber-500"></div>
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Total Gatherings</span>
+                  <Calendar className="w-4 h-4 text-amber-500" />
+                </div>
+                <div className="text-2xl font-extrabold text-slate-900">{events.length}</div>
+                <span className="text-xs text-slate-400 mt-1 block">Scheduled programs</span>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-2 h-full bg-emerald-500"></div>
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Upcoming Events</span>
+                  <Clock className="w-4 h-4 text-emerald-500" />
+                </div>
+                <div className="text-2xl font-extrabold text-emerald-600">
+                  {events.filter(e => e.status === 'Upcoming').length}
+                </div>
+                <span className="text-xs text-slate-400 mt-1 block">Active on public site</span>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Featured Flyers</span>
+                  <Sparkles className="w-4 h-4 text-blue-500" />
+                </div>
+                <div className="text-2xl font-extrabold text-blue-600">
+                  {events.filter(e => e.isFeatured).length}
+                </div>
+                <span className="text-xs text-slate-400 mt-1 block">Homepage banner tier</span>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-2 h-full bg-purple-500"></div>
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Speakers Roster</span>
+                  <Users className="w-4 h-4 text-purple-500" />
+                </div>
+                <div className="text-2xl font-extrabold text-purple-600">
+                  {events.reduce((sum, e) => sum + (e.speakers?.length || 0), 0)}
+                </div>
+                <span className="text-xs text-slate-400 mt-1 block">Allocated ministers</span>
+              </div>
+            </div>
+
+            {/* SEARCH & FILTERS BAR */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search events, theme, venue, or ministers..."
+                  value={eventSearchQuery}
+                  onChange={(e) => setEventSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3.5 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                <div className="flex items-center space-x-1.5 shrink-0">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase">Category:</span>
+                  <select
+                    value={eventCategoryFilter}
+                    onChange={(e) => setEventCategoryFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700"
+                  >
+                    <option value="All">All Categories</option>
+                    <option value="Praise & Worship">Praise &amp; Worship</option>
+                    <option value="Youth & Leadership">Youth &amp; Leadership</option>
+                    <option value="Conference">Conference</option>
+                    <option value="Special Vigil">Special Vigil</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center space-x-1.5 shrink-0">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase">Status:</span>
+                  <select
+                    value={eventStatusFilter}
+                    onChange={(e) => setEventStatusFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700"
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Upcoming">Upcoming</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* EVENTS CARDS GRID */}
+            {(() => {
+              const filtered = events.filter((ev) => {
+                const matchQuery =
+                  !eventSearchQuery.trim() ||
+                  ev.title.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
+                  (ev.theme && ev.theme.toLowerCase().includes(eventSearchQuery.toLowerCase())) ||
+                  ev.venue.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
+                  (ev.speakers && ev.speakers.some(s => s.fullName.toLowerCase().includes(eventSearchQuery.toLowerCase())));
+
+                const matchCat = eventCategoryFilter === 'All' || ev.category === eventCategoryFilter;
+                const matchStatus = eventStatusFilter === 'All' || ev.status === eventStatusFilter;
+
+                return matchQuery && matchCat && matchStatus;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 space-y-4">
+                    <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto border border-amber-200">
+                      <Calendar className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-800">No Parish Events Found</h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      No events match your current filter parameters. Try clearing your filters or create a new event.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddEventModal}
+                      className="px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 transition cursor-pointer"
+                    >
+                      + Create First Event
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {filtered.map((ev) => (
+                    <div
+                      key={ev.id}
+                      className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between"
+                    >
+                      {/* CARD FLYER COVER */}
+                      <div className="relative h-56 bg-slate-900 overflow-hidden group">
+                        <img
+                          src={ev.coverImageUrl || '/event_praise_night.jpg'}
+                          alt={ev.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        
+                        <div className="absolute top-3 left-3 flex gap-2">
+                          <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow">
+                            {ev.category}
+                          </span>
+                          {ev.isFeatured && (
+                            <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow flex items-center space-x-1">
+                              <Sparkles className="w-3 h-3" />
+                              <span>Featured</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="absolute top-3 right-3">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase backdrop-blur-md border ${
+                            ev.status === 'Upcoming'
+                              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
+                              : ev.status === 'Completed'
+                              ? 'bg-slate-800/80 text-slate-300 border-slate-600'
+                              : 'bg-red-950/80 text-red-300 border-red-500/40'
+                          }`}>
+                            {ev.status}
+                          </span>
+                        </div>
+
+                        <div className="absolute bottom-3 left-3 right-3 text-white">
+                          <h4 className="text-xl font-black drop-shadow truncate">
+                            {ev.title}
+                          </h4>
+                          {ev.theme && (
+                            <p className="text-xs font-semibold text-emerald-300 italic truncate">
+                              "{ev.theme}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* CARD BODY */}
+                      <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                        <div className="space-y-2.5">
+                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                            {ev.description || 'No description provided.'}
+                          </p>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 pt-2 border-t border-slate-100">
+                            <div className="flex items-center space-x-2 text-slate-600">
+                              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span className="truncate">{ev.timeString || ev.eventDate}</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-slate-600">
+                              <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span className="truncate">{ev.venue}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* MINISTERS & GUEST SPEAKERS LIST */}
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 uppercase">
+                            <span className="font-bold flex items-center space-x-1.5 text-slate-800">
+                              <Users className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Ministers &amp; Guest Speakers</span>
+                            </span>
+                            <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                              {ev.speakers?.length || 0} Listed
+                            </span>
+                          </div>
+
+                          {(!ev.speakers || ev.speakers.length === 0) ? (
+                            <p className="text-[11px] text-slate-400 italic">
+                              No ministers/speakers allocated yet. Click "Edit" to assign ministers.
+                            </p>
+                          ) : (
+                            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                              {ev.speakers.map((spk, idx) => (
+                                <div
+                                  key={spk.id || idx}
+                                  className="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200/80 text-xs shadow-2xs"
+                                >
+                                  <div className="flex items-center space-x-2.5 min-w-0">
+                                    <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-[10px] shrink-0 overflow-hidden border border-amber-300">
+                                      {spk.photoUrl ? (
+                                        <img src={spk.photoUrl} alt={spk.fullName} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span>{spk.fullName.slice(0, 2).toUpperCase()}</span>
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <span className="font-bold text-slate-900 block truncate">
+                                        {spk.fullName}
+                                      </span>
+                                      <span className="text-[10px] text-slate-500 block truncate">
+                                        {spk.ecclesiasticalTitle} &bull; {spk.organization || 'RCCG'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold shrink-0">
+                                    {spk.ministryRole}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* CARD ACTION BUTTONS */}
+                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditEventModal(ev)}
+                              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Edit Event</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEvent(ev.id, ev.title)}
+                              className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                              title="Delete Event"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="text-[11px] text-slate-500 font-medium">
+                            {ev.maxCapacity ? `Max Capacity: ${ev.maxCapacity} Seats` : 'Open Seating'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ADD / EDIT PARISH EVENT MODAL */}
+        {isEventModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-hidden flex flex-col border border-slate-200">
+              
+              {/* MODAL HEADER */}
+              <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-400/20 text-amber-400 flex items-center justify-center border border-amber-400/30">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold tracking-tight">
+                      {editingEvent ? 'Edit Parish Event & Ministers' : 'Create New Parish Event'}
+                    </h3>
+                    <p className="text-[11px] text-slate-300">
+                      Configure cover flyer artwork, venue details, and guest ministers roster.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsEventModalOpen(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* MODAL FORM BODY */}
+              <form onSubmit={handleSaveEvent} className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+                
+                {/* 1. BASIC DETAILS */}
+                <div className="space-y-4">
+                  <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
+                    1. Event Information &amp; Theme
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Event Title *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formEventTitle}
+                        onChange={(e) => setFormEventTitle(e.target.value)}
+                        placeholder="e.g. Annual Praise & Worship Night 2026"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Theme (Scripture / Subtitle)
+                      </label>
+                      <input
+                        type="text"
+                        value={formEventTheme}
+                        onChange={(e) => setFormEventTheme(e.target.value)}
+                        placeholder="e.g. Sounds of Victory & Divine Exaltation"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 focus:bg-white focus:outline-amber-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={formEventCategory}
+                        onChange={(e) => setFormEventCategory(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800"
+                      >
+                        <option value="Praise & Worship">Praise &amp; Worship</option>
+                        <option value="Youth & Leadership">Youth &amp; Leadership</option>
+                        <option value="Conference">Conference</option>
+                        <option value="Special Vigil">Special Vigil</option>
+                        <option value="Revival & Healing">Revival &amp; Healing</option>
+                        <option value="General">General</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Event Description / Overview
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formEventDescription}
+                      onChange={(e) => setFormEventDescription(e.target.value)}
+                      placeholder="Write an inviting description of the program, expectations, and instructions for attendees..."
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 focus:bg-white focus:outline-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. COVER FLYER ARTWORK */}
+                <div className="space-y-4">
+                  <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
+                    2. Cover Flyer Artwork
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                    <div className="sm:col-span-2 space-y-2">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Cover Image / Flyer URL
+                      </label>
+                      <input
+                        type="text"
+                        value={formEventCoverImageUrl}
+                        onChange={(e) => setFormEventCoverImageUrl(e.target.value)}
+                        placeholder="/event_praise_night.jpg or https://..."
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 focus:bg-white focus:outline-amber-500"
+                      />
+                      
+                      {/* SAMPLE FLYER PRESET BUTTONS */}
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <span className="text-[11px] text-slate-400 font-semibold self-center">Presets:</span>
+                        <button
+                          type="button"
+                          onClick={() => setFormEventCoverImageUrl('/event_praise_night.jpg')}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
+                        >
+                          Praise Night Flyer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormEventCoverImageUrl('/event_youth_summit.jpg')}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
+                        >
+                          Youth Summit Flyer
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* FLYER PREVIEW BOX */}
+                    <div className="h-28 rounded-2xl bg-slate-900 border border-slate-200 overflow-hidden relative shadow-inner flex items-center justify-center">
+                      {formEventCoverImageUrl ? (
+                        <img
+                          src={formEventCoverImageUrl}
+                          alt="Flyer Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-[11px] text-slate-400 font-medium">No flyer set</span>
+                      )}
+                      <div className="absolute bottom-1 right-1 bg-slate-950/70 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
+                        Preview
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. DATE, TIME, VENUE & SETTINGS */}
+                <div className="space-y-4">
+                  <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
+                    3. Date, Venue &amp; Registration
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Event Date (YYYY-MM-DD) *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={formEventDate}
+                        onChange={(e) => setFormEventDate(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Display Time String
+                      </label>
+                      <input
+                        type="text"
+                        value={formEventTimeString}
+                        onChange={(e) => setFormEventTimeString(e.target.value)}
+                        placeholder="e.g. Friday, October 24, 2026 • 9:00 PM GMT"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Venue / Auditorium *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formEventVenue}
+                        onChange={(e) => setFormEventVenue(e.target.value)}
+                        placeholder="e.g. Main Sanctuary Auditorium, RCCG Glorious Church Parish"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Max Seating Capacity
+                      </label>
+                      <input
+                        type="number"
+                        value={formEventMaxCapacity}
+                        onChange={(e) => setFormEventMaxCapacity(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
+                        placeholder="e.g. 500"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
+                      <select
+                        value={formEventStatus}
+                        onChange={(e) => setFormEventStatus(e.target.value as any)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                      >
+                        <option value="Upcoming">Upcoming</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center space-x-2.5 pt-5">
+                      <input
+                        type="checkbox"
+                        id="isFeaturedToggle"
+                        checked={formEventIsFeatured}
+                        onChange={(e) => setFormEventIsFeatured(e.target.checked)}
+                        className="w-4 h-4 text-amber-500 rounded border-slate-300"
+                      />
+                      <label htmlFor="isFeaturedToggle" className="text-xs font-bold text-slate-700 cursor-pointer">
+                        Feature on Website
+                      </label>
+                    </div>
+
+                    <div className="flex items-center space-x-2.5 pt-5">
+                      <input
+                        type="checkbox"
+                        id="regReqToggle"
+                        checked={formEventRegistrationRequired}
+                        onChange={(e) => setFormEventRegistrationRequired(e.target.checked)}
+                        className="w-4 h-4 text-amber-500 rounded border-slate-300"
+                      />
+                      <label htmlFor="regReqToggle" className="text-xs font-bold text-slate-700 cursor-pointer">
+                        Registration Required
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. MINISTERS & GUEST SPEAKERS ROSTER */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                    <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400">
+                      4. Ministers &amp; Keynote Speakers Roster
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddSpeakerRow}
+                      className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition flex items-center space-x-1 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Minister / Speaker</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {formEventSpeakers.map((spk, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-2xl bg-slate-50 border border-slate-200 relative space-y-3"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                          <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider flex items-center space-x-1.5">
+                            <Users className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Speaker #{idx + 1}</span>
+                          </span>
+
+                          {formEventSpeakers.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSpeakerRow(idx)}
+                              className="text-rose-500 hover:text-rose-700 text-xs font-semibold flex items-center space-x-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Ecclesiastical Title
+                            </label>
+                            <select
+                              value={spk.ecclesiasticalTitle}
+                              onChange={(e) => handleSpeakerChange(idx, 'ecclesiasticalTitle', e.target.value)}
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                            >
+                              <option value="Pastor">Pastor</option>
+                              <option value="Pastor (Dr.)">Pastor (Dr.)</option>
+                              <option value="Minister">Minister</option>
+                              <option value="Evangelist">Evangelist</option>
+                              <option value="Deacon">Deacon</option>
+                              <option value="Sister">Sister</option>
+                              <option value="Brother">Brother</option>
+                            </select>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Full Name *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={spk.fullName}
+                              onChange={(e) => handleSpeakerChange(idx, 'fullName', e.target.value)}
+                              placeholder="e.g. Pastor (Dr.) Taiwo Adetunji"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Ministry Role
+                            </label>
+                            <input
+                              type="text"
+                              value={spk.ministryRole}
+                              onChange={(e) => handleSpeakerChange(idx, 'ministryRole', e.target.value)}
+                              placeholder="e.g. Keynote Speaker / Host Pastor"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Church / Organization
+                            </label>
+                            <input
+                              type="text"
+                              value={spk.organization || ''}
+                              onChange={(e) => handleSpeakerChange(idx, 'organization', e.target.value)}
+                              placeholder="e.g. RCCG Worldwide"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Photo URL / Preset
+                            </label>
+                            <input
+                              type="text"
+                              value={spk.photoUrl || ''}
+                              onChange={(e) => handleSpeakerChange(idx, 'photoUrl', e.target.value)}
+                              placeholder="/dr_taiwo_adetunji.jpg"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-800"
+                            />
+                            <div className="flex gap-1.5 mt-1">
+                              <button
+                                type="button"
+                                onClick={() => handleSpeakerChange(idx, 'photoUrl', '/adeboye-enoch-jpeg.webp')}
+                                className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded cursor-pointer"
+                              >
+                                Adeboye
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSpeakerChange(idx, 'photoUrl', '/dr_taiwo_adetunji.jpg')}
+                                className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded cursor-pointer"
+                              >
+                                Dr. Taiwo
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="sm:col-span-3">
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                              Short Biography / Ministration Focus
+                            </label>
+                            <input
+                              type="text"
+                              value={spk.shortBio || ''}
+                              onChange={(e) => handleSpeakerChange(idx, 'shortBio', e.target.value)}
+                              placeholder="Brief background or ministry calling note..."
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* MODAL ACTIONS FOOTER */}
+                <div className="pt-4 border-t border-slate-200 flex items-center justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsEventModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition cursor-pointer"
+                  >
+                    {editingEvent ? 'Update Event & Speakers' : 'Publish Parish Event'}
+                  </button>
+                </div>
+              </form>
+
+            </div>
+          </div>
+        )}
+
+        {/* DEDICATED PARISH MEMBERSHIP TAB */}
+        {activeTab === 'membership' && (
+          <div className="space-y-6">
+            {/* MEMBERSHIP HEADER CARD */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                  <UserCheck className="w-6 h-6 text-emerald-600" />
+                  <span>Parish Membership Portal</span>
+                </h2>
+                <p className="text-slate-500 text-sm mt-1">
+                  Comprehensive directory, online member enrollment, birthday celebrants, and bulk workforce spreadsheet uploads.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => setMembershipSubTab('registration')}
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>New Member Registration</span>
+                </button>
+                <button
+                  onClick={() => setMembershipSubTab('workforce-upload')}
+                  className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Bulk Upload Members</span>
+                </button>
+              </div>
+            </div>
+
+            {/* MEMBERSHIP TABS BAR */}
+            <div className="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
+              <button
+                onClick={() => setMembershipSubTab('directory')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  membershipSubTab === 'directory' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>Parish Member Directory ({members.length})</span>
+              </button>
+
+              <button
+                onClick={() => setMembershipSubTab('registration')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  membershipSubTab === 'registration' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Member Registration</span>
+              </button>
+
+              <button
+                onClick={() => setMembershipSubTab('birthdays')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  membershipSubTab === 'birthdays' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <Gift className="w-4 h-4 text-amber-300 animate-pulse" />
+                <span>Birthdays ({members.filter(m => m.dobMonth === selectedBirthdayMonth).length})</span>
+              </button>
+
+              <button
+                onClick={() => setMembershipSubTab('workforce-upload')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  membershipSubTab === 'workforce-upload' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>Workforce Uploads ({workerRegistrations.length})</span>
+              </button>
+            </div>
+
+            {/* SUB-TAB 1: PARISH MEMBER DIRECTORY */}
+            {membershipSubTab === 'directory' && (
+              <div className="space-y-6">
+                {/* MEMBER STATISTICS SUMMARY CARDS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">{members.length}</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Members</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center flex-shrink-0">
+                      <UserCheck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">{members.filter(m => m.role === 'Workforce' || m.role === 'Minister').length}</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Workforce &amp; Ministers</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">{members.filter(m => m.membershipStatus === 'New Convert').length}</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">New Converts</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">{members.filter(m => m.membershipStatus === 'First Timer').length}</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">First Timers</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SEARCH & FILTERS BAR */}
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <div className="relative w-full sm:w-80">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      placeholder="Search member name, phone, email..."
+                      value={memberSearchQuery}
+                      onChange={(e) => setMemberSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto">
+                    <select
+                      value={memberStatusFilter}
+                      onChange={(e) => setMemberStatusFilter(e.target.value)}
+                      className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    >
+                      <option value="All">All Membership Status</option>
+                      <option value="Full Member">Full Member</option>
+                      <option value="New Convert">New Convert</option>
+                      <option value="First Timer">First Timer</option>
+                      <option value="Under Follow-up">Under Follow-up</option>
+                    </select>
+
+                    <button
+                      onClick={() => handleDownloadCSVTemplate()}
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Export CSV Template</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* MEMBERS DATA TABLE */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="py-3.5 px-4">Member Name</th>
+                          <th className="py-3.5 px-4">Contact Details</th>
+                          <th className="py-3.5 px-4">Status &amp; Role</th>
+                          <th className="py-3.5 px-4">Department</th>
+                          <th className="py-3.5 px-4">Birthday</th>
+                          <th className="py-3.5 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs font-medium">
+                        {members
+                          .filter(m => {
+                            const matchSearch = memberSearchQuery === '' || 
+                              m.fullName.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+                              m.whatsappNumber.includes(memberSearchQuery) ||
+                              m.email.toLowerCase().includes(memberSearchQuery.toLowerCase());
+                            const matchStatus = memberStatusFilter === 'All' || m.membershipStatus === memberStatusFilter;
+                            return matchSearch && matchStatus;
+                          })
+                          .map((member) => (
+                            <tr key={member.id} className="hover:bg-slate-50/80 transition">
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-extrabold flex items-center justify-center text-xs flex-shrink-0">
+                                    {member.firstname.charAt(0)}{member.surname.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-slate-900">{member.fullName}</div>
+                                    <div className="text-[10px] text-slate-400 font-mono">{member.gender} • Joined {member.dateJoined}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <div className="text-slate-800 font-mono text-[11px]">{member.whatsappNumber}</div>
+                                <div className="text-[10px] text-slate-500 truncate">{member.email}</div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <div className="flex flex-col gap-1 items-start">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    member.membershipStatus === 'Full Member' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                                    member.membershipStatus === 'New Convert' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                                    'bg-purple-100 text-purple-800 border border-purple-200'
+                                  }`}>
+                                    {member.membershipStatus}
+                                  </span>
+                                  <span className="text-[10px] font-mono text-slate-500 font-semibold uppercase">{member.role}</span>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                {member.assignedDepartment ? (
+                                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[11px] font-medium border border-slate-200">
+                                    {member.assignedDepartment}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 italic text-[11px]">Unassigned</span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4 font-bold text-slate-700">
+                                🎂 {member.dobMonth} {member.dobDay}
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                <div className="flex items-center justify-end space-x-1">
+                                  <button
+                                    onClick={() => setRoleAssignModalMember(member)}
+                                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                                    title="Assign Department / Role"
+                                  >
+                                    <Sliders className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteMember(member.id)}
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                    title="Delete Member"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: MEMBER REGISTRATION */}
+            {membershipSubTab === 'registration' && (
+              <div className="space-y-6">
+                {/* SHAREABLE REGISTRATION LINK BOX */}
+                <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white p-6 rounded-2xl shadow-md border border-emerald-700/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2 text-emerald-400">
+                      <Share2 className="w-5 h-5" />
+                      <h3 className="text-sm font-extrabold uppercase tracking-wider">Shareable Online Member Registration Form</h3>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Send this link to new converts, first-timers, or church members to fill out their profile online.
+                    </p>
+                    <div className="mt-3 bg-slate-950/70 border border-emerald-500/30 px-3.5 py-2 rounded-xl text-xs font-mono text-emerald-300 flex items-center justify-between gap-2 max-w-xl">
+                      <span className="truncate">https://rccggloriouschurch.org/portal?register=member</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText('https://rccggloriouschurch.org/portal?register=member');
+                          showNotification('Member registration link copied to clipboard!', 'success');
+                        }}
+                        className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg text-[11px] transition flex items-center gap-1 flex-shrink-0 cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Link</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setShowPublicMemberForm(true)}
+                    className="px-4 py-2.5 bg-white text-slate-900 hover:bg-slate-100 font-extrabold text-xs rounded-xl shadow transition flex items-center space-x-2 cursor-pointer flex-shrink-0"
+                  >
+                    <ExternalLink className="w-4 h-4 text-emerald-600" />
+                    <span>Open Registration Form Preview</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 3: BIRTHDAYS & CELEBRANTS */}
+            {membershipSubTab === 'birthdays' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <Gift className="w-5 h-5 text-amber-500" />
+                      <span>Monthly Birthday Celebrants</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Send birthday goodwill messages and pastoral blessings to celebrants.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <label className="text-xs font-bold text-slate-600">Select Month:</label>
+                    <select
+                      value={selectedBirthdayMonth}
+                      onChange={(e) => setSelectedBirthdayMonth(e.target.value)}
+                      className="bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    >
+                      {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* CELEBRANTS GRID */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {members
+                    .filter(m => m.dobMonth === selectedBirthdayMonth)
+                    .map((m) => (
+                      <div key={m.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between hover:border-emerald-300 transition">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 font-black flex items-center justify-center text-sm shadow-inner flex-shrink-0">
+                            🎂
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900 text-sm">{m.fullName}</div>
+                            <div className="text-xs font-semibold text-emerald-700 mt-0.5">🎂 {m.dobMonth} {m.dobDay}</div>
+                            <div className="text-[10px] text-slate-400">{m.assignedDepartment || 'Parish Member'}</div>
+                          </div>
+                        </div>
+
+                        <a
+                          href={`https://wa.me/${m.whatsappNumber.replace(/[^0-9]/g, '')}?text=Happy%20Birthday%20${encodeURIComponent(m.firstname)}!%20May%20God's%20grace%20and%20blessings%20multiply%20in%20your%20new%20age!%20-%20From%20${encodeURIComponent(org.parishName)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 transition flex items-center space-x-1 text-xs font-bold cursor-pointer"
+                          title="Send Birthday Wish via WhatsApp"
+                        >
+                          <Send className="w-4 h-4" />
+                          <span className="hidden sm:inline">Wish</span>
+                        </a>
+                      </div>
+                    ))}
+                  {members.filter(m => m.dobMonth === selectedBirthdayMonth).length === 0 && (
+                    <div className="col-span-full bg-white p-8 rounded-2xl shadow-xs border border-slate-200 text-center text-slate-500 text-sm font-medium">
+                      No birthday celebrants recorded for <strong>{selectedBirthdayMonth}</strong>.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 4: WORKFORCE UPLOADS */}
+            {membershipSubTab === 'workforce-upload' && (
+              <div className="space-y-6">
+                {/* FILE UPLOAD CARD */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                        <span>Bulk Member Spreadsheet Upload</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Import member lists directly from Excel or CSV files into the parish database.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDownloadCSVTemplate()}
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Download Sample CSV</span>
+                    </button>
+                  </div>
+
+                  <input
+                    type="file"
+                    id="member-bulk-upload-input"
+                    accept=".csv,.xlsx,.xls"
+                    className="hidden"
+                    onChange={handleFileSelectForMemberUpload}
+                  />
+
+                  <div 
+                    className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-8 text-center bg-slate-50/50 hover:bg-emerald-50/20 transition cursor-pointer group"
+                    onClick={() => document.getElementById('member-bulk-upload-input')?.click()}
+                  >
+                    <Upload className="w-10 h-10 text-slate-400 group-hover:text-emerald-600 mx-auto transition mb-2" />
+                    <h4 className="text-sm font-bold text-slate-800">
+                      {bulkFileName ? `Selected File: ${bulkFileName}` : 'Click to Select Excel / CSV File'}
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-1">Supports .xlsx, .xls, .csv format files</p>
+
+                    {parsedPreviewMembers.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col items-center gap-2">
+                        <span className="text-xs font-bold text-emerald-700">
+                          ✓ {parsedPreviewMembers.length} member records parsed and ready for import!
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleProcessMemberBatchImport(); }}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition"
+                        >
+                          Confirm &amp; Import {parsedPreviewMembers.length} Members into Directory
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* WORKFORCE APPLICATIONS LIST */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-slate-900">Workforce Training &amp; Applications ({workerRegistrations.length})</h3>
+                  </div>
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                          <th className="py-3.5 px-4">Applicant Name</th>
+                          <th className="py-3.5 px-4">Phone / Email</th>
+                          <th className="py-3.5 px-4">Preferred Dept</th>
+                          <th className="py-3.5 px-4">Current Stage</th>
+                          <th className="py-3.5 px-4">Certificates</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs font-medium">
+                        {workerRegistrations.map((worker) => (
+                          <tr key={worker.id} className="hover:bg-slate-50/80 transition">
+                            <td className="py-3.5 px-4 font-bold text-slate-900">{worker.fullName}</td>
+                            <td className="py-3.5 px-4 font-mono text-slate-700">{worker.phone}</td>
+                            <td className="py-3.5 px-4">
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[11px] font-bold border border-slate-200">
+                                {worker.preferredDepartment}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                {worker.currentStage}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-slate-600 font-mono text-[11px]">
+                              {worker.certificates?.baptismCertName ? '✓ Baptismal' : 'No Cert'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* USER MANAGEMENT & ACCESS CONTROL TAB */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">User Management & Personnel Directory</h2>
-                <p className="text-slate-500 text-sm mt-1">Manage portal access credentials, departmental access roles, and ministers directory.</p>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  {currentUser?.role === 'HOD' 
+                    ? `My Department Personnel (${getHodDepartment(currentUser)})` 
+                    : "User Management & System Access Roles"}
+                </h2>
+                <p className="text-slate-500 text-sm mt-1">
+                  {currentUser?.role === 'HOD' 
+                    ? (getHodDepartment(currentUser) === 'Follow-up & Welfare'
+                        ? `View personnel directory for ${getHodDepartment(currentUser)}.`
+                        : `View personnel directory for ${getHodDepartment(currentUser)} and assign members to monthly service duty rosters.`)
+                    : "Manage portal access credentials, departmental access roles, and monthly service duty rosters."}
+                </p>
               </div>
-            </div>            {/* USER MANAGEMENT SUB-TAB NAVIGATION */}
+            </div>
+
+            {/* SUB-TAB NAVIGATION */}
             <div className="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
-              <button
-                onClick={() => setUserSubTab('portal-users')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-                  userSubTab === 'portal-users' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                <span>Members ({members.length})</span>
-              </button>
+              {currentUser?.role === 'HOD' ? (
+                <>
+                  <button
+                    onClick={() => setUserSubTab('portal-users')}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                      userSubTab === 'portal-users' || getHodDepartment(currentUser) === 'Follow-up & Welfare' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                    <span>Department Members ({members.filter(m => m.assignedDepartment === getHodDepartment(currentUser)).length})</span>
+                  </button>
 
-              <button
-                onClick={() => setUserSubTab('ministers')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-                  userSubTab === 'ministers' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>Ministers Directory ({ministers.length})</span>
-              </button>
+                  {getHodDepartment(currentUser) !== 'Follow-up & Welfare' && (
+                    <button
+                      onClick={() => setUserSubTab('assignment')}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                        userSubTab === 'assignment' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                      }`}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      <span>Assignment (Duty Roster)</span>
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setUserSubTab('portal-users')}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                      userSubTab === 'portal-users' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                    <span>Members ({members.length})</span>
+                  </button>
 
-              <button
-                onClick={() => setUserSubTab('role-assignment')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-                  userSubTab === 'role-assignment' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <Sliders className="w-4 h-4" />
-                <span>Role & Department Assignment ({members.length})</span>
-              </button>
+                  <button
+                    onClick={() => setUserSubTab('ministers')}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                      userSubTab === 'ministers' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Ministers Directory ({ministers.length})</span>
+                  </button>
 
-              <button
-                onClick={() => setUserSubTab('workers-registration')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-                  userSubTab === 'workers-registration' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <UserCheck className="w-4 h-4" />
-                <span>Workers Registration Applications ({workerRegistrations.length})</span>
-              </button>
+                  <button
+                    onClick={() => setUserSubTab('role-assignment')}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                      userSubTab === 'role-assignment' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <Sliders className="w-4 h-4" />
+                    <span>Role & Department Assignment ({members.length})</span>
+                  </button>
+
+                  <button
+                    onClick={() => setUserSubTab('workers-registration')}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                      userSubTab === 'workers-registration' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    <span>Workers Registration ({workerRegistrations.length})</span>
+                  </button>
+
+                  <button
+                    onClick={() => setUserSubTab('assignment')}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                      userSubTab === 'assignment' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <span>Duty Assignments (All Depts)</span>
+                  </button>
+                </>
+              )}
             </div>
 
             {/* SUB-PANEL 1: MEMBERS & DEPARTMENT LEADERSHIP */}
@@ -3662,522 +5489,612 @@ export default function App() {
                   </div>
                 )}
 
-                {/* SHAREABLE MEMBER REGISTRATION LINK BANNER */}
-                <div className="bg-gradient-to-r from-rccg-blue via-rccg-navy to-purple-950 p-5 rounded-2xl text-white shadow-md space-y-3">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div>
-                      <h3 className="text-sm font-bold flex items-center gap-2">
-                        <Share2 className="w-4 h-4 text-emerald-300" />
-                        <span>Shareable Member Registration Link</span>
-                      </h3>
-                      <p className="text-xs text-blue-100 mt-0.5">Share this link with members or post on WhatsApp groups for parish self-registration.</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const shareableUrl = `${window.location.origin}${window.location.pathname}?register=member`;
-                          navigator.clipboard.writeText(shareableUrl);
-                          setUploadSuccessBanner("Shareable registration link copied to clipboard! You can now paste it into WhatsApp groups.");
-                          setTimeout(() => setUploadSuccessBanner(null), 6000);
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy WhatsApp Link</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowPublicMemberForm(true)}
-                        className="px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span>Preview Public Form</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* INNER SUB-TABS: Members vs Department & Leadership */}
-                <div className="flex space-x-2 bg-slate-100 p-1.5 rounded-2xl w-max border border-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => setMembersInnerTab('members-list')}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
-                      membersInnerTab === 'members-list'
-                        ? 'bg-rccg-blue text-white shadow'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                    }`}
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    <span>Members</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMembersInnerTab('dept-leadership')}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
-                      membersInnerTab === 'dept-leadership'
-                        ? 'bg-rccg-blue text-white shadow'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                    }`}
-                  >
-                    <Sliders className="w-4 h-4" />
-                    <span>Department & Leadership</span>
-                  </button>
-                </div>
-
-                {/* TAB 1: MEMBERS */}
-                {membersInnerTab === 'members-list' && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column Forms */}
-                    <div className="space-y-6">
-                      {/* SINGLE MEMBER REGISTRATION FORM */}
-                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                        <div className="border-b border-slate-100 pb-3">
-                          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                            <UserPlus className="w-5 h-5 text-rccg-blue" />
-                            <span>Register New Parishioner</span>
-                          </h3>
-                          <p className="text-xs text-slate-500 mt-0.5">Register individual member details into parish database.</p>
-                        </div>
-
-                        <form onSubmit={handleRegisterSingleMember} className="space-y-4">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Surname *</label>
-                              <input
-                                type="text"
-                                required
-                                value={regSurname}
-                                onChange={(e) => setRegSurname(e.target.value)}
-                                placeholder="e.g. Okon"
-                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Firstname *</label>
-                              <input
-                                type="text"
-                                required
-                                value={regFirstname}
-                                onChange={(e) => setRegFirstname(e.target.value)}
-                                placeholder="e.g. Emmanuel"
-                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">Whatsapp Number *</label>
-                            <input
-                              type="tel"
-                              required
-                              value={regWhatsapp}
-                              onChange={(e) => setRegWhatsapp(e.target.value)}
-                              placeholder="e.g. +2348031112233"
-                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
-                            <input
-                              type="email"
-                              value={regEmail}
-                              onChange={(e) => setRegEmail(e.target.value)}
-                              placeholder="name@example.com"
-                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">Home Address</label>
-                            <input
-                              type="text"
-                              value={regAddress}
-                              onChange={(e) => setRegAddress(e.target.value)}
-                              placeholder="12 Allen Avenue, Ikeja, Lagos"
-                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
-                            />
-                          </div>
-
-                          {/* DATE OF BIRTH */}
-                          <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl space-y-2">
-                            <label className="block text-xs font-bold text-rccg-blue flex items-center gap-1">
-                              <span>🎂 Date of Birth (Day & Month)</span>
-                            </label>
-                            <p className="text-[11px] text-slate-500 font-medium">Used to send automated birthday greetings & announcements.</p>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Day</label>
-                                <select
-                                  value={regDobDay}
-                                  onChange={(e) => setRegDobDay(parseInt(e.target.value) || 1)}
-                                  className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
-                                >
-                                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                                    <option key={day} value={day}>Day {day}</option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div>
-                                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Month</label>
-                                <select
-                                  value={regDobMonth}
-                                  onChange={(e) => setRegDobMonth(e.target.value)}
-                                  className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
-                                >
-                                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                                    <option key={m} value={m}>{m}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* PROFILE PHOTO UPLOAD */}
-                          <div className="flex items-center space-x-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                            <div className="w-12 h-12 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center shrink-0 border border-slate-300">
-                              {regProfileImageUrl ? (
-                                <img src={regProfileImageUrl} alt="Preview" className="w-full h-full object-cover" />
-                              ) : (
-                                <User className="w-6 h-6 text-slate-400" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <label className="block text-[11px] font-bold text-slate-700 mb-1">Profile Photo (Optional)</label>
-                              <label className="px-3 py-1.5 rounded-lg bg-rccg-blue text-white text-xs font-bold hover:bg-rccg-navy transition cursor-pointer inline-flex items-center space-x-1">
-                                <Camera className="w-3.5 h-3.5" />
-                                <span>{regProfileImageUrl ? 'Change Image' : 'Upload Image'}</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onloadend = () => {
-                                        setRegProfileImageUrl(reader.result as string);
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }
-                                  }}
-                                />
-                              </label>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
-                              <select
-                                value={regGender}
-                                onChange={(e) => setRegGender(e.target.value)}
-                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-                              >
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Marital Status</label>
-                              <select
-                                value={regMaritalStatus}
-                                onChange={(e) => setRegMaritalStatus(e.target.value as any)}
-                                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-                              >
-                                <option value="Single">Single</option>
-                                <option value="Married">Married</option>
-                                <option value="Engaged">Engaged</option>
-                                <option value="Widowed">Widowed</option>
-                                <option value="Divorced">Divorced</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          <button
-                            type="submit"
-                            className="w-full py-3 bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer"
-                          >
-                            <UserPlus className="w-4 h-4" />
-                            <span>Save Member Profile</span>
-                          </button>
-                        </form>
+                {currentUser?.role === 'HOD' ? (
+                  /* HOD DEDICATED DEPARTMENT PERSONNEL DIRECTORY */
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                          <Users className="w-5 h-5 text-rccg-blue" />
+                          <span>Department Personnel Directory ({members.filter(m => m.assignedDepartment === getHodDepartment(currentUser)).length})</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Active workforce members assigned to <strong>{getHodDepartment(currentUser)}</strong>.
+                        </p>
+                      </div>
+                      <div className="relative w-full sm:w-72">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          placeholder="Search department members..."
+                          value={memberSearchQuery}
+                          onChange={(e) => setMemberSearchQuery(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-rccg-blue"
+                        />
                       </div>
                     </div>
 
-                    {/* Right Column Directories */}
-                    <div className="lg:col-span-2 space-y-6">
-                      {/* BULK MEMBER IMPORT */}
-                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
-                          <div>
-                            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                              <Upload className="w-5 h-5 text-rccg-blue" />
-                              <span>Bulk Member CSV / Excel Import</span>
-                            </h3>
-                            <p className="text-xs text-slate-500 mt-0.5">Upload member roster files with Surname, Firstname, Whatsapp & DOB.</p>
+                    {(() => {
+                      const hodDept = getHodDepartment(currentUser);
+                      const deptMembersList = members
+                        .filter(m => m.assignedDepartment === hodDept)
+                        .filter(m => m.fullName.toLowerCase().includes(memberSearchQuery.toLowerCase()) || m.whatsappNumber.includes(memberSearchQuery));
+
+                      if (deptMembersList.length === 0) {
+                        return (
+                          <div className="p-10 text-center bg-slate-50/80 rounded-2xl border border-dashed border-slate-200 space-y-3">
+                            <Users className="w-12 h-12 text-slate-300 mx-auto" />
+                            <div className="text-sm font-bold text-slate-700">No personnel currently assigned to {hodDept}</div>
+                            <p className="text-xs text-slate-500 max-w-md mx-auto">
+                              Workers assigned to your department by System Admin or Pastor will automatically appear here for monthly duty roster assignments.
+                            </p>
                           </div>
+                        );
+                      }
 
-                          <button
-                            type="button"
-                            onClick={handleDownloadCSVTemplate}
-                            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center space-x-1.5 cursor-pointer w-max"
-                          >
-                            <Download className="w-3.5 h-3.5 text-rccg-blue" />
-                            <span>CSV Template</span>
-                          </button>
-                        </div>
-
-                        {/* DROPZONE */}
-                        <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 transition relative">
-                          <input
-                            type="file"
-                            accept=".csv,.xlsx,.xls"
-                            onChange={handleFileSelectForMemberUpload}
-                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                          />
-                          <div className="flex flex-col items-center justify-center space-y-2">
-                            <FileSpreadsheet className="w-7 h-7 text-rccg-blue" />
-                            <div className="text-xs font-bold text-slate-800">
-                              {bulkFileName ? `Selected: ${bulkFileName}` : 'Drag & Drop Member Spreadsheet Here'}
-                            </div>
-                            <p className="text-[11px] text-slate-500">Or click to select CSV file from your computer</p>
-                          </div>
-                        </div>
-
-                        {parsedPreviewMembers.length > 0 && (
-                          <div className="space-y-3 pt-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-slate-800">
-                                Parsed Preview ({parsedPreviewMembers.length} records ready)
-                              </span>
-                              <button
-                                type="button"
-                                onClick={handleProcessMemberBatchImport}
-                                className="px-4 py-2 rounded-xl bg-rccg-green hover:bg-emerald-700 text-white text-xs font-bold shadow transition cursor-pointer"
-                              >
-                                Confirm Batch Import
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* REGISTERED PARISH MEMBERS DIRECTORY TABLE */}
-                      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                          <h3 className="text-base font-bold text-slate-900">Registered Parish Members ({members.length})</h3>
-                          <div className="relative w-full sm:w-64">
-                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                            <input
-                              type="text"
-                              placeholder="Search by surname or whatsapp..."
-                              value={memberSearchQuery}
-                              onChange={(e) => setMemberSearchQuery(e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-rccg-blue"
-                            />
-                          </div>
-                        </div>
-
+                      return (
                         <div className="overflow-x-auto">
                           <table className="w-full text-left text-xs text-slate-600">
                             <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
                               <tr>
-                                <th className="py-3 px-4">Member Name</th>
-                                <th className="py-3 px-4">Whatsapp</th>
-                                <th className="py-3 px-4">Home Address</th>
-                                <th className="py-3 px-4">Birthday</th>
-                                <th className="py-3 px-4">Role & Dept</th>
+                                <th className="py-3.5 px-4">Member Name</th>
+                                <th className="py-3.5 px-4">Whatsapp</th>
+                                <th className="py-3.5 px-4">Home Address</th>
+                                <th className="py-3.5 px-4">Birthday</th>
+                                <th className="py-3.5 px-4">Role & Dept</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                              {members
-                                .filter(m => m.fullName.toLowerCase().includes(memberSearchQuery.toLowerCase()) || m.whatsappNumber.includes(memberSearchQuery))
-                                .map((m) => (
-                                  <tr key={m.id} className="hover:bg-slate-50">
-                                    <td className="py-3 px-4 font-bold text-slate-900">
-                                      <div className="flex items-center space-x-2.5">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 overflow-hidden flex items-center justify-center shrink-0 text-rccg-blue font-bold text-xs">
-                                          {m.profileImageUrl ? (
-                                            <img src={m.profileImageUrl} alt={m.fullName} className="w-full h-full object-cover" />
-                                          ) : (
-                                            <span>{m.surname[0]}{m.firstname[0]}</span>
-                                          )}
-                                        </div>
-                                        <div>
-                                          <div>{m.surname}, {m.firstname}</div>
-                                          <div className="text-[11px] text-slate-400 font-normal flex items-center gap-1.5">
-                                            <span>{m.email}</span>
-                                            {m.maritalStatus && (
-                                              <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-slate-200">
-                                                {m.maritalStatus}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
+                              {deptMembersList.map((member) => (
+                                <tr key={member.id} className="hover:bg-slate-50/80 transition">
+                                  <td className="py-3.5 px-4 font-bold text-slate-900">
+                                    <div className="flex items-center space-x-2.5">
+                                      <div className="w-8 h-8 rounded-full bg-rccg-blue/10 text-rccg-blue flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                        {member.firstname.charAt(0)}{member.surname.charAt(0)}
                                       </div>
-                                    </td>
-                                    <td className="py-3 px-4 font-mono font-bold text-rccg-blue">{m.whatsappNumber}</td>
-                                    <td className="py-3 px-4 text-slate-600">{m.homeAddress}</td>
-                                    <td className="py-3 px-4">
-                                      <span className="bg-blue-50 text-rccg-blue font-bold px-2 py-0.5 rounded text-[11px]">
-                                        🎂 {m.dobMonth} {m.dobDay}
-                                      </span>
-                                    </td>
-                                    <td className="py-3 px-4">
-                                      <div className="font-bold text-slate-800">{m.role}</div>
-                                      <div className="text-[11px] text-slate-500">{m.assignedDepartment || 'No Dept'}</div>
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* Registered Portal Users List */}
-                      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="p-6 border-b border-slate-100">
-                          <h3 className="text-base font-bold text-slate-900">Parish Portal System Users ({users.length})</h3>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left text-sm text-slate-600">
-                            <thead className="bg-slate-50 text-slate-700 uppercase text-xs font-bold tracking-wider">
-                              <tr>
-                                <th className="py-3.5 px-6">User & Role</th>
-                                <th className="py-3.5 px-6">Contact</th>
-                                <th className="py-3.5 px-6">Must Change Password</th>
-                                <th className="py-3.5 px-6">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {users.map((u) => (
-                                <tr key={u.id} className="hover:bg-slate-50/80">
-                                  <td className="py-4 px-6 font-medium text-slate-900">
-                                    <div>{u.fullName}</div>
-                                    <span className="text-xs text-slate-400 font-normal">{u.role}</span>
+                                      <div>
+                                        <div>{member.surname}, {member.firstname}</div>
+                                        <div className="text-[10px] text-slate-400 font-mono">{member.email || 'No email provided'}</div>
+                                      </div>
+                                    </div>
                                   </td>
-                                  <td className="py-4 px-6 text-xs text-slate-500">
-                                    <div>{u.email}</div>
-                                    <div>{u.phone}</div>
-                                  </td>
-                                  <td className="py-4 px-6">
-                                    {u.mustChangePassword ? (
-                                      <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
-                                        <Lock className="w-3 h-3" />
-                                        <span>Pending Reset</span>
-                                      </span>
-                                    ) : (
-                                      <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
-                                        <ShieldCheck className="w-3 h-3" />
-                                        <span>Active & Verified</span>
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="py-4 px-6">
-                                    <span className="text-xs font-semibold text-emerald-600">Active</span>
+                                  <td className="py-3.5 px-4 font-mono font-bold text-rccg-blue">{member.whatsappNumber}</td>
+                                  <td className="py-3.5 px-4">{member.homeAddress || 'N/A'}</td>
+                                  <td className="py-3.5 px-4 font-bold text-slate-700">🎂 {member.dobMonth} {member.dobDay}</td>
+                                  <td className="py-3.5 px-4">
+                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-blue-100 text-blue-800">
+                                      {member.assignedDepartment}
+                                    </span>
                                   </td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
-                )}
+                ) : (
+                  /* SYSTEM ADMIN / PASTOR PARISH-WIDE VIEW WITH REGISTRATION FORMS */
+                  <>
+                    {/* SHAREABLE MEMBER REGISTRATION LINK BANNER */}
+                    <div className="bg-gradient-to-r from-rccg-blue via-rccg-navy to-purple-950 p-5 rounded-2xl text-white shadow-md space-y-3">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                          <h3 className="text-sm font-bold flex items-center gap-2">
+                            <Share2 className="w-4 h-4 text-emerald-300" />
+                            <span>Shareable Member Registration Link</span>
+                          </h3>
+                          <p className="text-xs text-blue-100 mt-0.5">Share this link with members or post on WhatsApp groups for parish self-registration.</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const shareableUrl = `${window.location.origin}${window.location.pathname}?register=member`;
+                              navigator.clipboard.writeText(shareableUrl);
+                              setUploadSuccessBanner("Shareable registration link copied to clipboard! You can now paste it into WhatsApp groups.");
+                              setTimeout(() => setUploadSuccessBanner(null), 6000);
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy WhatsApp Link</span>
+                          </button>
 
-                {/* TAB 2: DEPARTMENT & LEADERSHIP */}
-                {membersInnerTab === 'dept-leadership' && (
-                  <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                          <Sliders className="w-5 h-5 text-rccg-blue" />
-                          <span>Department & Leadership Allocation</span>
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-0.5">Assign members to active parish departments and designate Head of Department (HOD) leaders.</p>
+                          <button
+                            type="button"
+                            onClick={() => setShowPublicMemberForm(true)}
+                            className="px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Preview Public Form</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-slate-600">
-                          <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
-                            <tr>
-                              <th className="py-3 px-4">Member Name</th>
-                              <th className="py-3 px-4">Whatsapp / Email</th>
-                              <th className="py-3 px-4">Current Role</th>
-                              <th className="py-3 px-4">Assigned Department</th>
-                              <th className="py-3 px-4">Leadership / HOD</th>
-                              <th className="py-3 px-4 text-right">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {members.map((m) => (
-                              <tr key={m.id} className="hover:bg-slate-50">
-                                <td className="py-4 px-4 font-bold text-slate-900">
-                                  <div>{m.surname}, {m.firstname}</div>
-                                  <div className="text-[11px] text-slate-400 font-normal">Joined: {m.dateJoined}</div>
-                                </td>
-                                <td className="py-4 px-4 text-slate-600">
-                                  <div className="font-mono font-bold text-rccg-blue">{m.whatsappNumber}</div>
-                                  <div className="text-[11px] text-slate-500">{m.email}</div>
-                                </td>
-                                <td className="py-4 px-4 font-bold text-slate-800">
-                                  <span className={`px-2.5 py-1 rounded-full text-[11px] ${
-                                    m.role === 'Minister' ? 'bg-purple-100 text-purple-800' :
-                                    m.role === 'Workforce' ? 'bg-blue-100 text-blue-800' :
-                                    'bg-slate-100 text-slate-700'
-                                  }`}>
-                                    {m.role}
+                    {/* INNER SUB-TABS: Members vs Department & Leadership */}
+                    <div className="flex space-x-2 bg-slate-100 p-1.5 rounded-2xl w-max border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setMembersInnerTab('members-list')}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
+                          membersInnerTab === 'members-list'
+                            ? 'bg-rccg-blue text-white shadow'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                        }`}
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        <span>Members</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setMembersInnerTab('dept-leadership')}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
+                          membersInnerTab === 'dept-leadership'
+                            ? 'bg-rccg-blue text-white shadow'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                        }`}
+                      >
+                        <Sliders className="w-4 h-4" />
+                        <span>Department & Leadership</span>
+                      </button>
+                    </div>
+
+                    {/* TAB 1: MEMBERS */}
+                    {membersInnerTab === 'members-list' && (
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Left Column Forms */}
+                        <div className="space-y-6">
+                          {/* SINGLE MEMBER REGISTRATION FORM */}
+                          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                            <div className="border-b border-slate-100 pb-3">
+                              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <UserPlus className="w-5 h-5 text-rccg-blue" />
+                                <span>Register New Parishioner</span>
+                              </h3>
+                              <p className="text-xs text-slate-500 mt-0.5">Register individual member details into parish database.</p>
+                            </div>
+
+                            <form onSubmit={handleRegisterSingleMember} className="space-y-4">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-700 mb-1">Surname *</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    value={regSurname}
+                                    onChange={(e) => setRegSurname(e.target.value)}
+                                    placeholder="e.g. Okon"
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-700 mb-1">Firstname *</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    value={regFirstname}
+                                    onChange={(e) => setRegFirstname(e.target.value)}
+                                    placeholder="e.g. Emmanuel"
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Whatsapp Number *</label>
+                                <input
+                                  type="tel"
+                                  required
+                                  value={regWhatsapp}
+                                  onChange={(e) => setRegWhatsapp(e.target.value)}
+                                  placeholder="e.g. +2348031112233"
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                                <input
+                                  type="email"
+                                  value={regEmail}
+                                  onChange={(e) => setRegEmail(e.target.value)}
+                                  placeholder="name@example.com"
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Home Address</label>
+                                <input
+                                  type="text"
+                                  value={regAddress}
+                                  onChange={(e) => setRegAddress(e.target.value)}
+                                  placeholder="12 Allen Avenue, Ikeja, Lagos"
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium"
+                                />
+                              </div>
+
+                              {/* DATE OF BIRTH */}
+                              <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl space-y-2">
+                                <label className="block text-xs font-bold text-rccg-blue flex items-center gap-1">
+                                  <span>🎂 Date of Birth (Day & Month)</span>
+                                </label>
+                                <p className="text-[11px] text-slate-500 font-medium">Used to send automated birthday greetings & announcements.</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Day</label>
+                                    <select
+                                      value={regDobDay}
+                                      onChange={(e) => setRegDobDay(parseInt(e.target.value) || 1)}
+                                      className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
+                                    >
+                                      {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                        <option key={day} value={day}>Day {day}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Month</label>
+                                    <select
+                                      value={regDobMonth}
+                                      onChange={(e) => setRegDobMonth(e.target.value)}
+                                      className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800"
+                                    >
+                                      {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* PROFILE PHOTO UPLOAD */}
+                              <div className="flex items-center space-x-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="w-12 h-12 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center shrink-0 border border-slate-300">
+                                  {regProfileImageUrl ? (
+                                    <img src={regProfileImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <User className="w-6 h-6 text-slate-400" />
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Profile Photo (Optional)</label>
+                                  <label className="px-3 py-1.5 rounded-lg bg-rccg-blue text-white text-xs font-bold hover:bg-rccg-navy transition cursor-pointer inline-flex items-center space-x-1">
+                                    <Camera className="w-3.5 h-3.5" />
+                                    <span>{regProfileImageUrl ? 'Change Image' : 'Upload Image'}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          const reader = new FileReader();
+                                          reader.onloadend = () => {
+                                            setRegProfileImageUrl(reader.result as string);
+                                          };
+                                          reader.readAsDataURL(file);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
+                                  <select
+                                    value={regGender}
+                                    onChange={(e) => setRegGender(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                                  >
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-700 mb-1">Marital Status</label>
+                                  <select
+                                    value={regMaritalStatus}
+                                    onChange={(e) => setRegMaritalStatus(e.target.value as any)}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                                  >
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Engaged">Engaged</option>
+                                    <option value="Widowed">Widowed</option>
+                                    <option value="Divorced">Divorced</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <button
+                                type="submit"
+                                className="w-full py-3 bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                                <span>Save Member Profile</span>
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+
+                        {/* Right Column Directories */}
+                        <div className="lg:col-span-2 space-y-6">
+                          {/* BULK MEMBER IMPORT */}
+                          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+                              <div>
+                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                  <Upload className="w-5 h-5 text-rccg-blue" />
+                                  <span>Bulk Member CSV / Excel Import</span>
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Upload member roster files with Surname, Firstname, Whatsapp & DOB.</p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={handleDownloadCSVTemplate}
+                                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center space-x-1.5 cursor-pointer w-max"
+                              >
+                                <Download className="w-3.5 h-3.5 text-rccg-blue" />
+                                <span>CSV Template</span>
+                              </button>
+                            </div>
+
+                            {/* DROPZONE */}
+                            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 transition relative">
+                              <input
+                                type="file"
+                                accept=".csv,.xlsx,.xls"
+                                onChange={handleFileSelectForMemberUpload}
+                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                              />
+                              <div className="flex flex-col items-center justify-center space-y-2">
+                                <FileSpreadsheet className="w-7 h-7 text-rccg-blue" />
+                                <div className="text-xs font-bold text-slate-800">
+                                  {bulkFileName ? `Selected: ${bulkFileName}` : 'Drag & Drop Member Spreadsheet Here'}
+                                </div>
+                                <p className="text-[11px] text-slate-500">Or click to select CSV file from your computer</p>
+                              </div>
+                            </div>
+
+                            {parsedPreviewMembers.length > 0 && (
+                              <div className="space-y-3 pt-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-slate-800">
+                                    Parsed Preview ({parsedPreviewMembers.length} records ready)
                                   </span>
-                                </td>
-                                <td className="py-4 px-4 font-bold text-slate-800">
-                                  {m.assignedDepartment ? (
-                                    <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                                      {m.assignedDepartment}
-                                    </span>
-                                  ) : (
-                                    <span className="text-slate-400 italic">Unassigned</span>
-                                  )}
-                                </td>
-                                <td className="py-4 px-4">
-                                  {m.isHod ? (
-                                    <span className="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-2.5 py-1 rounded-full flex items-center w-max gap-1">
-                                      <span>👑 HOD</span>
-                                    </span>
-                                  ) : (
-                                    <span className="text-slate-400 text-xs">—</span>
-                                  )}
-                                </td>
-                                <td className="py-4 px-4 text-right">
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setDeptAssignModalMember(m);
-                                      setSelectedDept(m.assignedDepartment || 'Ushering & Protocol');
-                                      setIsHodToggle(!!m.isHod);
-                                    }}
-                                    className="px-4 py-2 rounded-xl bg-rccg-blue text-white text-xs font-bold shadow hover:bg-rccg-navy transition cursor-pointer"
+                                    onClick={handleProcessMemberBatchImport}
+                                    className="px-4 py-2 rounded-xl bg-rccg-green hover:bg-emerald-700 text-white text-xs font-bold shadow transition cursor-pointer"
                                   >
-                                    Assign
+                                    Confirm Batch Import
                                   </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* REGISTERED PARISH MEMBERS DIRECTORY TABLE */}
+                          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                              <h3 className="text-base font-bold text-slate-900">Registered Parish Members ({members.length})</h3>
+                              <div className="relative w-full sm:w-64">
+                                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                                <input
+                                  type="text"
+                                  placeholder="Search by surname or whatsapp..."
+                                  value={memberSearchQuery}
+                                  onChange={(e) => setMemberSearchQuery(e.target.value)}
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-rccg-blue"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs text-slate-600">
+                                <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
+                                  <tr>
+                                    <th className="py-3 px-4">Member Name</th>
+                                    <th className="py-3 px-4">Whatsapp</th>
+                                    <th className="py-3 px-4">Home Address</th>
+                                    <th className="py-3 px-4">Birthday</th>
+                                    <th className="py-3 px-4">Role & Dept</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {members
+                                    .filter(m => m.fullName.toLowerCase().includes(memberSearchQuery.toLowerCase()) || m.whatsappNumber.includes(memberSearchQuery))
+                                    .map((m) => (
+                                      <tr key={m.id} className="hover:bg-slate-50">
+                                        <td className="py-3 px-4 font-bold text-slate-900">
+                                          <div className="flex items-center space-x-2.5">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 overflow-hidden flex items-center justify-center shrink-0 text-rccg-blue font-bold text-xs">
+                                              {m.profileImageUrl ? (
+                                                <img src={m.profileImageUrl} alt={m.fullName} className="w-full h-full object-cover" />
+                                              ) : (
+                                                <span>{m.surname[0]}{m.firstname[0]}</span>
+                                              )}
+                                            </div>
+                                            <div>
+                                              <div>{m.surname}, {m.firstname}</div>
+                                              <div className="text-[11px] text-slate-400 font-normal flex items-center gap-1.5">
+                                                <span>{m.email}</span>
+                                                {m.maritalStatus && (
+                                                  <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-slate-200">
+                                                    {m.maritalStatus}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-4 font-mono font-bold text-rccg-blue">{m.whatsappNumber}</td>
+                                        <td className="py-3 px-4 text-slate-600">{m.homeAddress}</td>
+                                        <td className="py-3 px-4">
+                                          <span className="bg-blue-50 text-rccg-blue font-bold px-2 py-0.5 rounded text-[11px]">
+                                            🎂 {m.dobMonth} {m.dobDay}
+                                          </span>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                          <div className="font-bold text-slate-800">{m.role}</div>
+                                          <div className="text-[11px] text-slate-500">{m.assignedDepartment || 'No Dept'}</div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* Registered Portal Users List */}
+                          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100">
+                              <h3 className="text-base font-bold text-slate-900">Parish Portal System Users ({users.length})</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-sm text-slate-600">
+                                <thead className="bg-slate-50 text-slate-700 uppercase text-xs font-bold tracking-wider">
+                                  <tr>
+                                    <th className="py-3.5 px-6">User & Role</th>
+                                    <th className="py-3.5 px-6">Contact</th>
+                                    <th className="py-3.5 px-6">Must Change Password</th>
+                                    <th className="py-3.5 px-6">Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {users.map((u) => (
+                                    <tr key={u.id} className="hover:bg-slate-50/80">
+                                      <td className="py-4 px-6 font-medium text-slate-900">
+                                        <div>{u.fullName}</div>
+                                        <span className="text-xs text-slate-400 font-normal">{u.role}</span>
+                                      </td>
+                                      <td className="py-4 px-6 text-xs text-slate-500">
+                                        <div>{u.email}</div>
+                                        <div>{u.phone}</div>
+                                      </td>
+                                      <td className="py-4 px-6">
+                                        {u.mustChangePassword ? (
+                                          <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
+                                            <Lock className="w-3 h-3" />
+                                            <span>Pending Reset</span>
+                                          </span>
+                                        ) : (
+                                          <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full flex items-center w-max space-x-1">
+                                            <ShieldCheck className="w-3 h-3" />
+                                            <span>Active & Verified</span>
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="py-4 px-6">
+                                        <span className="text-xs font-semibold text-emerald-600">Active</span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    )}
+
+                    {/* TAB 2: DEPARTMENT & LEADERSHIP */}
+                    {membersInnerTab === 'dept-leadership' && (
+                      <div className="space-y-6">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                              <Sliders className="w-5 h-5 text-rccg-blue" />
+                              <span>Department & Leadership Allocation</span>
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">Assign members to active parish departments and designate Head of Department (HOD) leaders.</p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs text-slate-600">
+                              <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
+                                <tr>
+                                  <th className="py-3 px-4">Member Name</th>
+                                  <th className="py-3 px-4">Whatsapp / Email</th>
+                                  <th className="py-3 px-4">Current Role</th>
+                                  <th className="py-3 px-4">Assigned Department</th>
+                                  <th className="py-3 px-4">Leadership / HOD</th>
+                                  <th className="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {members.map((m) => (
+                                  <tr key={m.id} className="hover:bg-slate-50">
+                                    <td className="py-4 px-4 font-bold text-slate-900">
+                                      <div>{m.surname}, {m.firstname}</div>
+                                      <div className="text-[11px] text-slate-400 font-normal">Joined: {m.dateJoined}</div>
+                                    </td>
+                                    <td className="py-4 px-4 text-slate-600">
+                                      <div className="font-mono font-bold text-rccg-blue">{m.whatsappNumber}</div>
+                                      <div className="text-[11px] text-slate-500">{m.email}</div>
+                                    </td>
+                                    <td className="py-4 px-4 font-bold text-slate-800">
+                                      <span className={`px-2.5 py-1 rounded-full text-[11px] ${
+                                        m.role === 'Minister' ? 'bg-purple-100 text-purple-800' :
+                                        m.role === 'Workforce' ? 'bg-blue-100 text-blue-800' :
+                                        'bg-slate-100 text-slate-700'
+                                      }`}>
+                                        {m.role}
+                                      </span>
+                                    </td>
+                                    <td className="py-4 px-4 font-bold text-slate-800">
+                                      {m.assignedDepartment ? (
+                                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                                          {m.assignedDepartment}
+                                        </span>
+                                      ) : (
+                                        <span className="text-slate-400 italic">Unassigned</span>
+                                      )}
+                                    </td>
+                                    <td className="py-4 px-4">
+                                      {m.isHod ? (
+                                        <span className="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-2.5 py-1 rounded-full flex items-center w-max gap-1">
+                                          <span>👑 HOD</span>
+                                        </span>
+                                      ) : (
+                                        <span className="text-slate-400 text-xs">—</span>
+                                      )}
+                                    </td>
+                                    <td className="py-4 px-4 text-right">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setDeptAssignModalMember(m);
+                                          setSelectedDept(m.assignedDepartment || 'Ushering & Protocol');
+                                          setIsHodToggle(!!m.isHod);
+                                        }}
+                                        className="px-4 py-2 rounded-xl bg-rccg-blue text-white text-xs font-bold shadow hover:bg-rccg-navy transition cursor-pointer"
+                                      >
+                                        Assign
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -4529,6 +6446,848 @@ export default function App() {
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* SUB-PANEL 5: DUTY ROSTER ASSIGNMENTS */}
+            {userSubTab === 'assignment' && (currentUser?.role !== 'HOD' || getHodDepartment(currentUser) !== 'Follow-up & Welfare') && (
+              <div className="space-y-6">
+                
+                {/* SUCCESS ALERT TOAST */}
+                {rosterSuccessAlert && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 font-bold flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                      <span>{rosterSuccessAlert}</span>
+                    </div>
+                    <button onClick={() => setRosterSuccessAlert(null)} className="text-emerald-700 hover:text-emerald-950 font-bold text-xs cursor-pointer">Dismiss</button>
+                  </div>
+                )}
+
+                {/* AUTOMATED BACKGROUND JOB POLICY NOTICE */}
+                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 rounded-2xl text-white shadow-md space-y-2 border border-indigo-800/40">
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <span>Monthly Duty Roster Policy & Background Scheduling</span>
+                        <span className="px-2 py-0.5 text-[10px] uppercase font-mono bg-amber-500/20 text-amber-300 border border-amber-400/40 rounded-full">Automated Job Active</span>
+                      </h3>
+                      <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                        All Heads of Department (HODs) must prepare and submit monthly duty rosters at the end of every month for the upcoming month.
+                        You can save your roster progress as a <strong>Draft</strong> anytime. If left unsubmitted, the system background job will automatically submit your saved draft <strong>5 days prior to month-end</strong> for Pastor & Service Coordinator publication.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CONTROLS HEADER BAR */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    
+                    {/* DEPARTMENT SELECTOR */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Target Department</label>
+                      {currentUser?.role === 'HOD' ? (
+                        <div className="px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-xs font-bold text-slate-800 flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-rccg-blue" />
+                          <span>{getHodDepartment(currentUser)}</span>
+                        </div>
+                      ) : (
+                        <select
+                          value={rosterSelectedDept}
+                          onChange={(e) => setRosterSelectedDept(e.target.value)}
+                          className="bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-rccg-blue cursor-pointer"
+                        >
+                          <option value="Choir & Praise Team">Choir & Praise Team</option>
+                          <option value="Ushering & Protocol">Ushering & Protocol</option>
+                          <option value="Sanctuary Keepers">Sanctuary Keepers</option>
+                          <option value="Media & IT">Media & IT</option>
+                          <option value="Technical & Sound">Technical & Sound</option>
+                          <option value="Children Ministry">Children Ministry</option>
+                          <option value="Evangelism & Outreach">Evangelism & Outreach</option>
+                          <option value="Follow-up & Welfare">Follow-up & Welfare</option>
+                        </select>
+                      )}
+                    </div>
+
+                    {/* MONTH SELECTOR */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Target Month</label>
+                      <select
+                        value={rosterSelectedMonth}
+                        onChange={(e) => setRosterSelectedMonth(e.target.value)}
+                        className="bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-rccg-blue cursor-pointer"
+                      >
+                        <option value="2026-10">October 2026 (Next Month)</option>
+                        <option value="2026-11">November 2026</option>
+                        <option value="2026-12">December 2026</option>
+                        <option value="2026-09">September 2026 (Current)</option>
+                      </select>
+                    </div>
+
+                    {/* CURRENT ROSTER STATUS BADGE */}
+                    {(() => {
+                      const activeDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
+                      const activeRoster = rosters.find(r => r.departmentName === activeDept && r.monthYear === rosterSelectedMonth);
+                      const currentStatus = activeRoster?.status || 'Draft';
+
+                      return (
+                        <div className="self-end pb-0.5">
+                          <span className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${
+                            currentStatus === 'Approved' 
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : currentStatus === 'SubmittedForApproval'
+                              ? 'bg-blue-100 text-blue-800 border-blue-300'
+                              : 'bg-amber-100 text-amber-800 border-amber-300'
+                          }`}>
+                            <span className="w-2 h-2 rounded-full bg-current"></span>
+                            <span>Status: {currentStatus === 'Approved' ? 'Approved & Published' : currentStatus === 'SubmittedForApproval' ? 'Submitted (Pending Review)' : 'Draft'}</span>
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* ACTION BUTTONS */}
+                  <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+                    
+                    {/* ADD SPECIAL EVENT / NIGHT VIGIL */}
+                    <button
+                      type="button"
+                      onClick={() => setShowAddNightVigilModal(true)}
+                      className="px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4 text-purple-600" />
+                      <span>+ Add Night Vigil / Event</span>
+                    </button>
+
+                    {/* SAVE DRAFT */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const activeDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
+                        setRosterSuccessAlert(`Draft roster saved successfully for ${activeDept} (${rosterSelectedMonth}).`);
+                        setTimeout(() => setRosterSuccessAlert(null), 5000);
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                    >
+                      <FileText className="w-4 h-4 text-slate-500" />
+                      <span>Save Draft</span>
+                    </button>
+
+                    {/* SUBMIT FOR APPROVAL (HOD) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const activeDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
+                        setRosters(prev => prev.map(r => r.departmentName === activeDept && r.monthYear === rosterSelectedMonth ? { ...r, status: 'SubmittedForApproval', submittedAt: new Date().toISOString() } : r));
+                        setRosterSuccessAlert(`Roster submitted to Service Coordinator & Pastor for review! Notifications scheduled.`);
+                        setTimeout(() => setRosterSuccessAlert(null), 6000);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold shadow transition flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Submit for Approval</span>
+                    </button>
+
+                    {/* APPROVE & PUBLISH (PASTOR / ADMIN) */}
+                    {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'ServiceCoordinator') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRosters(prev => prev.map(r => r.departmentName === rosterSelectedDept && r.monthYear === rosterSelectedMonth ? { ...r, status: 'Approved', approvedAt: new Date().toISOString(), approvedBy: currentUser.fullName } : r));
+                          setRosterSuccessAlert(`Roster APPROVED & PUBLISHED! Simulated email notifications dispatched to all assigned duty workers.`);
+                          setTimeout(() => setRosterSuccessAlert(null), 7000);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow transition flex items-center space-x-1.5 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Approve & Publish (Mails Sent)</span>
+                      </button>
+                    )}
+
+                    {/* DOWNLOAD / WHATSAPP SHARE */}
+                    <button
+                      type="button"
+                      onClick={() => setShowRosterExportModal(true)}
+                      className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Download / Share (WhatsApp)</span>
+                    </button>
+
+                    {/* PRINT PDF OFFICIAL SCHEDULE (MATCHING MASTER SCHEDULE IMAGE 1) */}
+                    <button
+                      type="button"
+                      onClick={() => setShowPrintPdfModal(true)}
+                      className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow border border-slate-700"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Print PDF Official Schedule</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* DUTY ROSTER ASSIGNMENT SERVICES GRID */}
+                {(() => {
+                  const targetDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
+                  const activeRoster = rosters.find(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth);
+                  
+                  // Filter members strictly for target department
+                  const deptWorkers = members.filter(m => m.assignedDepartment === targetDept);
+
+                  // Default list of recurring services for October 2026 if empty
+                  const defaultServiceList = [
+                    { id: 'srv1', serviceDate: '2026-10-04', serviceTypeName: 'Sunday 1st Service (08:00 AM)', dayName: 'Sunday' },
+                    { id: 'srv2', serviceDate: '2026-10-04', serviceTypeName: 'Sunday 2nd Service (10:00 AM)', dayName: 'Sunday' },
+                    { id: 'srv3', serviceDate: '2026-10-06', serviceTypeName: 'Tuesday Digging Deep (06:00 PM)', dayName: 'Tuesday' },
+                    { id: 'srv4', serviceDate: '2026-10-08', serviceTypeName: 'Thursday Faith Clinic (06:00 PM)', dayName: 'Thursday' },
+                    { id: 'srv5', serviceDate: '2026-10-11', serviceTypeName: 'Sunday 1st Service (08:00 AM)', dayName: 'Sunday' },
+                    { id: 'srv6', serviceDate: '2026-10-11', serviceTypeName: 'Sunday 2nd Service (10:00 AM)', dayName: 'Sunday' },
+                    { id: 'srv7', serviceDate: '2026-10-13', serviceTypeName: 'Tuesday Digging Deep (06:00 PM)', dayName: 'Tuesday' },
+                    { id: 'srv8', serviceDate: '2026-10-15', serviceTypeName: 'Thursday Faith Clinic (06:00 PM)', dayName: 'Thursday' },
+                    { id: 'srv9', serviceDate: '2026-10-16', serviceTypeName: 'Monthly Night Vigil (10:00 PM) - Special Event', dayName: 'Friday' },
+                    { id: 'srv10', serviceDate: '2026-10-18', serviceTypeName: 'Sunday 1st Service (08:00 AM)', dayName: 'Sunday' },
+                    { id: 'srv11', serviceDate: '2026-10-18', serviceTypeName: 'Sunday 2nd Service (10:00 AM)', dayName: 'Sunday' },
+                    { id: 'srv12', serviceDate: '2026-10-25', serviceTypeName: 'Sunday 1st Service (08:00 AM)', dayName: 'Sunday' },
+                  ];
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                          <Calendar className="w-5 h-5 text-rccg-blue" />
+                          <span>Monthly Duty Roster ({targetDept} - {rosterSelectedMonth})</span>
+                        </h3>
+                        <span className="text-xs text-slate-500 font-medium">Click workers to toggle duty assignments (Multiple workers per service allowed)</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {defaultServiceList
+                          .filter(srv => !deletedServices.includes(srv.id))
+                          .map(srv => ({
+                            ...srv,
+                            serviceTypeName: renamedServices[srv.id] || srv.serviceTypeName
+                          }))
+                          .map((srv) => {
+                            // Find existing assignment if present
+                            const assignment = activeRoster?.assignments?.find((a: any) => a.serviceDate === srv.serviceDate && (a.serviceTypeName === srv.serviceTypeName || srv.serviceTypeName.startsWith(a.serviceTypeName)));
+                            const assignedNames: string[] = assignment?.assignedPersonNames || [];
+
+                            const isChoir = targetDept === 'Choir & Praise Team';
+                            const defaultChoirRoles = [
+                              { key: 'workersPraise', label: "Praise & Worship (Worker's Meeting)", icon: '🌅', color: 'border-amber-200 bg-amber-50/60 text-amber-950' },
+                              { key: 'mainPraise', label: "Praise & Worship (Main Service)", icon: '🔥', color: 'border-purple-200 bg-purple-50/60 text-purple-950' },
+                              { key: 'offering', label: "Offering Ministration (Main Service)", icon: '💸', color: 'border-emerald-200 bg-emerald-50/60 text-emerald-950' },
+                              { key: 'thanksgiving', label: "Thanksgiving Ministration (Main Service)", icon: '🙌', color: 'border-blue-200 bg-blue-50/60 text-blue-950' },
+                            ];
+
+                            const serviceDeletedRoles = deletedRolesPerService[srv.id] || [];
+                            const serviceCustomRoles = customRolesPerService[srv.id] || [];
+                            const serviceRenames = renamedRolesPerService[srv.id] || {};
+
+                            const choirMinistrationRoles = [
+                              ...defaultChoirRoles.filter(r => !serviceDeletedRoles.includes(r.key)),
+                              ...serviceCustomRoles.filter(r => !serviceDeletedRoles.includes(r.key))
+                            ].map(r => ({
+                              ...r,
+                              label: serviceRenames[r.key] || r.label
+                            }));
+
+                            const handleToggleChoirMinistration = (roleKey: string, memberName: string) => {
+                              setRosters(prev => {
+                                const targetRoster = prev.find(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth);
+                                const existingAssignments = [...(targetRoster?.assignments || [])];
+                                const aIdx = existingAssignments.findIndex((a: any) => a.serviceDate === srv.serviceDate && (a.serviceTypeName === srv.serviceTypeName || srv.serviceTypeName.startsWith(a.serviceTypeName)));
+
+                                let updatedAssign: any;
+                                if (aIdx >= 0) {
+                                  const currentAssign = existingAssignments[aIdx];
+                                  const currentBreakdown = currentAssign.ministrationBreakdown || {};
+                                  
+                                  let nextBreakdown = { ...currentBreakdown };
+                                  if (memberName === 'CLEAR_ROLE_ALL') {
+                                    delete nextBreakdown[roleKey];
+                                  } else {
+                                    const currentRoleList: string[] = currentBreakdown[roleKey] || [];
+                                    const nextRoleList = currentRoleList.includes(memberName)
+                                      ? currentRoleList.filter(n => n !== memberName)
+                                      : [...currentRoleList, memberName];
+                                    nextBreakdown[roleKey] = nextRoleList;
+                                  }
+
+                                  const allAssigned = Array.from(new Set(Object.values(nextBreakdown).flat())) as string[];
+
+                                  updatedAssign = {
+                                    ...currentAssign,
+                                    ministrationBreakdown: nextBreakdown,
+                                    assignedPersonNames: allAssigned
+                                  };
+                                  existingAssignments[aIdx] = updatedAssign;
+                                } else if (memberName !== 'CLEAR_ROLE_ALL') {
+                                  const nextBreakdown = { [roleKey]: [memberName] };
+                                  updatedAssign = {
+                                    id: `d_${Date.now()}`,
+                                    serviceDate: srv.serviceDate,
+                                    serviceTypeName: srv.serviceTypeName,
+                                    departmentName: targetDept,
+                                    dutyRole: 'Choir Ministration Breakdown',
+                                    assignedPersonNames: [memberName],
+                                    ministrationBreakdown: nextBreakdown,
+                                    status: 'Draft'
+                                  };
+                                  existingAssignments.push(updatedAssign);
+                                }
+
+                                if (!targetRoster) {
+                                  return [...prev, {
+                                    id: `ros_${Date.now()}`,
+                                    monthYear: rosterSelectedMonth,
+                                    departmentName: targetDept,
+                                    hodName: currentUser?.fullName || 'HOD Choir',
+                                    status: 'Draft',
+                                    assignments: existingAssignments
+                                  }];
+                                } else {
+                                  return prev.map(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth ? { ...r, assignments: existingAssignments } : r);
+                                }
+                              });
+                            };
+
+                            return (
+                              <div key={srv.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3.5 hover:border-slate-300 transition">
+                                
+                                {/* SERVICE HEADER */}
+                                <div className="flex justify-between items-start border-b border-slate-100 pb-2.5">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md uppercase ${
+                                        srv.dayName === 'Sunday' ? 'bg-amber-100 text-amber-800' :
+                                        srv.dayName === 'Tuesday' ? 'bg-blue-100 text-blue-800' :
+                                        srv.dayName === 'Thursday' ? 'bg-teal-100 text-teal-800' : 'bg-purple-100 text-purple-800'
+                                      }`}>
+                                        {srv.dayName}
+                                      </span>
+                                      <span className="text-xs font-bold text-slate-500 font-mono">{srv.serviceDate}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <h4 className="text-sm font-bold text-slate-900">{srv.serviceTypeName}</h4>
+                                      {/* EDIT SERVICE BUTTON */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingServiceId(srv.id);
+                                          setNewServiceTitleInput(srv.serviceTypeName);
+                                        }}
+                                        className="p-1 rounded-md text-slate-400 hover:text-rccg-blue hover:bg-slate-100 transition cursor-pointer"
+                                        title="Edit Service Title"
+                                      >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </button>
+                                      {/* DELETE SERVICE BUTTON */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setDeletedServices(prev => [...prev, srv.id]);
+                                          setRosterSuccessAlert(`Deleted "${srv.serviceTypeName}" service slot from duty roster.`);
+                                          setTimeout(() => setRosterSuccessAlert(null), 4000);
+                                        }}
+                                        className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                                        title="Delete Service Slot"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-extrabold text-rccg-blue bg-blue-50 px-2.5 py-1 rounded-xl">
+                                    {assignedNames.length} Assigned
+                                  </span>
+                                </div>
+
+                                {/* SECTION 1: CHOIR & PRAISE TEAM EMBEDDED BREAKDOWN SUB-BOX (MATCHING NOTES COUNT BREAKDOWN PATTERN) */}
+                                {(currentUser?.role !== 'HOD' || targetDept === 'Choir & Praise Team') && (
+                                  <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200 space-y-3">
+                                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                        <span className="text-rccg-blue">🎼</span> Choir Ministration Roles
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 font-medium">Multiple members per ministration allowed</span>
+                                    </div>
+
+                                    <div className="space-y-2.5">
+                                      {choirMinistrationRoles.map(mRole => {
+                                        const minBreakdown = assignment?.ministrationBreakdown || {};
+                                        const slotAssigned: string[] = minBreakdown[mRole.key] || [];
+
+                                        return (
+                                          <div key={mRole.key} className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-2 transition hover:border-slate-300">
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                                                  <span>{mRole.icon}</span>
+                                                  <span>{mRole.label}</span>
+                                                </span>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    setEditingRoleState({ serviceId: srv.id, roleKey: mRole.key, currentLabel: mRole.label });
+                                                    setNewRoleLabelInput(mRole.label);
+                                                  }}
+                                                  className="p-1 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+                                                  title="Edit Ministration Role Title"
+                                                >
+                                                  <Pencil className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    setDeletedRolesPerService(prev => ({
+                                                      ...prev,
+                                                      [srv.id]: [...(prev[srv.id] || []), mRole.key]
+                                                    }));
+                                                    handleToggleChoirMinistration(mRole.key, 'CLEAR_ROLE_ALL');
+                                                    setRosterSuccessAlert(`Deleted "${mRole.label}" ministration role.`);
+                                                    setTimeout(() => setRosterSuccessAlert(null), 3500);
+                                                  }}
+                                                  className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                                                  title="Delete Ministration Role"
+                                                >
+                                                  <Trash2 className="w-3 h-3" />
+                                                </button>
+                                              </div>
+                                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                                {slotAssigned.length} Assigned
+                                              </span>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-1.5">
+                                              {slotAssigned.length === 0 ? (
+                                                <span className="text-[11px] text-slate-400 italic">No choir member assigned yet</span>
+                                              ) : (
+                                                slotAssigned.map((name, idx) => (
+                                                  <span key={idx} className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                                    <span>👤 {name}</span>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleToggleChoirMinistration(mRole.key, name)}
+                                                      className="text-slate-400 hover:text-red-600 font-bold ml-0.5 cursor-pointer"
+                                                      title="Remove from this ministration"
+                                                    >
+                                                      ×
+                                                    </button>
+                                                  </span>
+                                                ))
+                                              )}
+                                            </div>
+
+                                            {targetDept === 'Choir & Praise Team' && (
+                                              <div className="pt-1.5 border-t border-slate-100 flex flex-wrap items-center gap-1">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">ASSIGN:</span>
+                                                {deptWorkers.map((mem) => {
+                                                  const isSlotAssigned = slotAssigned.includes(mem.fullName);
+                                                  return (
+                                                    <button
+                                                      key={mem.id}
+                                                      type="button"
+                                                      onClick={() => handleToggleChoirMinistration(mRole.key, mem.fullName)}
+                                                      className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition cursor-pointer ${
+                                                        isSlotAssigned
+                                                          ? 'bg-slate-900 text-white shadow-xs'
+                                                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+                                                      }`}
+                                                    >
+                                                      {isSlotAssigned ? `✓ ${mem.fullName}` : `+ ${mem.fullName}`}
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+
+                                    {targetDept === 'Choir & Praise Team' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAddingRoleServiceId(srv.id);
+                                          setNewRoleTitleInput('');
+                                        }}
+                                        className="w-full py-2 border border-dashed border-slate-300 hover:border-rccg-blue rounded-xl text-xs font-bold text-rccg-blue bg-white hover:bg-blue-50/50 transition flex items-center justify-center space-x-1.5 cursor-pointer mt-2 shadow-2xs"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" />
+                                        <span>+ Add Custom Ministration Role</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* SECTION 2: USHERING & PROTOCOL SUB-CARD */}
+                                {(currentUser?.role !== 'HOD' || targetDept === 'Ushering & Protocol') && (
+                                  <div className="bg-blue-50/40 p-4 rounded-2xl border border-blue-100 space-y-3">
+                                    <div className="flex items-center justify-between border-b border-blue-100 pb-1.5">
+                                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                        <span>🛡️</span> Ushering & Protocol (Ushers In-Charge)
+                                      </span>
+                                      <span className="text-[10px] text-slate-500 font-bold bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                                        Setup by HOD Ushering
+                                      </span>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                      <label className="block text-[11px] font-bold text-slate-600">Assigned Department Personnel:</label>
+                                      {assignedNames.length === 0 ? (
+                                        <div className="text-xs text-slate-400 italic bg-white p-2.5 rounded-xl border border-dashed border-slate-200">
+                                          No personnel assigned yet for this service slot.
+                                        </div>
+                                      ) : (
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {assignedNames.map((name, nIdx) => (
+                                            <span key={nIdx} className="px-2.5 py-1 rounded-xl bg-rccg-blue/10 border border-rccg-blue/30 text-rccg-blue text-xs font-bold flex items-center gap-1.5">
+                                              <span>👤 {name}</span>
+                                              {targetDept === 'Ushering & Protocol' && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const updatedNames = assignedNames.filter(n => n !== name);
+                                                    setRosters(prev => prev.map(r => {
+                                                      if (r.departmentName === targetDept && r.monthYear === rosterSelectedMonth) {
+                                                        const existingAssignments = r.assignments || [];
+                                                        const assignIdx = existingAssignments.findIndex((a: any) => a.serviceDate === srv.serviceDate);
+                                                        if (assignIdx >= 0) {
+                                                          existingAssignments[assignIdx] = { ...existingAssignments[assignIdx], assignedPersonNames: updatedNames };
+                                                        }
+                                                        return { ...r, assignments: [...existingAssignments] };
+                                                      }
+                                                      return r;
+                                                    }));
+                                                  }}
+                                                  className="text-slate-400 hover:text-red-600 font-bold cursor-pointer"
+                                                  title="Remove from service"
+                                                >
+                                                  ×
+                                                </button>
+                                              )}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {targetDept === 'Ushering & Protocol' && (
+                                      <div className="pt-2 border-t border-slate-200/50">
+                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Assign / Toggle Members:</label>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {deptWorkers.map((mem) => {
+                                            const isAssigned = assignedNames.includes(mem.fullName);
+                                            return (
+                                              <button
+                                                key={mem.id}
+                                                type="button"
+                                                onClick={() => {
+                                                  const nextNames = isAssigned
+                                                    ? assignedNames.filter(n => n !== mem.fullName)
+                                                    : [...assignedNames, mem.fullName];
+
+                                                  setRosters(prev => {
+                                                    const targetRoster = prev.find(r => r.departmentName === targetDept && r.monthYear === rosterSelectedMonth);
+                                                    if (!targetRoster) {
+                                                      const newRoster = {
+                                                        id: `ros_${Date.now()}`,
+                                                        monthYear: rosterSelectedMonth,
+                                                        departmentName: targetDept,
+                                                        hodName: currentUser?.fullName || 'Department HOD',
+                                                        status: 'Draft',
+                                                        assignments: [
+                                                          {
+                                                            id: `d_${Date.now()}`,
+                                                            serviceDate: srv.serviceDate,
+                                                            serviceTypeName: srv.serviceTypeName,
+                                                            departmentName: targetDept,
+                                                            dutyRole: 'Service Ministration',
+                                                            assignedPersonNames: nextNames,
+                                                            status: 'Draft'
+                                                          }
+                                                        ]
+                                                      };
+                                                      return [...prev, newRoster];
+                                                    } else {
+                                                      return prev.map(r => {
+                                                        if (r.departmentName === targetDept && r.monthYear === rosterSelectedMonth) {
+                                                          const existingList = [...(r.assignments || [])];
+                                                          const aIdx = existingList.findIndex(a => a.serviceDate === srv.serviceDate && a.serviceTypeName === srv.serviceTypeName);
+                                                          if (aIdx >= 0) {
+                                                            existingList[aIdx] = { ...existingList[aIdx], assignedPersonNames: nextNames };
+                                                          } else {
+                                                            existingList.push({
+                                                              id: `d_${Date.now()}`,
+                                                              serviceDate: srv.serviceDate,
+                                                              serviceTypeName: srv.serviceTypeName,
+                                                              departmentName: targetDept,
+                                                              dutyRole: 'Service Ministration',
+                                                              assignedPersonNames: nextNames,
+                                                              status: 'Draft'
+                                                            });
+                                                          }
+                                                          return { ...r, assignments: existingList };
+                                                        }
+                                                        return r;
+                                                      });
+                                                    }
+                                                  });
+                                                }}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center space-x-1 cursor-pointer ${
+                                                  isAssigned
+                                                    ? 'bg-rccg-blue text-white border-rccg-blue shadow-sm'
+                                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                }`}
+                                              >
+                                                <span>{isAssigned ? '✓' : '+'}</span>
+                                                <span>{mem.fullName}</span>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* SECTION 3: SERVICE LEADERSHIP (COORDINATOR, MINISTER, OPEN HEAVENS LEADER) */}
+                                <div className="bg-gradient-to-br from-amber-50/60 via-purple-50/40 to-indigo-50/50 p-4 rounded-2xl border border-amber-200/80 space-y-3">
+                                   <div className="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
+                                     <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                                       <span>👑</span> Service Leadership (Coordinator, Minister & Open Heavens Leader)
+                                     </span>
+                                     <span className="text-[10px] font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
+                                       Interactive Pickers
+                                     </span>
+                                   </div>
+
+                                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                                     {/* COORDINATOR WITH MULTI-PICK DROPDOWN */}
+                                     <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 shadow-2xs">
+                                       <div className="flex items-center justify-between">
+                                         <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Coordinator *</label>
+                                         <span className="text-[10px] text-slate-400 font-bold">Pick to add</span>
+                                       </div>
+                                       
+                                       {/* Current Badges */}
+                                       <div className="flex flex-wrap gap-1">
+                                         {(() => {
+                                           const raw = adminRosterScheduleData[srv.id]?.coordinator || '';
+                                           const list = raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                           if (list.length === 0) {
+                                             return <span className="text-[11px] text-slate-400 italic">No coordinator assigned</span>;
+                                           }
+                                           return list.map((name, idx) => (
+                                             <span key={idx} className="px-2 py-0.5 rounded-md bg-amber-100 border border-amber-200 text-amber-900 text-[11px] font-bold flex items-center gap-1">
+                                               <span>👤 {name}</span>
+                                               <button
+                                                 type="button"
+                                                 onClick={() => {
+                                                   const newList = list.filter(n => n !== name);
+                                                   setAdminRosterScheduleData(prev => ({
+                                                     ...prev,
+                                                     [srv.id]: {
+                                                       ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                       coordinator: newList.join(', ')
+                                                     }
+                                                   }));
+                                                 }}
+                                                 className="text-amber-700 hover:text-red-600 font-bold ml-0.5 cursor-pointer"
+                                               >
+                                                 ×
+                                               </button>
+                                             </span>
+                                           ));
+                                         })()}
+                                       </div>
+
+                                       {/* Add Dropdown */}
+                                       <select
+                                         value=""
+                                         onChange={(e) => {
+                                           const newName = e.target.value;
+                                           if (!newName) return;
+                                           setAdminRosterScheduleData(prev => {
+                                             const current = prev[srv.id]?.coordinator || '';
+                                             const list = current ? current.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                             if (list.includes(newName)) return prev;
+                                             return {
+                                               ...prev,
+                                               [srv.id]: {
+                                                 ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                 coordinator: [...list, newName].join(', ')
+                                               }
+                                             };
+                                           });
+                                         }}
+                                         className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue cursor-pointer"
+                                       >
+                                         <option value="">+ Click to add Coordinator...</option>
+                                         <optgroup label="Ordained Ministers / Pastors">
+                                           {ministers.map((m) => (
+                                             <option key={m.id} value={m.fullName}>{m.fullName}</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="All Parish Members (Ushering, Choir, etc.)">
+                                           {members.map((mem) => (
+                                             <option key={mem.id} value={mem.fullName}>{mem.fullName} ({mem.assignedDepartment || 'Member'})</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="Common Coordinators">
+                                           <option value="BRO. PHILLIP">BRO. PHILLIP</option>
+                                           <option value="BRO. DANIEL">BRO. DANIEL</option>
+                                           <option value="VIGIL">VIGIL</option>
+                                         </optgroup>
+                                       </select>
+                                     </div>
+
+                                     {/* MINISTER DROPDOWN */}
+                                     <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 shadow-2xs">
+                                       <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Minister *</label>
+                                       <select
+                                         value={adminRosterScheduleData[srv.id]?.officiatingMinister || ''}
+                                         onChange={(e) => {
+                                           const val = e.target.value;
+                                           setAdminRosterScheduleData(prev => ({
+                                             ...prev,
+                                             [srv.id]: {
+                                               ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                               officiatingMinister: val
+                                             }
+                                           }));
+                                         }}
+                                         className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue cursor-pointer"
+                                       >
+                                         <option value="">-- Select Minister / Preacher --</option>
+                                         <optgroup label="Ordained Ministers / Pastors">
+                                           {ministers.map((m) => (
+                                             <option key={m.id} value={m.fullName}>{m.fullName}</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="Ushering Department">
+                                           {members.filter(m => m.assignedDepartment === 'Ushering & Protocol').map((mem) => (
+                                             <option key={mem.id} value={mem.fullName}>{mem.fullName} (Ushering)</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="Choir & Music Ministry">
+                                           {members.filter(m => m.assignedDepartment === 'Choir & Praise Team').map((mem) => (
+                                             <option key={mem.id} value={mem.fullName}>{mem.fullName} (Choir)</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="All Parish Members (Any Department)">
+                                           {members.map((mem) => (
+                                             <option key={mem.id} value={mem.fullName}>{mem.fullName} ({mem.assignedDepartment || 'Member'})</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="Visiting / General Overseer">
+                                           <option value="DADDY G.O.">DADDY G.O.</option>
+                                           <option value="MUMMY G.O.">MUMMY G.O.</option>
+                                           <option value="PST. ADETUNJI">PST. ADETUNJI</option>
+                                           <option value="DEACON IDOWU">DEACON IDOWU</option>
+                                           <option value="BRO. SAMUEL EGBA">BRO. SAMUEL EGBA</option>
+                                           <option value="BRO. MICHAEL SHONIBARE">BRO. MICHAEL SHONIBARE</option>
+                                           <option value="MUMMY CHUKWUMA">MUMMY CHUKWUMA</option>
+                                           <option value="BRO. RAPHAEL">BRO. RAPHAEL</option>
+                                           <option value="SIS. MERCY ZAINAB">SIS. MERCY ZAINAB</option>
+                                           <option value="GUEST MINISTER">GUEST MINISTER</option>
+                                         </optgroup>
+                                       </select>
+                                     </div>
+
+                                     {/* OPEN HEAVENS LEADER WITH MULTI-PICK DROPDOWN */}
+                                     <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 shadow-2xs">
+                                       <div className="flex items-center justify-between">
+                                         <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Open Heavens Leader</label>
+                                         <span className="text-[10px] text-slate-400 font-bold">Pick to add</span>
+                                       </div>
+
+                                       {/* Current Badges */}
+                                       <div className="flex flex-wrap gap-1">
+                                         {(() => {
+                                           const raw = adminRosterScheduleData[srv.id]?.openHeavensLeader || '';
+                                           const list = raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                           if (list.length === 0) {
+                                             return <span className="text-[11px] text-slate-400 italic">No leader assigned</span>;
+                                           }
+                                           return list.map((name, idx) => (
+                                             <span key={idx} className="px-2 py-0.5 rounded-md bg-purple-100 border border-purple-200 text-purple-900 text-[11px] font-bold flex items-center gap-1">
+                                               <span>📖 {name}</span>
+                                               <button
+                                                 type="button"
+                                                 onClick={() => {
+                                                   const newList = list.filter(n => n !== name);
+                                                   setAdminRosterScheduleData(prev => ({
+                                                     ...prev,
+                                                     [srv.id]: {
+                                                       ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                       openHeavensLeader: newList.join(', ')
+                                                     }
+                                                   }));
+                                                 }}
+                                                 className="text-purple-700 hover:text-red-600 font-bold ml-0.5 cursor-pointer"
+                                               >
+                                                 ×
+                                               </button>
+                                             </span>
+                                           ));
+                                         })()}
+                                       </div>
+
+                                       {/* Add Dropdown */}
+                                       <select
+                                         value=""
+                                         onChange={(e) => {
+                                           const newName = e.target.value;
+                                           if (!newName) return;
+                                           setAdminRosterScheduleData(prev => {
+                                             const current = prev[srv.id]?.openHeavensLeader || '';
+                                             const list = current ? current.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                             if (list.includes(newName)) return prev;
+                                             return {
+                                               ...prev,
+                                               [srv.id]: {
+                                                 ...(prev[srv.id] || { coordinator: '', usherInCharge: '', praiseLeader: '', officiatingMinister: '', openHeavensLeader: '' }),
+                                                 openHeavensLeader: [...list, newName].join(', ')
+                                               }
+                                             };
+                                           });
+                                         }}
+                                         className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue cursor-pointer"
+                                       >
+                                         <option value="">+ Click to add Open Heavens Leader...</option>
+                                         <optgroup label="Ordained Ministers / Pastors">
+                                           {ministers.map((m) => (
+                                             <option key={m.id} value={m.fullName}>{m.fullName}</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="All Parish Members (Ushering, Choir, etc.)">
+                                           {members.map((mem) => (
+                                             <option key={mem.id} value={mem.fullName}>{mem.fullName} ({mem.assignedDepartment || 'Member'})</option>
+                                           ))}
+                                         </optgroup>
+                                         <optgroup label="Common Leaders">
+                                           <option value="SIS. PRAISE">SIS. PRAISE</option>
+                                           <option value="BRO. JOHNSON (GANGAN)">BRO. JOHNSON (GANGAN)</option>
+                                           <option value="SIS. BLESSING">SIS. BLESSING</option>
+                                           <option value="VIGIL">VIGIL</option>
+                                         </optgroup>
+                                       </select>
+                                     </div>
+                                   </div>
+                                 </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
               </div>
             )}
           </div>
@@ -4932,8 +7691,488 @@ export default function App() {
           </div>
         )}
 
-        {/* SETUP TAB */}
-        {activeTab === 'setup' && (
+        {/* DEPARTMENTS TAB */}
+        {activeTab === 'departments' && (
+          <div className="space-y-6 max-w-6xl mx-auto">
+            {/* DEPARTMENTS HEADER & CONTROL BAR */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <Building2 className="w-6 h-6 text-rccg-blue" />
+                  <h2 className="text-xl font-bold text-slate-900">Parish Departments & Ministries</h2>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Configure operational units, assign Heads of Departments (HODs), and filter department member reports.
+                </p>
+              </div>
+
+              {departmentSubTab === 'departments-list' && (
+                <button
+                  onClick={() => setShowAddSetupForm(!showAddSetupForm)}
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-sm rounded-xl shadow-md transition cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4 text-emerald-300" />
+                  <span>{showAddSetupForm ? 'Close Add Form' : 'Add New Department'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* DEPARTMENTS SUB-TAB NAVIGATION */}
+            <div className="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
+              <button
+                onClick={() => { setDepartmentSubTab('departments-list'); setShowAddSetupForm(false); }}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  departmentSubTab === 'departments-list' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <Building2 className="w-4 h-4" />
+                <span>Departments ({departments.length})</span>
+              </button>
+
+              <button
+                onClick={() => { setDepartmentSubTab('assign-hod'); setShowAddSetupForm(false); }}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  departmentSubTab === 'assign-hod' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <UserCheck className="w-4 h-4 text-emerald-400" />
+                <span>Assign Department Head (HOD)</span>
+              </button>
+
+              <button
+                onClick={() => { setDepartmentSubTab('department-report'); setShowAddSetupForm(false); }}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+                  departmentSubTab === 'department-report' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <Users className="w-4 h-4 text-amber-300" />
+                <span>Department Member Report & Filter</span>
+              </button>
+            </div>
+
+            {/* SUB-TAB 1: PARISH DEPARTMENTS LIST */}
+            {departmentSubTab === 'departments-list' && (
+              <div className="space-y-6">
+                {showAddSetupForm && (
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 animate-fadeIn">
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <PlusCircle className="w-5 h-5 text-rccg-blue" />
+                      <span>Configure New Parish Department / Ministry</span>
+                    </h3>
+                    <form onSubmit={handleAddDepartment} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Department Name *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newDepartmentName}
+                            onChange={(e) => setNewDepartmentName(e.target.value)}
+                            placeholder="e.g. Media & Technical Unit"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Department Code</label>
+                          <input
+                            type="text"
+                            value={newDepartmentCode}
+                            onChange={(e) => setNewDepartmentCode(e.target.value)}
+                            placeholder="e.g. TEC-01 (Auto-generated if empty)"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Head of Department (HOD)</label>
+                          <select
+                            value={newDepartmentHod}
+                            onChange={(e) => setNewDepartmentHod(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
+                          >
+                            <option value="">-- Select HOD / Leader --</option>
+                            {ministers.map((m) => (
+                              <option key={m.id} value={m.fullName}>
+                                {m.fullName} ({m.title})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Meeting Schedule</label>
+                          <input
+                            type="text"
+                            value={newDepartmentSchedule}
+                            onChange={(e) => setNewDepartmentSchedule(e.target.value)}
+                            placeholder="e.g. Saturdays at 05:00 PM"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Brief Description / Mandate</label>
+                          <input
+                            type="text"
+                            value={newDepartmentDescription}
+                            onChange={(e) => setNewDepartmentDescription(e.target.value)}
+                            placeholder="e.g. Sound engineering, live streaming, and media production."
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button type="submit" className="px-6 py-2.5 bg-rccg-green text-white font-bold text-sm rounded-xl shadow hover:bg-emerald-700 transition cursor-pointer">
+                          Save Department Setup
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div className="px-6 py-4 bg-slate-50 border-b flex justify-between items-center">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">CONFIGURED PARISH DEPARTMENTS & DIRECTORATES</h3>
+                      <p className="text-xs text-slate-500">Departments configured for workforce management and roster scheduling.</p>
+                    </div>
+                    <span className="px-3 py-1 bg-blue-100 text-rccg-blue rounded-full text-xs font-bold font-mono">
+                      {departments.length} Units Active
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
+                    {departments.map((dep) => {
+                      const deptMembersCount = members.filter(m => m.assignedDepartment === dep.name).length;
+                      return (
+                        <div key={dep.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="p-3 bg-rccg-blue text-white rounded-xl shadow-sm">
+                                <Users className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-bold text-slate-900">{dep.name}</h4>
+                                <span className="text-[11px] font-mono font-bold text-slate-500">Code: {dep.code}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Active Unit
+                              </span>
+                              <button
+                                onClick={() => handleStartEditDepartment(dep)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition border border-transparent hover:border-blue-200 cursor-pointer"
+                                title="Edit Department"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteDepartment(dep.id, dep.name)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200 cursor-pointer"
+                                title="Delete Department"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {dep.description && (
+                            <p className="text-xs text-slate-600 line-clamp-2">{dep.description}</p>
+                          )}
+
+                          <div className="pt-2 border-t border-slate-200/80 grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Head of Dept (HOD)</span>
+                              <span className="font-semibold text-slate-800">{dep.headOfDepartment || 'Unassigned'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Meeting Schedule</span>
+                              <span className="font-semibold text-slate-800">{dep.meetingSchedule || 'Flexible'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Assigned Members</span>
+                              <span className="font-bold text-rccg-blue">{deptMembersCount} Members</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: ASSIGN DEPARTMENT HEAD (HOD) */}
+            {departmentSubTab === 'assign-hod' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                  <div className="flex items-center space-x-3 border-b pb-4">
+                    <div className="p-3 bg-blue-100 text-rccg-blue rounded-xl">
+                      <UserCheck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">Assign & Update Department Head (HOD)</h3>
+                      <p className="text-xs text-slate-500">Designate leaders/ministers as Head of Department for parish units.</p>
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!assignHodDept || !assignHodPerson) {
+                        showNotification('Please select both a Department and a Head of Department.', 'error');
+                        return;
+                      }
+                      setDepartments(prev => prev.map(d => {
+                        if (d.name === assignHodDept || d.id === assignHodDept) {
+                          return { ...d, headOfDepartment: assignHodPerson };
+                        }
+                        return d;
+                      }));
+                      showNotification(`Assigned "${assignHodPerson}" as HOD for "${assignHodDept}"!`);
+                      setAssignHodPerson('');
+                    }}
+                    className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200"
+                  >
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Department *</label>
+                      <select
+                        value={assignHodDept}
+                        onChange={(e) => setAssignHodDept(e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rccg-blue"
+                      >
+                        {departments.map((d) => (
+                          <option key={d.id} value={d.name}>
+                            {d.name} ({d.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Assign HOD Leader *</label>
+                      <select
+                        value={assignHodPerson}
+                        onChange={(e) => setAssignHodPerson(e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rccg-blue"
+                      >
+                        <option value="">-- Select Minister or Member --</option>
+                        <optgroup label="Ordained Ministers / Pastors">
+                          {ministers.map((m) => (
+                            <option key={m.id} value={`${m.title} ${m.fullName}`}>
+                              {m.title} {m.fullName}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Parish Members & Workforce">
+                          {members.map((mem) => (
+                            <option key={mem.id} value={mem.fullName}>
+                              {mem.fullName} ({mem.role} - {mem.assignedDepartment || 'No Dept'})
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    <div className="flex items-end">
+                      <button
+                        type="submit"
+                        className="w-full py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow transition cursor-pointer"
+                      >
+                        Confirm HOD Assignment
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* CURRENT HOD ASSIGNMENT ROSTER TABLE */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Current Department HOD Summary</h4>
+                    <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-700 font-bold uppercase border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-4">Department Name</th>
+                            <th className="py-3 px-4">Code</th>
+                            <th className="py-3 px-4">Head of Department (HOD)</th>
+                            <th className="py-3 px-4">Meeting Schedule</th>
+                            <th className="py-3 px-4 text-right">Quick Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                          {departments.map((d) => (
+                            <tr key={d.id} className="hover:bg-slate-50">
+                              <td className="py-3 px-4 font-bold text-slate-900">{d.name}</td>
+                              <td className="py-3 px-4 font-mono font-bold text-slate-500">{d.code}</td>
+                              <td className="py-3 px-4 font-bold text-rccg-blue">
+                                <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-rccg-blue border border-blue-200">
+                                  👑 {d.headOfDepartment || 'Unassigned'}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-slate-600">{d.meetingSchedule || 'Flexible'}</td>
+                              <td className="py-3 px-4 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAssignHodDept(d.name);
+                                    setAssignHodPerson(d.headOfDepartment || '');
+                                  }}
+                                  className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition cursor-pointer"
+                                >
+                                  Re-assign HOD
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 3: DEPARTMENT MEMBER REPORT & FILTER */}
+            {departmentSubTab === 'department-report' && (
+              <div className="space-y-6">
+                {/* FILTER CONTROL BAR & STATS CARDS */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-amber-500" />
+                        <span>Department Membership Filter & Personnel Report</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Filter by department to view member count breakdowns and personnel rosters.</p>
+                    </div>
+
+                    <div className="flex items-center space-x-3 w-full sm:w-auto">
+                      <label className="text-xs font-bold text-slate-700 whitespace-nowrap">Filter Department:</label>
+                      <select
+                        value={selectedReportDept}
+                        onChange={(e) => setSelectedReportDept(e.target.value)}
+                        className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rccg-blue cursor-pointer w-full sm:w-64"
+                      >
+                        <option value="All">All Parish Departments</option>
+                        {departments.map((d) => (
+                          <option key={d.id} value={d.name}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* SUMMARY METRIC CARDS */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-blue-50/60 p-4 rounded-2xl border border-blue-200 space-y-1">
+                      <div className="text-[10px] font-bold text-rccg-blue uppercase tracking-wider">Active Units</div>
+                      <div className="text-2xl font-black text-slate-900">{departments.length}</div>
+                      <div className="text-[11px] text-slate-500 font-medium">Departments Configured</div>
+                    </div>
+
+                    <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200 space-y-1">
+                      <div className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Assigned Members</div>
+                      <div className="text-2xl font-black text-emerald-900">
+                        {selectedReportDept === 'All' 
+                          ? members.filter(m => !!m.assignedDepartment).length 
+                          : members.filter(m => m.assignedDepartment === selectedReportDept).length}
+                      </div>
+                      <div className="text-[11px] text-emerald-700 font-medium">
+                        {selectedReportDept === 'All' ? 'In any department' : `In ${selectedReportDept}`}
+                      </div>
+                    </div>
+
+                    <div className="bg-purple-50/60 p-4 rounded-2xl border border-purple-200 space-y-1">
+                      <div className="text-[10px] font-bold text-purple-800 uppercase tracking-wider">Workforce Personnel</div>
+                      <div className="text-2xl font-black text-purple-900">
+                        {selectedReportDept === 'All'
+                          ? members.filter(m => m.role === 'Workforce' || m.role === 'Minister').length
+                          : members.filter(m => m.assignedDepartment === selectedReportDept && (m.role === 'Workforce' || m.role === 'Minister')).length}
+                      </div>
+                      <div className="text-[11px] text-purple-700 font-medium">Workforce & Ministers</div>
+                    </div>
+
+                    <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200 space-y-1">
+                      <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Unassigned Members</div>
+                      <div className="text-2xl font-black text-amber-900">
+                        {members.filter(m => !m.assignedDepartment).length}
+                      </div>
+                      <div className="text-[11px] text-amber-700 font-medium">Awaiting Department</div>
+                    </div>
+                  </div>
+
+                  {/* FILTERED DEPARTMENT PERSONNEL TABLE */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Personnel Roster — {selectedReportDept === 'All' ? 'All Departments' : selectedReportDept}
+                      </h4>
+                      <span className="text-xs text-slate-500 font-mono">
+                        Showing {members.filter(m => selectedReportDept === 'All' || m.assignedDepartment === selectedReportDept).length} Members
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-700 font-bold uppercase border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-4">Member Name</th>
+                            <th className="py-3 px-4">Department</th>
+                            <th className="py-3 px-4">Member Role</th>
+                            <th className="py-3 px-4">Whatsapp / Phone</th>
+                            <th className="py-3 px-4">Email</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                          {members
+                            .filter(m => selectedReportDept === 'All' || m.assignedDepartment === selectedReportDept)
+                            .map((m) => (
+                              <tr key={m.id} className="hover:bg-slate-50">
+                                <td className="py-3 px-4 font-bold text-slate-900 flex items-center space-x-2">
+                                  <div className="w-7 h-7 rounded-full bg-rccg-blue text-white flex items-center justify-center font-bold text-[10px]">
+                                    {m.surname[0]}{m.firstname[0]}
+                                  </div>
+                                  <div>
+                                    <span>{m.fullName}</span>
+                                    {m.isHod && <span className="ml-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">👑 HOD</span>}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 font-bold text-rccg-blue">
+                                  {m.assignedDepartment ? (
+                                    <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-rccg-blue border border-blue-200">
+                                      {m.assignedDepartment}
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 italic">Unassigned</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    m.role === 'Minister' ? 'bg-purple-100 text-purple-800' :
+                                    m.role === 'Workforce' ? 'bg-emerald-100 text-emerald-800' :
+                                    'bg-slate-100 text-slate-700'
+                                  }`}>
+                                    {m.role}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 font-mono font-bold text-slate-700">{m.whatsappNumber}</td>
+                                <td className="py-3 px-4 text-slate-600">{m.email}</td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SYSTEM SETUP TAB */}
+        {activeTab === 'setup' && (currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'SystemAdmin' || currentUser?.role === 'Admin') && (
           <div className="space-y-6 max-w-6xl mx-auto">
             {/* SETUP HEADER & CONTROL BAR */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -4943,14 +8182,14 @@ export default function App() {
                   <h2 className="text-xl font-bold text-slate-900">System Setup & Configuration</h2>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Manage Service Types, Offering Categories, Ministers Directory, and Parish Branding.
+                  Manage Service Types, Offering Categories, and Parish Branding settings.
                 </p>
               </div>
 
               {setupSubTab === 'service-types' ? (
                 <button
                   onClick={() => setIsAddSetupModalOpen(true)}
-                  className="flex items-center space-x-2 px-4 py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-sm rounded-xl shadow-md transition"
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-sm rounded-xl shadow-md transition cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4 text-emerald-300" />
                   <span>Configure Service Type & Category</span>
@@ -4958,7 +8197,7 @@ export default function App() {
               ) : setupSubTab !== 'branding' ? (
                 <button
                   onClick={() => setShowAddSetupForm(!showAddSetupForm)}
-                  className="flex items-center space-x-2 px-4 py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-sm rounded-xl shadow-md transition"
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-sm rounded-xl shadow-md transition cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4 text-emerald-300" />
                   <span>{showAddSetupForm ? 'Close Add Form' : 'Add New Setup'}</span>
@@ -4970,7 +8209,7 @@ export default function App() {
             <div className="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
               <button
                 onClick={() => { setSetupSubTab('service-types'); setShowAddSetupForm(false); }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
                   setupSubTab === 'service-types' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
@@ -4980,7 +8219,7 @@ export default function App() {
 
               <button
                 onClick={() => { setSetupSubTab('offering-categories'); setShowAddSetupForm(false); }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
                   setupSubTab === 'offering-categories' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
@@ -4989,18 +8228,8 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setSetupSubTab('departments'); setShowAddSetupForm(false); }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap ${
-                  setupSubTab === 'departments' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                <span>Departments ({departments.length})</span>
-              </button>
-
-              <button
                 onClick={() => { setSetupSubTab('branding'); setShowAddSetupForm(false); }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
                   setupSubTab === 'branding' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
@@ -5021,7 +8250,7 @@ export default function App() {
                     </div>
                     <button
                       onClick={() => setIsAddCategoryModalOpen(true)}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-rccg-blue font-bold text-xs rounded-xl transition flex items-center gap-1"
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-rccg-blue font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Add Service Category</span>
@@ -5067,7 +8296,7 @@ export default function App() {
                     </div>
                     <button
                       onClick={() => setIsAddSetupModalOpen(true)}
-                      className="px-4 py-2 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5"
+                      className="px-4 py-2 bg-rccg-blue hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer"
                     >
                       <PlusCircle className="w-3.5 h-3.5 text-emerald-300" />
                       <span>Configure New Service Type</span>
@@ -5177,7 +8406,7 @@ export default function App() {
                         />
                       </div>
                       <div className="flex items-end">
-                        <button type="submit" className="w-full py-2.5 bg-rccg-green text-white font-bold text-sm rounded-xl shadow hover:bg-emerald-700 transition">
+                        <button type="submit" className="w-full py-2.5 bg-rccg-green text-white font-bold text-sm rounded-xl shadow hover:bg-emerald-700 transition cursor-pointer">
                           Save Offering Category
                         </button>
                       </div>
@@ -5229,156 +8458,7 @@ export default function App() {
               </div>
             )}
 
-
-
-            {/* SUB-TAB 4: PARISH DEPARTMENTS SETUP */}
-            {setupSubTab === 'departments' && (
-              <div className="space-y-6">
-                {showAddSetupForm && (
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 animate-fadeIn">
-                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <PlusCircle className="w-5 h-5 text-rccg-blue" />
-                      <span>Configure New Parish Department / Ministry</span>
-                    </h3>
-                    <form onSubmit={handleAddDepartment} className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Department Name *</label>
-                          <input
-                            type="text"
-                            required
-                            value={newDepartmentName}
-                            onChange={(e) => setNewDepartmentName(e.target.value)}
-                            placeholder="e.g. Media & Technical Unit"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Department Code</label>
-                          <input
-                            type="text"
-                            value={newDepartmentCode}
-                            onChange={(e) => setNewDepartmentCode(e.target.value)}
-                            placeholder="e.g. TEC-01 (Auto-generated if empty)"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-rccg-blue focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Head of Department (HOD)</label>
-                          <select
-                            value={newDepartmentHod}
-                            onChange={(e) => setNewDepartmentHod(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
-                          >
-                            <option value="">-- Select HOD / Leader --</option>
-                            {ministers.map((m) => (
-                              <option key={m.id} value={m.fullName}>
-                                {m.fullName} ({m.title})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Meeting Schedule</label>
-                          <input
-                            type="text"
-                            value={newDepartmentSchedule}
-                            onChange={(e) => setNewDepartmentSchedule(e.target.value)}
-                            placeholder="e.g. Saturdays at 05:00 PM"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">Brief Description / Mandate</label>
-                          <input
-                            type="text"
-                            value={newDepartmentDescription}
-                            onChange={(e) => setNewDepartmentDescription(e.target.value)}
-                            placeholder="e.g. Sound engineering, live streaming, and media production."
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-rccg-blue focus:outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end pt-2">
-                        <button type="submit" className="px-6 py-2.5 bg-rccg-green text-white font-bold text-sm rounded-xl shadow hover:bg-emerald-700 transition">
-                          Save Department Setup
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                  <div className="px-6 py-4 bg-slate-50 border-b flex justify-between items-center">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Configured Parish Departments & Directorates</h3>
-                      <p className="text-xs text-slate-500">Departments configured for workforce management and roster scheduling.</p>
-                    </div>
-                    <span className="px-3 py-1 bg-blue-100 text-rccg-blue rounded-full text-xs font-bold font-mono">
-                      {departments.length} Units Active
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
-                    {departments.map((dep) => (
-                      <div key={dep.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="p-3 bg-rccg-blue text-white rounded-xl shadow-sm">
-                              <Users className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-bold text-slate-900">{dep.name}</h4>
-                              <span className="text-[11px] font-mono font-bold text-slate-500">Code: {dep.code}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              Active Unit
-                            </span>
-                            <button
-                              onClick={() => handleStartEditDepartment(dep)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition border border-transparent hover:border-blue-200 cursor-pointer"
-                              title="Edit Department"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDepartment(dep.id, dep.name)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-200 cursor-pointer"
-                              title="Delete Department"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {dep.description && (
-                          <p className="text-xs text-slate-600 line-clamp-2">{dep.description}</p>
-                        )}
-
-                        <div className="pt-2 border-t border-slate-200/80 grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase block">Head of Dept (HOD)</span>
-                            <span className="font-semibold text-slate-800">{dep.headOfDepartment || 'Unassigned'}</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase block">Meeting Schedule</span>
-                            <span className="font-semibold text-slate-800">{dep.meetingSchedule || 'Flexible'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* SUB-TAB 4: PARISH BRANDING SETUP */}
+            {/* SUB-TAB 3: PARISH BRANDING SETUP */}
             {setupSubTab === 'branding' && (
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
                 <h3 className="text-lg font-bold text-slate-900 border-b pb-3 flex items-center space-x-2">
@@ -5431,7 +8511,7 @@ export default function App() {
                             <button
                               type="button"
                               onClick={() => setOrg({ ...org, logoUrl: '' })}
-                              className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+                              className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                               <span>Remove</span>
@@ -5461,7 +8541,7 @@ export default function App() {
                     <select
                       value={org.baseCurrency}
                       onChange={(e) => setOrg({ ...org, baseCurrency: e.target.value })}
-                      className="w-full sm:w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900"
+                      className="w-full sm:w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 cursor-pointer"
                     >
                       <option value="NGN">NGN (Nigerian Naira - ₦)</option>
                       <option value="USD">USD (US Dollar - $)</option>
@@ -5471,7 +8551,7 @@ export default function App() {
                   </div>
 
                   <div className="pt-4">
-                    <button type="submit" className="px-8 py-3 bg-rccg-blue text-white text-sm font-bold rounded-xl shadow-md">
+                    <button type="submit" className="px-8 py-3 bg-rccg-blue text-white text-sm font-bold rounded-xl shadow-md cursor-pointer">
                       Save Branding Settings
                     </button>
                   </div>
@@ -5480,7 +8560,8 @@ export default function App() {
             )}
           </div>
         )}
-      </main>
+          </div>
+        </main>
 
       {/* ---------------- MODAL 1: DETAILED SERVICE TYPE & CATEGORY SETUP POPUP ---------------- */}
       {isAddSetupModalOpen && (
@@ -6595,6 +9676,646 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* 1. ADD SPECIAL EVENT / NIGHT VIGIL MODAL */}
+      {showAddNightVigilModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div className="bg-gradient-to-r from-purple-900 to-indigo-950 text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-300" />
+                <span>+ Add Night Vigil / Special Event</span>
+              </h3>
+              <button onClick={() => setShowAddNightVigilModal(false)} className="text-purple-200 hover:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Event Title *</label>
+                <input
+                  type="text"
+                  value={nightVigilTitle}
+                  onChange={(e) => setNightVigilTitle(e.target.value)}
+                  placeholder="e.g. Monthly Parish Night Vigil"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Event Date *</label>
+                  <input
+                    type="date"
+                    value={nightVigilDate}
+                    onChange={(e) => setNightVigilDate(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Start Time</label>
+                  <input
+                    type="text"
+                    value={nightVigilTime}
+                    onChange={(e) => setNightVigilTime(e.target.value)}
+                    placeholder="e.g. 10:00 PM"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddNightVigilModal(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const activeDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
+                    const newAssignment = {
+                      id: `d_nv_${Date.now()}`,
+                      serviceDate: nightVigilDate,
+                      serviceTypeName: `${nightVigilTitle} (${nightVigilTime}) - Special Event`,
+                      departmentName: activeDept,
+                      dutyRole: 'Night Vigil Ministration',
+                      assignedPersonNames: [],
+                      status: 'Draft'
+                    };
+
+                    setRosters(prev => {
+                      const targetRoster = prev.find(r => r.departmentName === activeDept && r.monthYear === rosterSelectedMonth);
+                      if (targetRoster) {
+                        return prev.map(r => r.departmentName === activeDept && r.monthYear === rosterSelectedMonth ? { ...r, assignments: [...(r.assignments || []), newAssignment] } : r);
+                      } else {
+                        return [...prev, { id: `ros_${Date.now()}`, monthYear: rosterSelectedMonth, departmentName: activeDept, hodName: currentUser?.fullName || 'HOD', status: 'Draft', assignments: [newAssignment] }];
+                      }
+                    });
+
+                    setShowAddNightVigilModal(false);
+                    setRosterSuccessAlert(`Added "${nightVigilTitle}" for ${nightVigilDate} to monthly roster list!`);
+                    setTimeout(() => setRosterSuccessAlert(null), 5000);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow cursor-pointer"
+                >
+                  Add Event to Roster
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. WHATSAPP & DOWNLOAD ROSTER EXPORT MODAL */}
+      {showRosterExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200">
+            <div className="bg-gradient-to-r from-rccg-blue to-rccg-navy text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Share2 className="w-4 h-4 text-emerald-300" />
+                <span>Export Duty Roster for WhatsApp Group Sharing</span>
+              </h3>
+              <button onClick={() => setShowRosterExportModal(false)} className="text-slate-300 hover:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {(() => {
+              const activeDept = currentUser?.role === 'HOD' ? getHodDepartment(currentUser) : rosterSelectedDept;
+              const activeRoster = rosters.find(r => r.departmentName === activeDept && r.monthYear === rosterSelectedMonth);
+              const assignments = activeRoster?.assignments || [];
+
+              const formattedText = `=======================================\n` +
+                `📌 RCCG GLORIOUS CHURCH - MONTHLY DUTY ROSTER\n` +
+                `🏢 Department: ${activeDept}\n` +
+                `📅 Month: ${rosterSelectedMonth}\n` +
+                `👑 HOD: ${activeRoster?.hodName || currentUser?.fullName}\n` +
+                `STATUS: ${activeRoster?.status === 'Approved' ? 'PUBLISHED & APPROVED ✓' : 'DRAFT / SUBMITTED'}\n` +
+                `=======================================\n\n` +
+                (assignments.length === 0 ? "No specific assignments configured yet." : assignments.map((a: any) => {
+                  let str = `🗓️ ${a.serviceDate} - ${a.serviceTypeName}\n`;
+                  if (activeDept === 'Choir & Praise Team' && a.ministrationBreakdown) {
+                    const mb = a.ministrationBreakdown;
+                    if (mb.workersPraise?.length) str += ` ├ 🌅 Worker's P&W: ${mb.workersPraise.join(', ')}\n`;
+                    if (mb.mainPraise?.length) str += ` ├ 🔥 Main P&W: ${mb.mainPraise.join(', ')}\n`;
+                    if (mb.offering?.length) str += ` ├ 💸 Offering Ministration: ${mb.offering.join(', ')}\n`;
+                    if (mb.thanksgiving?.length) str += ` └ 🙌 Thanksgiving Ministration: ${mb.thanksgiving.join(', ')}\n`;
+                  } else {
+                    str += ` └ 👤 Workers (${a.assignedPersonNames?.length || 0}): ${a.assignedPersonNames?.join(', ') || 'Unassigned'}\n`;
+                  }
+                  return str;
+                }).join('\n')) +
+                `\n=======================================\n` +
+                `God bless your service in His Vineyard! 🙏✨`;
+
+              return (
+                <div className="p-6 space-y-4">
+                  <p className="text-xs text-slate-500">
+                    This formatted roster schedule can be copied and pasted directly into your department's WhatsApp group or saved as a document for members.
+                  </p>
+
+                  <div className="bg-slate-900 text-emerald-300 font-mono text-xs p-4 rounded-2xl border border-slate-800 h-64 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
+                    {formattedText}
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowRosterExportModal(false)}
+                      className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                    >
+                      Close
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(formattedText);
+                        setRosterSuccessAlert("Formatted Duty Roster copied to clipboard! You can now paste directly into your WhatsApp group chat.");
+                        setShowRosterExportModal(false);
+                        setTimeout(() => setRosterSuccessAlert(null), 6000);
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow flex items-center space-x-2 cursor-pointer"
+                    >
+                      <Copy className="w-4 h-4" />
+                      <span>Copy for WhatsApp</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* 3. EDIT MINISTRATION ROLE TITLE MODAL */}
+      {editingRoleState && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-amber-400" />
+                <span>Edit Ministration Role Title</span>
+              </h3>
+              <button onClick={() => setEditingRoleState(null)} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Ministration Role Name *</label>
+                <input
+                  type="text"
+                  value={newRoleLabelInput}
+                  onChange={(e) => setNewRoleLabelInput(e.target.value)}
+                  placeholder="e.g. Praise & Worship (Special)"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:bg-white focus:outline-rccg-blue"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingRoleState(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!newRoleLabelInput.trim()) return;
+                    setRenamedRolesPerService(prev => ({
+                      ...prev,
+                      [editingRoleState.serviceId]: {
+                        ...(prev[editingRoleState.serviceId] || {}),
+                        [editingRoleState.roleKey]: newRoleLabelInput.trim()
+                      }
+                    }));
+                    setRosterSuccessAlert(`Updated ministration role title to "${newRoleLabelInput.trim()}".`);
+                    setEditingRoleState(null);
+                    setTimeout(() => setRosterSuccessAlert(null), 4000);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold shadow cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. ADD CUSTOM MINISTRATION ROLE & MINISTER SELECTION MODAL */}
+      {addingRoleServiceId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Plus className="w-4 h-4 text-emerald-400" />
+                <span>Add Custom Ministration Role / Minister</span>
+              </h3>
+              <button onClick={() => setAddingRoleServiceId(null)} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Minister / Custom Role Title *</label>
+                
+                {/* SELECT FROM MINISTER & MEMBER DROPDOWN ACROSS ALL DEPARTMENTS */}
+                <div className="space-y-2">
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setNewRoleTitleInput(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:bg-white focus:outline-rccg-blue cursor-pointer mb-2"
+                  >
+                    <option value="">-- Quick Pick Minister / Member --</option>
+                    <optgroup label="Ordained Ministers / Pastors">
+                      {ministers.map((m) => (
+                        <option key={m.id} value={`Ministration by ${m.fullName}`}>
+                          {m.fullName}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Ushering Department">
+                      {members.filter(m => m.assignedDepartment === 'Ushering & Protocol').map((mem) => (
+                        <option key={mem.id} value={`Preaching / Ministration by ${mem.fullName}`}>
+                          {mem.fullName} (Ushering)
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Choir & Music Ministry">
+                      {members.filter(m => m.assignedDepartment === 'Choir & Praise Team').map((mem) => (
+                        <option key={mem.id} value={`Special Ministration by ${mem.fullName}`}>
+                          {mem.fullName} (Choir)
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="All Parish Members (Any Department)">
+                      {members.map((mem) => (
+                        <option key={mem.id} value={`Ministration by ${mem.fullName}`}>
+                          {mem.fullName} ({mem.assignedDepartment || 'General Member'})
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+
+                  <input
+                    type="text"
+                    value={newRoleTitleInput}
+                    onChange={(e) => setNewRoleTitleInput(e.target.value)}
+                    placeholder="Or type custom title e.g. Preaching / Special Duet Ministration"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:bg-white focus:outline-rccg-blue"
+                    autoFocus
+                  />
+                  <p className="text-[11px] text-slate-500 italic">
+                    Someone in Ushering, Choir, or any department can be picked to preach or minister on that service day.
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAddingRoleServiceId(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!newRoleTitleInput.trim()) return;
+                    const newKey = `custom_role_${Date.now()}`;
+                    const newRoleObj = {
+                      key: newKey,
+                      label: newRoleTitleInput.trim(),
+                      icon: '🎵',
+                      color: 'border-indigo-200 bg-indigo-50/60 text-indigo-950'
+                    };
+                    setCustomRolesPerService(prev => ({
+                      ...prev,
+                      [addingRoleServiceId]: [...(prev[addingRoleServiceId] || []), newRoleObj]
+                    }));
+                    setRosterSuccessAlert(`Added ministration role "${newRoleTitleInput.trim()}".`);
+                    setAddingRoleServiceId(null);
+                    setNewRoleTitleInput('');
+                    setTimeout(() => setRosterSuccessAlert(null), 4000);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow cursor-pointer"
+                >
+                  Add Role Slot
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. EDIT SERVICE CARD TITLE MODAL */}
+      {editingServiceId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-blue-400" />
+                <span>Edit Service Title</span>
+              </h3>
+              <button onClick={() => setEditingServiceId(null)} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Service Card Title *</label>
+                <input
+                  type="text"
+                  value={newServiceTitleInput}
+                  onChange={(e) => setNewServiceTitleInput(e.target.value)}
+                  placeholder="e.g. Sunday Combined Praise Service (09:00 AM)"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:bg-white focus:outline-rccg-blue"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingServiceId(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!newServiceTitleInput.trim()) return;
+                    setRenamedServices(prev => ({
+                      ...prev,
+                      [editingServiceId]: newServiceTitleInput.trim()
+                    }));
+                    setRosterSuccessAlert(`Updated service title to "${newServiceTitleInput.trim()}".`);
+                    setEditingServiceId(null);
+                    setNewServiceTitleInput('');
+                    setTimeout(() => setRosterSuccessAlert(null), 4000);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-rccg-blue hover:bg-rccg-navy text-white text-xs font-bold shadow cursor-pointer"
+                >
+                  Save Title
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. PRINT PDF OFFICIAL ROSTER SCHEDULE MODAL (MATCHING IMAGE 1 EXACTLY) */}
+      {showPrintPdfModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200 my-8">
+            
+            {/* MODAL ACTION BAR */}
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between no-print">
+              <div className="flex items-center space-x-2">
+                <Printer className="w-5 h-5 text-amber-400" />
+                <h3 className="text-sm font-bold">Official Printable Monthly Roster Schedule (PDF View)</h3>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print / Save PDF</span>
+                </button>
+                <button onClick={() => setShowPrintPdfModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* PRINTABLE DOCUMENT BODY (MATCHING IMAGE 1) */}
+            <div className="p-8 space-y-6 bg-white text-slate-900 font-sans print-document-container">
+              
+              {/* THEME & MONTH CONTROL BAR FOR ADMIN */}
+              <div className="no-print bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                <label className="block text-xs font-bold text-slate-700">Customize Monthly Roster Theme (Appears on Printable PDF):</label>
+                <input
+                  type="text"
+                  value={monthlyRosterTheme}
+                  onChange={(e) => setMonthlyRosterTheme(e.target.value)}
+                  placeholder="e.g. WORK IN THE SPIRIT (GALATIANS 5 VS 16)"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800"
+                />
+              </div>
+
+              {/* DOCUMENT HEADER */}
+              <div className="text-center space-y-1.5 border-b-2 border-slate-900 pb-4">
+                <h1 className="text-lg font-black uppercase tracking-wide text-slate-900 underline underline-offset-4">
+                  {org.parishName}
+                </h1>
+                <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-800 underline underline-offset-2">
+                  MONTHLY SCHEDULE FOR WORKERS AND MINISTERS ({rosterSelectedMonth === '2026-10' ? 'OCTOBER, 2026' : rosterSelectedMonth})
+                </h2>
+                <h3 className="text-xs font-extrabold uppercase tracking-wide text-slate-900 italic mt-1">
+                  THEME: {monthlyRosterTheme}
+                </h3>
+              </div>
+
+              {/* SCHEDULE TABLE MATCHING IMAGE 1 */}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border-2 border-slate-900 text-center text-xs">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-900 uppercase font-black tracking-wider border-b-2 border-slate-900">
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5 w-16">DATE</th>
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5 w-32">ACTIVITY</th>
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5">COORDINATOR</th>
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5">USHER IN-CHARGE</th>
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5">PRAISE LEADER</th>
+                      <th className="border-r-2 border-b-2 border-slate-900 p-2.5">OFFICIATING MINISTER</th>
+                      <th className="border-2 border-slate-900 p-2.5">OPEN HEAVENS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y border-slate-900 font-bold">
+                    {[
+                      { id: 'srv1', serviceDate: '2026-10-04', serviceTypeName: 'SUNDAY SERVICE', dayName: 'Sunday' },
+                      { id: 'srv2', serviceDate: '2026-10-04', serviceTypeName: 'SUNDAY SERVICE (2ND)', dayName: 'Sunday' },
+                      { id: 'srv3', serviceDate: '2026-10-06', serviceTypeName: 'DIGGING DEEP', dayName: 'Tuesday' },
+                      { id: 'srv4', serviceDate: '2026-10-08', serviceTypeName: 'FAITH CLINIC', dayName: 'Thursday' },
+                      { id: 'srv5', serviceDate: '2026-10-11', serviceTypeName: 'SUNDAY SERVICE', dayName: 'Sunday' },
+                      { id: 'srv6', serviceDate: '2026-10-11', serviceTypeName: 'SUNDAY SERVICE (2ND)', dayName: 'Sunday' },
+                      { id: 'srv7', serviceDate: '2026-10-13', serviceTypeName: 'DIGGING DEEP', dayName: 'Tuesday' },
+                      { id: 'srv8', serviceDate: '2026-10-15', serviceTypeName: 'FAITH CLINIC', dayName: 'Thursday' },
+                      { id: 'srv9', serviceDate: '2026-10-16', serviceTypeName: 'VIGIL', dayName: 'Friday' },
+                      { id: 'srv10', serviceDate: '2026-10-18', serviceTypeName: 'SUNDAY SERVICE', dayName: 'Sunday' },
+                      { id: 'srv11', serviceDate: '2026-10-18', serviceTypeName: 'SUNDAY SERVICE (2ND)', dayName: 'Sunday' },
+                      { id: 'srv12', serviceDate: '2026-10-25', serviceTypeName: 'SUNDAY SERVICE', dayName: 'Sunday' }
+                    ]
+                    .filter(s => !deletedServices.includes(s.id))
+                    .map((srvRow) => {
+                      const adminData = adminRosterScheduleData[srvRow.id] || {};
+                      const isSunday = srvRow.dayName === 'Sunday';
+                      const isVigil = srvRow.serviceTypeName.includes('VIGIL');
+
+                      const formattedDate = srvRow.serviceDate.split('-').slice(1).reverse().join('/'); // e.g. 04/10
+
+                      const rowTextColor = isSunday 
+                        ? 'text-red-700 font-extrabold' 
+                        : isVigil 
+                        ? 'text-purple-800 font-extrabold' 
+                        : 'text-slate-900 font-bold';
+
+                      return (
+                        <tr key={srvRow.id} className={`border-b border-slate-900 ${rowTextColor}`}>
+                          <td className="border-r border-slate-900 p-2.5 font-mono">{formattedDate}</td>
+                          <td className="border-r border-slate-900 p-2.5 uppercase">{renamedServices[srvRow.id] || srvRow.serviceTypeName}</td>
+                          <td className="border-r border-slate-900 p-2.5 uppercase">{adminData.coordinator || 'BRO. PHILLIP'}</td>
+                          <td className="border-r border-slate-900 p-2.5 uppercase">{adminData.usherInCharge || 'USHERS'}</td>
+                          <td className="border-r border-slate-900 p-2.5 uppercase">{adminData.praiseLeader || 'CHOIR'}</td>
+                          <td className="border-r border-slate-900 p-2.5 uppercase">{adminData.officiatingMinister || 'PST. ADETUNJI'}</td>
+                          <td className="border-slate-900 p-2.5 uppercase">{adminData.openHeavensLeader || ''}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* FOOTER SIGNATURES & NOTICE */}
+              <div className="pt-6 border-t border-slate-300 flex justify-between items-center text-[11px] font-bold text-slate-600">
+                <div>Prepared by: Service Coordinator & HODs</div>
+                <div>Approved by: Pastor-in-Charge of Parish</div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MOBILE BOTTOM NAVIGATION BAR (FIXED ON SMARTPHONES FOR PWA) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-white/10 text-white px-2 py-1.5 pb-safe flex items-center justify-around shadow-2xl">
+        {/* Dashboard */}
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition min-h-[44px] ${
+            activeTab === 'dashboard' ? 'text-emerald-400 bg-emerald-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Dashboard"
+        >
+          <Church className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Dashboard</span>
+        </button>
+
+        {/* Service Reports */}
+        {(currentUser?.role === 'SuperAdmin' || 
+          currentUser?.role === 'Pastor' || 
+          currentUser?.role === 'SystemAdmin' || 
+          currentUser?.role === 'Admin' || 
+          currentUser?.role === 'ServiceCoordinator' || 
+          (currentUser?.role === 'HOD' && getHodDepartment(currentUser) === 'Ushering & Protocol')) && (
+          <button
+            onClick={() => setActiveTab('service-report')}
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition min-h-[44px] ${
+              activeTab === 'service-report' ? 'text-emerald-300 bg-emerald-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Service Reports"
+          >
+            <FileText className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Reports</span>
+          </button>
+        )}
+
+        {/* Events */}
+        <button
+          onClick={() => setActiveTab('events')}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition min-h-[44px] ${
+            activeTab === 'events' ? 'text-amber-300 bg-amber-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Events & Conferences"
+        >
+          <Calendar className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Events</span>
+        </button>
+
+        {/* Membership */}
+        <button
+          onClick={() => { setActiveTab('membership'); setUserSubTab('portal-users'); }}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition min-h-[44px] ${
+            activeTab === 'membership' ? 'text-emerald-300 bg-emerald-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Membership"
+        >
+          <UserCheck className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Members</span>
+        </button>
+
+        {/* Departments */}
+        <button
+          onClick={() => { setActiveTab('departments'); setDepartmentSubTab('departments-list'); }}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition min-h-[44px] ${
+            activeTab === 'departments' ? 'text-indigo-300 bg-indigo-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Departments"
+        >
+          <Building2 className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Depts</span>
+        </button>
+
+        {/* Users */}
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition min-h-[44px] ${
+            activeTab === 'users' ? 'text-sky-300 bg-sky-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title={currentUser?.role === 'HOD' ? "Department Roles" : "Users"}
+        >
+          <Users className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">{currentUser?.role === 'HOD' ? 'Roles' : 'Users'}</span>
+        </button>
+
+        {/* Fellowship */}
+        {(currentUser?.role === 'SuperAdmin' || 
+          currentUser?.role === 'Pastor' || 
+          currentUser?.role === 'SystemAdmin' || 
+          currentUser?.role === 'Admin' || 
+          (currentUser?.role === 'HOD' && (getHodDepartment(currentUser) === 'Follow-up & Welfare' || getHodDepartment(currentUser) === 'Evangelism & Outreach'))) && (
+          <button
+            onClick={() => setActiveTab('fellowship')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition min-h-[44px] ${
+              activeTab === 'fellowship' ? 'text-teal-300 bg-teal-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Fellowship & Outreach"
+          >
+            <HeartHandshake className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Outreach</span>
+          </button>
+        )}
+
+        {/* Setup */}
+        {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Pastor' || currentUser?.role === 'SystemAdmin' || currentUser?.role === 'Admin') && (
+          <button
+            onClick={() => setActiveTab('setup')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition min-h-[44px] ${
+              activeTab === 'setup' ? 'text-blue-300 bg-blue-500/20 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="System Setup"
+          >
+            <Settings className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px]">Setup</span>
+          </button>
+        )}
+      </nav>
+
+      {/* PWA Install Prompt Banner */}
+      <PwaInstallPrompt />
     </div>
   </div>
   );

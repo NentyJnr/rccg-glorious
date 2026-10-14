@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/apiClient';
 import {
   Church,
   Search,
@@ -30,8 +31,114 @@ import {
   AlertCircle,
   Share2,
   Info,
-  FileText
+  FileText,
+  Users
 } from 'lucide-react';
+
+export interface EventSpeakerItem {
+  id?: string;
+  fullName: string;
+  ecclesiasticalTitle: string;
+  ministryRole: string;
+  photoUrl?: string;
+  organization?: string;
+  shortBio?: string;
+  displayOrder?: number;
+}
+
+export interface ParishEventItem {
+  id: string;
+  title: string;
+  theme?: string;
+  description: string;
+  coverImageUrl: string;
+  eventDate: string;
+  timeString: string;
+  venue: string;
+  category: string;
+  isFeatured: boolean;
+  registrationRequired: boolean;
+  status: 'Upcoming' | 'Completed' | 'Cancelled';
+  maxCapacity?: number;
+  speakers?: EventSpeakerItem[];
+}
+
+const INITIAL_PARISH_EVENTS: ParishEventItem[] = [
+  {
+    id: 'evt-1',
+    title: 'Annual Praise & Worship Night 2026',
+    theme: 'Sounds of Victory & Divine Exaltation',
+    description: "Join us for an unforgettable night of high praise, deep worship, and prophetic ministrations as we celebrate God's divine faithfulness across the zone. Come with your thanksgiving heart and expectations for miraculous encounters.",
+    coverImageUrl: '/event_praise_night.jpg',
+    eventDate: '2026-10-24',
+    timeString: 'Friday, October 24, 2026 • 9:00 PM GMT',
+    venue: 'Main Sanctuary Auditorium, RCCG Glorious Church Parish',
+    category: 'Praise & Worship',
+    isFeatured: true,
+    registrationRequired: true,
+    status: 'Upcoming',
+    maxCapacity: 500,
+    speakers: [
+      {
+        fullName: 'Pastor E. A. Adeboye',
+        ecclesiasticalTitle: 'Pastor',
+        ministryRole: 'General Overseer / Apostolic Blessings',
+        organization: 'RCCG Worldwide',
+        photoUrl: '/adeboye-enoch-jpeg.webp',
+        shortBio: 'General Overseer of the Redeemed Christian Church of God, spiritual leader and father in the Lord.'
+      },
+      {
+        fullName: 'Pastor (Dr.) Taiwo Adetunji',
+        ecclesiasticalTitle: 'Pastor (Dr.)',
+        ministryRole: 'Host Pastor & Convener',
+        organization: 'RCCG Glorious Church',
+        photoUrl: '/dr_taiwo_adetunji.jpg',
+        shortBio: 'Pastor-in-Charge of RCCG Glorious Church Parish, passionate about revival, worship, and apostolic order.'
+      },
+      {
+        fullName: 'Minister David Okafor',
+        ecclesiasticalTitle: 'Minister',
+        ministryRole: 'Guest Worship Minister',
+        organization: 'RCCG National Praise Team',
+        photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+        shortBio: 'Anointed worship leader and music minister leading the assembly in elevated atmosphere of praise.'
+      }
+    ]
+  },
+  {
+    id: 'evt-2',
+    title: 'Kingdom Youth Leadership Summit',
+    theme: 'Empowered for Dominion & Excellence',
+    description: 'Empowering young professionals, students, and emerging kingdom leaders with biblical wisdom, career strategies, and spiritual capacity to excel in contemporary corporate and social ecosystems.',
+    coverImageUrl: '/event_youth_summit.jpg',
+    eventDate: '2026-11-14',
+    timeString: 'Saturday, November 14, 2026 • 10:00 AM GMT',
+    venue: 'Youth Center & Online Virtual Live Stream',
+    category: 'Youth & Leadership',
+    isFeatured: true,
+    registrationRequired: true,
+    status: 'Upcoming',
+    maxCapacity: 350,
+    speakers: [
+      {
+        fullName: 'Pastor (Dr.) Taiwo Adetunji',
+        ecclesiasticalTitle: 'Pastor (Dr.)',
+        ministryRole: 'Host & Keynote Speaker',
+        organization: 'RCCG Glorious Church',
+        photoUrl: '/dr_taiwo_adetunji.jpg',
+        shortBio: 'Spiritual mentor and leadership coach equipping the next generation for marketplace dominance.'
+      },
+      {
+        fullName: 'Sister Grace Usang',
+        ecclesiasticalTitle: 'Sister',
+        ministryRole: 'Guest Speaker / Career Panelist',
+        organization: 'Vatebra Enterprise Tech',
+        photoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
+        shortBio: 'Enterprise technology leader and youth career mentor bridging faith and professional excellence.'
+      }
+    ]
+  }
+];
 
 interface ChurchWebsiteProps {
   onOpenPortal: () => void;
@@ -105,6 +212,27 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
     setSiteToast({ message, type });
     setTimeout(() => setSiteToast(null), 5000);
   };
+
+  // Parish Events & Ministers State
+  const [parishEvents, setParishEvents] = useState<ParishEventItem[]>(INITIAL_PARISH_EVENTS);
+  const [selectedEventForDetails, setSelectedEventForDetails] = useState<ParishEventItem | null>(null);
+
+  useEffect(() => {
+    const loadParishEvents = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/Events`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setParishEvents(json.data);
+          }
+        }
+      } catch (err) {
+        console.warn('[ChurchWebsite] Events API unavailable, running in resilient offline fallback mode.');
+      }
+    };
+    loadParishEvents();
+  }, []);
 
   // Event Registration Modal State
   const [eventModalOpen, setEventModalOpen] = useState(false);
@@ -644,117 +772,124 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
 
           {/* EVENTS GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
-            {/* EVENT 1 */}
-            <div className="bg-slate-950/90 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl hover:border-emerald-500/50 transition duration-300 flex flex-col justify-between group">
-              <div className="relative h-64 sm:h-72 overflow-hidden bg-slate-900">
-                <img
-                  src="/event_praise_night.jpg"
-                  alt="Annual Praise & Worship Night 2026"
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/30"></div>
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-[11px] font-black uppercase tracking-wider shadow-md">
-                    Featured Event
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-blue-900/90 text-blue-200 text-[11px] font-bold uppercase tracking-wider border border-blue-400/40 backdrop-blur-md">
-                    Registration Required
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-6 sm:p-8 space-y-5 flex-1 flex flex-col justify-between">
-                <div className="space-y-3">
-                  <h3 className="text-2xl sm:text-3xl font-black text-white group-hover:text-emerald-400 transition">
-                    Annual Praise &amp; Worship Night 2026
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
-                    Join us for an unforgettable night of high praise, deep worship, and prophetic ministrations as we celebrate God's divine faithfulness across the zone.
-                  </p>
-                </div>
-
-                <div className="space-y-2.5 pt-4 border-t border-slate-800 text-xs sm:text-sm font-semibold text-slate-300">
-                  <div className="flex items-center space-x-3 text-emerald-400">
-                    <Clock className="w-4 h-4 shrink-0" />
-                    <span>Friday, October 24, 2026 &bull; 9:00 PM GMT</span>
+            {parishEvents.map((ev) => (
+              <div
+                key={ev.id}
+                className="bg-slate-950/90 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl hover:border-emerald-500/50 transition duration-300 flex flex-col justify-between group cursor-pointer"
+                onClick={() => setSelectedEventForDetails(ev)}
+              >
+                <div className="relative h-64 sm:h-72 overflow-hidden bg-slate-900">
+                  <img
+                    src={ev.coverImageUrl || '/event_praise_night.jpg'}
+                    alt={ev.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/30"></div>
+                  
+                  <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                    <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-[11px] font-black uppercase tracking-wider shadow-md">
+                      {ev.category || 'Special Event'}
+                    </span>
+                    {ev.registrationRequired && (
+                      <span className="px-3 py-1 rounded-full bg-blue-900/90 text-blue-200 text-[11px] font-bold uppercase tracking-wider border border-blue-400/40 backdrop-blur-md">
+                        Registration Required
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-3 text-slate-300">
-                    <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Main Auditorium, RCCG Glorious Church Parish</span>
+
+                  <div className="absolute top-4 right-4">
+                    <span className="px-3 py-1 rounded-full bg-slate-900/80 text-emerald-400 text-[11px] font-bold uppercase tracking-wider border border-slate-700 backdrop-blur-md">
+                      {ev.status}
+                    </span>
+                  </div>
+
+                  <div className="absolute bottom-3 right-3 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-[11px] font-bold text-slate-200 flex items-center space-x-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Click to view ministers &amp; flyer</span>
                   </div>
                 </div>
 
-                <div className="pt-4">
-                  <button
-                    onClick={() => {
-                      setSelectedEventName('Annual Praise & Worship Night 2026');
-                      setEventModalOpen(true);
-                    }}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-xl transition transform hover:scale-[1.02] flex items-center justify-center space-x-2"
-                  >
-                    <UserCheck className="w-4 h-4" />
-                    <span>Register For Event</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* EVENT 2 */}
-            <div className="bg-slate-950/90 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl hover:border-blue-500/50 transition duration-300 flex flex-col justify-between group">
-              <div className="relative h-64 sm:h-72 overflow-hidden bg-slate-900">
-                <img
-                  src="/event_youth_summit.jpg"
-                  alt="Kingdom Youth Leadership Summit"
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/30"></div>
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-[11px] font-black uppercase tracking-wider shadow-md">
-                    Youth &amp; Young Adults
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-emerald-950/90 text-emerald-300 text-[11px] font-bold uppercase tracking-wider border border-emerald-400/40 backdrop-blur-md">
-                    Registration Open
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-6 sm:p-8 space-y-5 flex-1 flex flex-col justify-between">
-                <div className="space-y-3">
-                  <h3 className="text-2xl sm:text-3xl font-black text-white group-hover:text-blue-400 transition">
-                    Kingdom Youth Leadership Summit
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
-                    Empowering young professionals, students, and leaders with biblical wisdom, career strategies, and spiritual capacity to excel in modern society.
-                  </p>
-                </div>
-
-                <div className="space-y-2.5 pt-4 border-t border-slate-800 text-xs sm:text-sm font-semibold text-slate-300">
-                  <div className="flex items-center space-x-3 text-blue-400">
-                    <Clock className="w-4 h-4 shrink-0" />
-                    <span>Saturday, November 14, 2026 &bull; 10:00 AM GMT</span>
+                <div className="p-6 sm:p-8 space-y-5 flex-1 flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <h3 className="text-2xl sm:text-3xl font-black text-white group-hover:text-emerald-400 transition">
+                      {ev.title}
+                    </h3>
+                    {ev.theme && (
+                      <p className="text-xs sm:text-sm font-bold text-emerald-400 italic">
+                        Theme: "{ev.theme}"
+                      </p>
+                    )}
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium line-clamp-3">
+                      {ev.description}
+                    </p>
                   </div>
-                  <div className="flex items-center space-x-3 text-slate-300">
-                    <MapPin className="w-4 h-4 text-blue-400 shrink-0" />
-                    <span>Youth Center &amp; Online Virtual Live Stream</span>
+
+                  {/* MINISTERS & SPEAKERS PREVIEW ROSTER */}
+                  {ev.speakers && ev.speakers.length > 0 && (
+                    <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+                        <span className="flex items-center space-x-1 text-emerald-400 font-bold">
+                          <Users className="w-3.5 h-3.5" />
+                          <span>Ministers &amp; Guest Speakers</span>
+                        </span>
+                        <span className="font-bold text-slate-300">{ev.speakers.length} Featured</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {ev.speakers.slice(0, 3).map((spk, idx) => (
+                          <div
+                            key={idx}
+                            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700/80 text-[11px] text-slate-200"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            <span className="font-bold text-white">{spk.fullName}</span>
+                            <span className="text-[10px] text-slate-400">({spk.ministryRole})</span>
+                          </div>
+                        ))}
+                        {ev.speakers.length > 3 && (
+                          <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                            +{ev.speakers.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2.5 pt-3 border-t border-slate-800 text-xs sm:text-sm font-semibold text-slate-300">
+                    <div className="flex items-center space-x-3 text-emerald-400">
+                      <Clock className="w-4 h-4 shrink-0" />
+                      <span>{ev.timeString || ev.eventDate}</span>
+                    </div>
+                    <div className="flex items-center space-x-3 text-slate-300">
+                      <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="truncate">{ev.venue}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEventForDetails(ev)}
+                      className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-white font-extrabold text-xs uppercase tracking-wider border border-slate-700 transition flex items-center justify-center space-x-2"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>View Details &amp; Flyer</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedEventName(ev.title);
+                        setEventModalOpen(true);
+                      }}
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg transition transform hover:scale-102 flex items-center justify-center space-x-2"
+                    >
+                      <UserCheck className="w-4 h-4" />
+                      <span>Register For Event</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="pt-4">
-                  <button
-                    onClick={() => {
-                      setSelectedEventName('Kingdom Youth Leadership Summit');
-                      setEventModalOpen(true);
-                    }}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-xl transition transform hover:scale-[1.02] flex items-center justify-center space-x-2"
-                  >
-                    <UserCheck className="w-4 h-4 text-blue-200" />
-                    <span>Register For Event</span>
-                  </button>
-                </div>
               </div>
-            </div>
-
+            ))}
           </div>
 
         </div>
@@ -2062,6 +2197,198 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                 </button>
               </div>
             </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* EVENT DETAILS & MINISTERS / SPEAKERS MODAL */}
+      {selectedEventForDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-3xl w-full max-h-[92vh] overflow-hidden shadow-2xl flex flex-col text-white">
+            
+            {/* MODAL HEADER & COVER HERO */}
+            <div className="relative h-64 sm:h-80 w-full overflow-hidden shrink-0 bg-slate-950">
+              <img
+                src={selectedEventForDetails.coverImageUrl || '/event_praise_night.jpg'}
+                alt={selectedEventForDetails.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-slate-950/70" />
+              
+              {/* CLOSE BUTTON */}
+              <button
+                onClick={() => setSelectedEventForDetails(null)}
+                className="absolute top-4 right-4 p-2.5 rounded-full bg-slate-950/70 hover:bg-slate-800 text-slate-300 hover:text-white backdrop-blur-md border border-white/10 transition z-20"
+                title="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* PILLS & TITLE OVERLAY */}
+              <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 space-y-2 z-10">
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-[11px] font-black uppercase tracking-wider shadow-md">
+                    {selectedEventForDetails.category}
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-blue-900/90 text-blue-200 text-[11px] font-bold uppercase tracking-wider border border-blue-400/40 backdrop-blur-md">
+                    {selectedEventForDetails.status}
+                  </span>
+                  {selectedEventForDetails.registrationRequired && (
+                    <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider border border-amber-500/40 backdrop-blur-md">
+                      Registration Required
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-md">
+                  {selectedEventForDetails.title}
+                </h3>
+                {selectedEventForDetails.theme && (
+                  <p className="text-sm sm:text-base font-bold text-emerald-400 italic flex items-center space-x-1.5">
+                    <Sparkles className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>Theme: "{selectedEventForDetails.theme}"</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* MODAL BODY (SCROLLABLE) */}
+            <div className="p-6 sm:p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
+              
+              {/* KEY EVENT SPECS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs sm:text-sm">
+                <div className="flex items-center space-x-3 text-slate-200">
+                  <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Date &amp; Time</span>
+                    <span className="font-semibold text-white">{selectedEventForDetails.timeString || selectedEventForDetails.eventDate}</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 text-slate-200">
+                  <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Venue / Location</span>
+                    <span className="font-semibold text-white">{selectedEventForDetails.venue}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* EVENT DESCRIPTION */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-mono uppercase tracking-widest text-slate-400 font-extrabold flex items-center space-x-2">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>About This Gathering</span>
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+                  {selectedEventForDetails.description || "Join us for this special parish gathering. We look forward to fellowshipping together in God's presence."}
+                </p>
+              </div>
+
+              {/* MINISTERS & GUEST SPEAKERS ROSTER */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-emerald-400 font-extrabold flex items-center space-x-2">
+                    <Users className="w-4 h-4 text-emerald-400" />
+                    <span>Ministers &amp; Guest Speakers</span>
+                  </h4>
+                  <span className="text-[11px] font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full">
+                    {selectedEventForDetails.speakers?.length || 0} Scheduled
+                  </span>
+                </div>
+
+                {(!selectedEventForDetails.speakers || selectedEventForDetails.speakers.length === 0) ? (
+                  <p className="text-xs text-slate-400 italic bg-slate-950/40 p-4 rounded-xl border border-slate-800">
+                    Ministers and keynote guest speakers for this event will be announced shortly. Stay tuned!
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedEventForDetails.speakers.map((spk, idx) => (
+                      <div
+                        key={spk.id || idx}
+                        className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 transition duration-300 flex items-start space-x-3.5 group"
+                      >
+                        <div className="w-14 h-14 rounded-2xl bg-slate-800 overflow-hidden shrink-0 border border-emerald-500/30 flex items-center justify-center">
+                          {spk.photoUrl ? (
+                            <img
+                              src={spk.photoUrl}
+                              alt={spk.fullName}
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                            />
+                          ) : (
+                            <span className="text-base font-black text-emerald-400">
+                              {spk.fullName.slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30 font-bold uppercase">
+                              {spk.ecclesiasticalTitle || 'Minister'}
+                            </span>
+                          </div>
+                          <h5 className="text-sm font-extrabold text-white truncate group-hover:text-emerald-400 transition">
+                            {spk.fullName}
+                          </h5>
+                          <p className="text-[11px] font-semibold text-amber-300">
+                            {spk.ministryRole || 'Speaker'}
+                          </p>
+                          {spk.organization && (
+                            <p className="text-[10px] text-slate-400 truncate">
+                              {spk.organization}
+                            </p>
+                          )}
+                          {spk.shortBio && (
+                            <p className="text-[11px] text-slate-300/90 leading-tight pt-1 border-t border-slate-800/80 line-clamp-2">
+                              {spk.shortBio}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* MODAL FOOTER */}
+            <div className="p-4 sm:p-6 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.origin + '#events');
+                  showSiteToast('Event link copied to clipboard!');
+                }}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center justify-center space-x-2"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share Gathering</span>
+              </button>
+
+              <div className="flex items-center space-x-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setSelectedEventForDetails(null)}
+                  className="w-1/3 sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const eventTitle = selectedEventForDetails.title;
+                    setSelectedEventForDetails(null);
+                    setSelectedEventName(eventTitle);
+                    setEventModalOpen(true);
+                  }}
+                  className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition transform hover:scale-102 flex items-center justify-center space-x-2"
+                >
+                  <UserCheck className="w-4 h-4" />
+                  <span>Register for Event</span>
+                </button>
+              </div>
+            </div>
 
           </div>
         </div>
