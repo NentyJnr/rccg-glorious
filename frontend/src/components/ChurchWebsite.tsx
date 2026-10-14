@@ -62,13 +62,10 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
   // Info Modal State for Navigation Links
   const [infoModalKey, setInfoModalKey] = useState<InfoModalKey>(null);
 
-  // Hero Motion Background Media State (Video & Images rotation)
-  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
-
-  // Hero Background Video Playlist (Cycles between local video1.mp4 and Summit Church motion video)
+  // Hero Background Video Playlist (Cycles between Church Video and Church Video1)
   const heroBackgroundVideos = [
-    '/video1.mp4',
-    'https://summitchurch.com/GetFile.ashx?Guid=f6e6e89c-bfa7-4e46-9a9f-ee6c0f05a7b4'
+    '/Church Video.mp4',
+    '/Church Video1.mp4'
   ];
   const [heroVideoIndex, setHeroVideoIndex] = useState(0);
 
@@ -503,10 +500,9 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
       {/* ------------------------------------------------------------- */}
       <section className="relative h-screen min-h-screen flex flex-col justify-between overflow-hidden bg-slate-950 text-white pt-28 sm:pt-32 pb-10 border-b border-slate-900">
         
-        {/* BACKGROUND BRIGHT MOTION SLIDESHOW & VIDEO CONTAINER */}
-        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-          
-          {/* CONTINUOUS LIVE BACKGROUND VIDEO PLAYLIST WITH SEAMLESS LOOP & FOCAL ALIGNMENT */}
+        {/* HERO BACKGROUND CONTAINER WITH DUAL VIDEO ROTATION */}
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden bg-slate-950">
+          {/* BACKGROUND VIDEO WITH SMOOTH SEAMLESS LOOP & TRANSITIONS */}
           <div className="absolute inset-0 opacity-90 bg-slate-900">
             <video
               key={heroBackgroundVideos[heroVideoIndex]}
@@ -528,12 +524,12 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
             </video>
           </div>
 
-          {/* LIGHT & VIVID CINEMATIC OVERLAY (LOW DARKNESS FOR MAXIMUM BRIGHTNESS) */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-slate-950/40"></div>
-          <div className="absolute inset-0 bg-grid-subtle opacity-40"></div>
+          {/* AMBIENT BRAND GLOWS & CINEMATIC DEPTH OVERLAYS */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-slate-950/40"></div>
+          <div className="absolute inset-0 bg-grid-subtle opacity-30"></div>
 
           {/* HERO BACKGROUND VIDEO SWITCHER CONTROLS */}
-          <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-12 z-20 flex items-center space-x-2 bg-slate-950/60 p-2 rounded-full border border-white/20 backdrop-blur-md">
+          <div className="absolute bottom-6 right-6 sm:bottom-10 sm:right-12 z-20 pointer-events-auto flex items-center space-x-2 bg-slate-950/60 p-2 rounded-full border border-white/20 backdrop-blur-md">
             {heroBackgroundVideos.map((_, idx) => (
               <button
                 key={idx}
@@ -543,7 +539,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                     ? 'bg-emerald-400 w-7'
                     : 'bg-white/40 hover:bg-white/80 w-2.5'
                 }`}
-                title={`Play Background Video ${idx + 1}`}
+                title={`Play Video ${idx + 1}`}
               />
             ))}
           </div>
