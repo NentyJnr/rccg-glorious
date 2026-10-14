@@ -20,6 +20,20 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontendOrigin", policy =>
     {
         policy.WithOrigins(allowedOrigins)
+              .SetIsOriginAllowed(origin =>
+              {
+                  if (string.IsNullOrWhiteSpace(origin)) return false;
+                  if (allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)) return true;
+                  try
+                  {
+                      var uri = new Uri(origin);
+                      return uri.Host.EndsWith("vercel.app", StringComparison.OrdinalIgnoreCase) && uri.Scheme == "https";
+                  }
+                  catch
+                  {
+                      return false;
+                  }
+              })
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -70,11 +84,19 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseCors("AllowFrontendOrigin");
-app.UseDefaultFiles();
-app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Root Endpoint - Clean JSON Health Check / Headless API Discovery
+app.MapGet("/", (IHostEnvironment env) => Results.Ok(new
+{
+    status = "Healthy",
+    service = "RCCG Glorious Church API",
+    environment = env.EnvironmentName,
+    documentation = "/swagger"
+}));
+
 app.MapControllers();
 
 app.Run();
