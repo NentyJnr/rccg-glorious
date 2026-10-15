@@ -24,9 +24,18 @@ function cleanEnv(val?: string): string {
   return val.trim().replace(/^["']|["']$/g, '').trim();
 }
 
-const GOOGLE_CLIENT_ID = cleanEnv(import.meta.env.VITE_GOOGLE_CLIENT_ID);
-const MICROSOFT_CLIENT_ID = cleanEnv(import.meta.env.VITE_MICROSOFT_CLIENT_ID);
-const MICROSOFT_TENANT_ID = cleanEnv(import.meta.env.VITE_MICROSOFT_TENANT_ID) || 'common';
+const GOOGLE_CLIENT_ID = cleanEnv(
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  import.meta.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+);
+const MICROSOFT_CLIENT_ID = cleanEnv(
+  import.meta.env.VITE_MICROSOFT_CLIENT_ID ||
+  import.meta.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID
+);
+const MICROSOFT_TENANT_ID = cleanEnv(
+  import.meta.env.VITE_MICROSOFT_TENANT_ID ||
+  import.meta.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID
+) || 'common';
 
 function getRedirectUri(): string {
   // Use the origin so both localhost and Vercel production work automatically
@@ -107,20 +116,24 @@ export function redirectToMicrosoft(): void {
 /**
  * Parses URL hash and search params to extract OIDC id_token from Google/Microsoft
  */
-export function extractOidcCallbackToken(): { idToken: string | null; provider: 'google' | 'microsoft' | null; isCallback: boolean } {
+export function extractOidcCallbackToken(): { 
+  idToken: string | null; 
+  provider: 'google' | 'microsoft' | null; 
+  isCallback: boolean;
+  error?: string;
+} {
   // Check hash fragment first (#id_token=...)
   const hash = window.location.hash.startsWith('#') ? window.location.hash.substring(1) : window.location.hash;
   const hashParams = new URLSearchParams(hash);
-  let idToken = hashParams.get('id_token');
+  const searchParams = new URLSearchParams(window.location.search);
 
-  // Check search query params as fallback (?id_token=...)
-  if (!idToken) {
-    const searchParams = new URLSearchParams(window.location.search);
-    idToken = searchParams.get('id_token');
-  }
+  const errorParam = hashParams.get('error') || searchParams.get('error');
+  const errorDesc = hashParams.get('error_description') || searchParams.get('error_description');
+
+  let idToken = hashParams.get('id_token') || searchParams.get('id_token');
 
   // Detect provider from state or saved localStorage flag
-  const state = (hashParams.get('state') || new URLSearchParams(window.location.search).get('state') || '').toLowerCase();
+  const state = (hashParams.get('state') || searchParams.get('state') || '').toLowerCase();
   let provider: 'google' | 'microsoft' | null = null;
 
   if (state.includes('microsoft')) {
@@ -133,19 +146,34 @@ export function extractOidcCallbackToken(): { idToken: string | null; provider: 
     else if (saved.includes('google')) provider = 'google';
   }
 
-  const isCallback = Boolean(idToken || window.location.pathname.includes('/auth/callback'));
+  const isCallback = Boolean(idToken || errorParam || window.location.pathname.includes('/auth/callback'));
+  const error = errorParam
+    ? (errorDesc ? decodeURIComponent(errorDesc) : `Authentication cancelled or rejected (${errorParam})`)
+    : undefined;
 
-  return { idToken, provider, isCallback };
+  return { idToken, provider, isCallback, error };
 }
 
 /**
  * Authenticates the OIDC token against the backend API and stores the session
  */
 export async function processSsoCallback(): Promise<SsoCallbackResult> {
-  const { idToken, provider, isCallback } = extractOidcCallbackToken();
+  const { idToken, provider, isCallback, error } = extractOidcCallbackToken();
 
-  if (!isCallback || !idToken) {
-    return { isCallback, success: false };
+  if (!isCallback) {
+    return { isCallback: false, success: false };
+  }
+
+  if (error) {
+    try {
+      localStorage.removeItem('sso_pending_provider');
+      window.history.replaceState(null, '', window.location.pathname.replace(/\/auth\/callback\/?$/, '') || '/');
+    } catch {}
+    return { isCallback: true, success: false, error };
+  }
+
+  if (!idToken) {
+    return { isCallback: true, success: false, error: 'No identity token received from provider.' };
   }
 
   const targetEndpoint = provider === 'microsoft' ? '/Auth/microsoft' : '/Auth/google';

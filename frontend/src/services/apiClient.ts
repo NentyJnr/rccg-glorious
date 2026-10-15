@@ -5,10 +5,30 @@
  * Connects the React 19 Frontend with the Live ASP.NET Core 9.0 Web API (MonsterASP)
  */
 
-export const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.PROD ? 'https://rccggloriouschurch.runasp.net/api/v1' : 'http://localhost:5230/api/v1')
-).replace(/\/+$/, '');
+function resolveApiBaseUrl(): string {
+  const envUrl = (
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.NEXT_PUBLIC_API_URL ||
+    ''
+  ).trim();
+
+  let base = envUrl;
+  if (!base) {
+    base = import.meta.env.PROD 
+      ? 'https://rccggloriouschurch.runasp.net/api/v1' 
+      : 'http://localhost:5230/api/v1';
+  }
+
+  base = base.replace(/\/+$/, '');
+  if (!base.endsWith('/api/v1') && !base.includes('/api/')) {
+    base = `${base}/api/v1`;
+  }
+
+  return base;
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export interface ApiResponse<T = any> {
   success: boolean;
