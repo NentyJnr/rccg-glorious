@@ -39,6 +39,13 @@ function generateRandomNonce(): string {
  */
 export function redirectToGoogle(): void {
   const clientId = GOOGLE_CLIENT_ID;
+
+  if (!clientId || clientId.includes('your-google-client-id')) {
+    throw new Error(
+      'Google Single Sign-On is not configured with a live Google Client ID yet. Please set VITE_GOOGLE_CLIENT_ID in your frontend .env file.'
+    );
+  }
+
   const redirectUri = getRedirectUri();
   const nonce = generateRandomNonce();
 
@@ -64,6 +71,13 @@ export function redirectToGoogle(): void {
  */
 export function redirectToMicrosoft(): void {
   const clientId = MICROSOFT_CLIENT_ID;
+
+  if (!clientId || clientId.includes('your-azure-app-client')) {
+    throw new Error(
+      'Microsoft Entra ID Single Sign-On is not configured with a live Azure App Client ID yet. Please set VITE_MICROSOFT_CLIENT_ID in your frontend .env file.'
+    );
+  }
+
   const redirectUri = getRedirectUri();
   const nonce = generateRandomNonce();
 
