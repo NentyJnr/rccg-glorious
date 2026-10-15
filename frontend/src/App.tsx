@@ -58,6 +58,7 @@ import { ChurchWebsite } from './components/ChurchWebsite';
 import { PortalComingSoonPage } from './components/PortalComingSoonPage';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { api, API_BASE_URL, clearAuthSession } from './services/apiClient';
+import { processSsoCallback } from './services/ssoService';
 
 export interface EventSpeakerItem {
   id?: string;
@@ -2274,7 +2275,7 @@ export default function App() {
   // Current Authenticated User Session
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Hydrate user session from localStorage on initial load
+  // Hydrate user session from localStorage on initial load & handle SSO redirect callbacks
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem('cms_auth_user');
@@ -2285,6 +2286,20 @@ export default function App() {
     } catch (err) {
       console.warn('[Session] Failed to hydrate user session:', err);
     }
+
+    // Process SSO OIDC Callback (Google / Microsoft Entra ID)
+    processSsoCallback().then((result) => {
+      if (result.isCallback) {
+        if (result.success && result.user) {
+          setCurrentUser(result.user as any);
+          setViewMode('portal');
+          setShowDraftLogin(false);
+          showNotification(`Welcome, ${result.user.fullName}! Signed in successfully via Single Sign-On.`);
+        } else if (result.error) {
+          showNotification(result.error, 'error');
+        }
+      }
+    });
 
     const handleUnauthorized = () => {
       clearAuthSession();

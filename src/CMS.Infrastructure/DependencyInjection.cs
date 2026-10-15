@@ -33,6 +33,8 @@ public static class DependencyInjection
         services.AddScoped<ICmsDbContext>(provider => provider.GetRequiredService<CmsDbContext>());
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddTransient<IEmailNotificationService, EmailNotificationService>();
+        services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddSingleton<ISsoTokenValidatorService, SsoTokenValidatorService>();
 
         return services;
     }

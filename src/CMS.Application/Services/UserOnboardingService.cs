@@ -17,15 +17,18 @@ public class UserOnboardingService : IUserOnboardingService
     private readonly ICmsDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IEmailNotificationService _emailService;
+    private readonly IJwtTokenGenerator _jwtTokenGenerator;
 
     public UserOnboardingService(
         ICmsDbContext dbContext,
         IPasswordHasher passwordHasher,
-        IEmailNotificationService emailService)
+        IEmailNotificationService emailService,
+        IJwtTokenGenerator jwtTokenGenerator)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _emailService = emailService;
+        _jwtTokenGenerator = jwtTokenGenerator;
     }
 
     public async Task<OnboardUserResultDto> OnboardUserAsync(OnboardUserRequestDto request, CancellationToken cancellationToken = default)
@@ -78,8 +81,8 @@ public class UserOnboardingService : IUserOnboardingService
             throw new UnauthorizedAccessException("Invalid credentials.");
         }
 
-        // Mock JWT Token generation for demonstration
-        string mockJwtToken = $"Bearer_Token_For_{user.Id}";
+        // Generate cryptographically signed JWT Token
+        string jwtToken = _jwtTokenGenerator.GenerateToken(user);
 
         return new LoginResultDto(
             user.Id,
@@ -87,7 +90,7 @@ public class UserOnboardingService : IUserOnboardingService
             user.Email,
             user.Role,
             user.MustChangePassword,
-            mockJwtToken
+            jwtToken
         );
     }
 

@@ -10,10 +10,14 @@ namespace CMS.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IUserOnboardingService _onboardingService;
+    private readonly ISsoUserProvisioningService _ssoService;
 
-    public AuthController(IUserOnboardingService onboardingService)
+    public AuthController(
+        IUserOnboardingService onboardingService,
+        ISsoUserProvisioningService ssoService)
     {
         _onboardingService = onboardingService;
+        _ssoService = ssoService;
     }
 
     [HttpPost("onboard")]
@@ -41,6 +45,42 @@ public class AuthController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(ApiResponseEnvelope<LoginResultDto>.Fail(ex.Message));
+        }
+    }
+
+    [HttpPost("google")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _ssoService.ProcessGoogleLoginAsync(request, cancellationToken);
+            return Ok(ApiResponseEnvelope<LoginResultDto>.Ok(result, "Google Single Sign-On successful."));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ApiResponseEnvelope<LoginResultDto>.Fail(ex.Message));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponseEnvelope<LoginResultDto>.Fail(ex.Message));
+        }
+    }
+
+    [HttpPost("microsoft")]
+    public async Task<IActionResult> MicrosoftLogin([FromBody] MicrosoftLoginRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _ssoService.ProcessMicrosoftLoginAsync(request, cancellationToken);
+            return Ok(ApiResponseEnvelope<LoginResultDto>.Ok(result, "Microsoft Single Sign-On successful."));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ApiResponseEnvelope<LoginResultDto>.Fail(ex.Message));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponseEnvelope<LoginResultDto>.Fail(ex.Message));
         }
     }
 

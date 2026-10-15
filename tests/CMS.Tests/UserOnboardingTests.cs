@@ -28,7 +28,8 @@ public class UserOnboardingTests
         var dbContext = GetInMemoryDbContext();
         var passwordHasher = new PasswordHasher();
         var emailService = new EmailNotificationService(NullLogger<EmailNotificationService>.Instance);
-        var onboardingService = new UserOnboardingService(dbContext, passwordHasher, emailService);
+        var jwtTokenGenerator = new TestJwtTokenGenerator();
+        var onboardingService = new UserOnboardingService(dbContext, passwordHasher, emailService, jwtTokenGenerator);
 
         var request = new OnboardUserRequestDto(
             "Brother David",
@@ -58,7 +59,8 @@ public class UserOnboardingTests
         var dbContext = GetInMemoryDbContext();
         var passwordHasher = new PasswordHasher();
         var emailService = new EmailNotificationService(NullLogger<EmailNotificationService>.Instance);
-        var onboardingService = new UserOnboardingService(dbContext, passwordHasher, emailService);
+        var jwtTokenGenerator = new TestJwtTokenGenerator();
+        var onboardingService = new UserOnboardingService(dbContext, passwordHasher, emailService, jwtTokenGenerator);
 
         var request = new OnboardUserRequestDto(
             "Sister Grace",
@@ -88,3 +90,9 @@ public class UserOnboardingTests
         Assert.True(passwordHasher.VerifyPassword(newPass, updatedUser.PasswordHash));
     }
 }
+
+public class TestJwtTokenGenerator : IJwtTokenGenerator
+{
+    public string GenerateToken(CMS.Domain.Entities.ApplicationUser user) => $"test_token_for_{user.Id}";
+}
+
