@@ -31,7 +31,7 @@ public class SsoTokenValidatorService : ISsoTokenValidatorService
             throw new ArgumentException("Google ID token cannot be empty.", nameof(idToken));
         }
 
-        string? clientId = _configuration["Authentication:Google:ClientId"];
+        string? clientId = _configuration["Authentication:Google:ClientId"]?.Trim().Trim('"', '\'');
 
         try
         {
@@ -84,8 +84,8 @@ public class SsoTokenValidatorService : ISsoTokenValidatorService
             throw new ArgumentException("Microsoft ID token cannot be empty.", nameof(idToken));
         }
 
-        string? clientId = _configuration["Authentication:Microsoft:ClientId"];
-        string tenantId = _configuration["Authentication:Microsoft:TenantId"] ?? "common";
+        string? clientId = _configuration["Authentication:Microsoft:ClientId"]?.Trim().Trim('"', '\'');
+        string tenantId = _configuration["Authentication:Microsoft:TenantId"]?.Trim().Trim('"', '\'') ?? "common";
 
         try
         {

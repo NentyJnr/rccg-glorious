@@ -19,9 +19,14 @@ export interface SsoCallbackResult {
   error?: string;
 }
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-const MICROSOFT_CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '';
-const MICROSOFT_TENANT_ID = import.meta.env.VITE_MICROSOFT_TENANT_ID || 'common';
+function cleanEnv(val?: string): string {
+  if (!val) return '';
+  return val.trim().replace(/^["']|["']$/g, '').trim();
+}
+
+const GOOGLE_CLIENT_ID = cleanEnv(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+const MICROSOFT_CLIENT_ID = cleanEnv(import.meta.env.VITE_MICROSOFT_CLIENT_ID);
+const MICROSOFT_TENANT_ID = cleanEnv(import.meta.env.VITE_MICROSOFT_TENANT_ID) || 'common';
 
 function getRedirectUri(): string {
   // Use the origin so both localhost and Vercel production work automatically
