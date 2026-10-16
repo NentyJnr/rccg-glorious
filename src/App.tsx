@@ -5516,127 +5516,214 @@ export default function App() {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          <div>
-                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                              Ecclesiastical Title
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                          {/* MINISTER HEADSHOT PHOTO PREVIEW & UPLOAD ZONE */}
+                          <div className="sm:col-span-1 flex flex-col items-center sm:items-start space-y-2">
+                            <label className="block text-[11px] font-bold text-slate-700">
+                              Minister Photo *
                             </label>
-                            <select
-                              value={spk.ecclesiasticalTitle}
-                              onChange={(e) => handleSpeakerChange(idx, 'ecclesiasticalTitle', e.target.value)}
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+
+                            {/* AVATAR / PREVIEW CONTAINER */}
+                            <div 
+                              onClick={() => document.getElementById(`speaker-photo-file-${idx}`)?.click()}
+                              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-dashed border-amber-300 hover:border-amber-500 bg-white overflow-hidden relative shadow-xs flex flex-col items-center justify-center cursor-pointer group transition"
+                              title="Click to browse or upload minister headshot"
                             >
-                              <option value="Pastor">Pastor</option>
-                              <option value="Pastor (Dr.)">Pastor (Dr.)</option>
-                              <option value="Minister">Minister</option>
-                              <option value="Evangelist">Evangelist</option>
-                              <option value="Deacon">Deacon</option>
-                              <option value="Sister">Sister</option>
-                              <option value="Brother">Brother</option>
-                            </select>
-                          </div>
+                              {spk.photoUrl ? (
+                                <>
+                                  <img
+                                    src={spk.photoUrl}
+                                    alt={spk.fullName || `Speaker ${idx + 1}`}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                  />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white text-[10px] font-bold">
+                                    <Camera className="w-5 h-5 mb-1 text-amber-400" />
+                                    <span>Change</span>
+                                  </div>
+                                  <div className="absolute bottom-1 right-1">
+                                    {spk.photoUrl.startsWith('data:') ? (
+                                      <span className="bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
+                                        Uploaded
+                                      </span>
+                                    ) : (
+                                      <span className="bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                        Preset
+                                      </span>
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center p-2 text-center text-slate-400 group-hover:text-amber-600 transition space-y-1">
+                                  <Camera className="w-6 h-6 text-slate-400 group-hover:text-amber-500" />
+                                  <span className="text-[10px] font-bold">Upload Photo</span>
+                                </div>
+                              )}
 
-                          <div className="sm:col-span-2">
-                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                              Full Name *
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={spk.fullName}
-                              onChange={(e) => handleSpeakerChange(idx, 'fullName', e.target.value)}
-                              placeholder="e.g. Pastor (Dr.) Taiwo Adetunji"
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                              Ministry Role
-                            </label>
-                            <input
-                              type="text"
-                              value={spk.ministryRole}
-                              onChange={(e) => handleSpeakerChange(idx, 'ministryRole', e.target.value)}
-                              placeholder="e.g. Keynote Speaker / Host Pastor"
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                              Church / Organization
-                            </label>
-                            <input
-                              type="text"
-                              value={spk.organization || ''}
-                              onChange={(e) => handleSpeakerChange(idx, 'organization', e.target.value)}
-                              placeholder="e.g. RCCG Worldwide"
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                              Photo URL / Preset
-                            </label>
-                            <input
-                              type="text"
-                              value={spk.photoUrl || ''}
-                              onChange={(e) => handleSpeakerChange(idx, 'photoUrl', e.target.value)}
-                              placeholder="/dr_taiwo_adetunji.jpg"
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-800"
-                            />
-                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                              <label className="text-[10px] text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded cursor-pointer flex items-center gap-1 font-bold">
-                                <Upload className="w-2.5 h-2.5" />
-                                <span>Upload</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onload = () => {
-                                        if (typeof reader.result === 'string') {
-                                          handleSpeakerChange(idx, 'photoUrl', reader.result);
-                                        }
-                                      };
-                                      reader.readAsDataURL(file);
+                              <input
+                                type="file"
+                                id={`speaker-photo-file-${idx}`}
+                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    if (!file.type.startsWith('image/')) {
+                                      showNotification('Please upload a valid image file (.png, .jpg, .jpeg, .webp)', 'error');
+                                      return;
                                     }
-                                  }}
-                                />
-                              </label>
+                                    if (file.size > 10 * 1024 * 1024) {
+                                      showNotification('Photo size exceeds 10MB limit', 'error');
+                                      return;
+                                    }
+                                    const reader = new FileReader();
+                                    reader.onload = () => {
+                                      if (typeof reader.result === 'string') {
+                                        handleSpeakerChange(idx, 'photoUrl', reader.result);
+                                        showNotification(`Photo for "${spk.fullName || 'Minister'}" uploaded!`, 'success');
+                                      }
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </div>
+
+                            {/* UPLOAD & CLEAR ACTIONS */}
+                            <div className="w-full space-y-1">
                               <button
                                 type="button"
-                                onClick={() => handleSpeakerChange(idx, 'photoUrl', '/adeboye-enoch-jpeg.webp')}
-                                className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded cursor-pointer"
+                                onClick={() => document.getElementById(`speaker-photo-file-${idx}`)?.click()}
+                                className="w-full py-1.5 px-2 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-[11px] rounded-lg transition flex items-center justify-center gap-1 cursor-pointer"
                               >
-                                Adeboye
+                                <Upload className="w-3 h-3 text-amber-700" />
+                                <span>{spk.photoUrl ? 'Change Photo' : 'Upload Photo'}</span>
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSpeakerChange(idx, 'photoUrl', '/dr_taiwo_adetunji.jpg')}
-                                className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded cursor-pointer"
-                              >
-                                Dr. Taiwo
-                              </button>
+
+                              {spk.photoUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSpeakerChange(idx, 'photoUrl', '')}
+                                  className="w-full py-1 text-slate-500 hover:text-rose-600 font-semibold text-[10px] transition text-center cursor-pointer"
+                                >
+                                  Clear Photo
+                                </button>
+                              )}
                             </div>
                           </div>
 
-                          <div className="sm:col-span-3">
-                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                              Short Biography / Ministration Focus
-                            </label>
-                            <input
-                              type="text"
-                              value={spk.shortBio || ''}
-                              onChange={(e) => handleSpeakerChange(idx, 'shortBio', e.target.value)}
-                              placeholder="Brief background or ministry calling note..."
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
-                            />
+                          {/* MINISTER DETAILS (TITLE, NAME, ROLE, ORG, PRESETS, BIO) */}
+                          <div className="sm:col-span-3 space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                  Ecclesiastical Title
+                                </label>
+                                <select
+                                  value={spk.ecclesiasticalTitle}
+                                  onChange={(e) => handleSpeakerChange(idx, 'ecclesiasticalTitle', e.target.value)}
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:bg-white focus:outline-amber-500"
+                                >
+                                  <option value="Pastor">Pastor</option>
+                                  <option value="Pastor (Dr.)">Pastor (Dr.)</option>
+                                  <option value="Minister">Minister</option>
+                                  <option value="Evangelist">Evangelist</option>
+                                  <option value="Deacon">Deacon</option>
+                                  <option value="Deaconess">Deaconess</option>
+                                  <option value="Sister">Sister</option>
+                                  <option value="Brother">Brother</option>
+                                </select>
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                  Full Name *
+                                </label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={spk.fullName}
+                                  onChange={(e) => handleSpeakerChange(idx, 'fullName', e.target.value)}
+                                  placeholder="e.g. Pastor (Dr.) Taiwo Adetunji"
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                  Ministry Role
+                                </label>
+                                <input
+                                  type="text"
+                                  value={spk.ministryRole}
+                                  onChange={(e) => handleSpeakerChange(idx, 'ministryRole', e.target.value)}
+                                  placeholder="e.g. Keynote Speaker / Host Pastor"
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-amber-500"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                  Church / Organization
+                                </label>
+                                <input
+                                  type="text"
+                                  value={spk.organization || ''}
+                                  onChange={(e) => handleSpeakerChange(idx, 'organization', e.target.value)}
+                                  placeholder="e.g. RCCG Worldwide"
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-amber-500"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                  Photo URL / Presets
+                                </label>
+                                <input
+                                  type="text"
+                                  value={spk.photoUrl?.startsWith('data:') ? 'Uploaded Image File (Base64)' : (spk.photoUrl || '')}
+                                  onChange={(e) => handleSpeakerChange(idx, 'photoUrl', e.target.value)}
+                                  placeholder="/dr_taiwo_adetunji.jpg"
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 focus:bg-white focus:outline-amber-500"
+                                />
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                  <span className="text-[10px] text-slate-500 font-bold">Presets:</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSpeakerChange(idx, 'photoUrl', '/adeboye-enoch-jpeg.webp')}
+                                    className="text-[10px] text-amber-800 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-bold cursor-pointer"
+                                  >
+                                    Adeboye
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSpeakerChange(idx, 'photoUrl', '/dr_taiwo_adetunji.jpg')}
+                                    className="text-[10px] text-amber-800 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-bold cursor-pointer"
+                                  >
+                                    Dr. Taiwo
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSpeakerChange(idx, 'photoUrl', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300')}
+                                    className="text-[10px] text-slate-700 bg-slate-200 hover:bg-slate-300 px-1.5 py-0.5 rounded font-bold cursor-pointer"
+                                  >
+                                    Minister David
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                Short Biography / Ministration Focus
+                              </label>
+                              <input
+                                type="text"
+                                value={spk.shortBio || ''}
+                                onChange={(e) => handleSpeakerChange(idx, 'shortBio', e.target.value)}
+                                placeholder="Brief background or ministry calling note..."
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-amber-500"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
