@@ -24,10 +24,12 @@ function cleanEnv(val?: string): string {
   return val.trim().replace(/^["']|["']$/g, '').trim();
 }
 
+const DEFAULT_GOOGLE_CLIENT_ID = '930892872796-advtrgb8dn9ar87cv61uu037tkvjbo3b.apps.googleusercontent.com';
+
 const GOOGLE_CLIENT_ID = cleanEnv(
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
   import.meta.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-);
+) || DEFAULT_GOOGLE_CLIENT_ID;
 const MICROSOFT_CLIENT_ID = cleanEnv(
   import.meta.env.VITE_MICROSOFT_CLIENT_ID ||
   import.meta.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID
