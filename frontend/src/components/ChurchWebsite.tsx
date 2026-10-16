@@ -46,6 +46,14 @@ export interface EventSpeakerItem {
   displayOrder?: number;
 }
 
+export interface EventDailyScheduleItem {
+  id?: string;
+  dayNumber: number;
+  date: string;
+  timeString: string;
+  sessionTitle?: string;
+}
+
 export interface ParishEventItem {
   id: string;
   title: string;
@@ -53,6 +61,7 @@ export interface ParishEventItem {
   description: string;
   coverImageUrl: string;
   eventDate: string;
+  endDate?: string;
   timeString: string;
   venue: string;
   category: string;
@@ -60,6 +69,8 @@ export interface ParishEventItem {
   registrationRequired: boolean;
   status: 'Upcoming' | 'Completed' | 'Cancelled';
   maxCapacity?: number;
+  isMultiDay?: boolean;
+  dailySchedules?: EventDailyScheduleItem[];
   speakers?: EventSpeakerItem[];
 }
 
@@ -111,14 +122,36 @@ const INITIAL_PARISH_EVENTS: ParishEventItem[] = [
     theme: 'Empowered for Dominion & Excellence',
     description: 'Empowering young professionals, students, and emerging kingdom leaders with biblical wisdom, career strategies, and spiritual capacity to excel in contemporary corporate and social ecosystems.',
     coverImageUrl: '/event_youth_summit.jpg',
-    eventDate: '2026-11-14',
-    timeString: 'Saturday, November 14, 2026 • 10:00 AM GMT',
+    eventDate: '2026-11-13',
+    endDate: '2026-11-15',
+    timeString: '3 Days • Day 1 (Nov 13): 6:00 PM | Day 2 (Nov 14): 10:00 AM & 4:00 PM | Day 3 (Nov 15): 9:00 AM',
     venue: 'Youth Center & Online Virtual Live Stream',
     category: 'Youth & Leadership',
     isFeatured: true,
     registrationRequired: true,
     status: 'Upcoming',
-    maxCapacity: 350,
+    maxCapacity: undefined,
+    isMultiDay: true,
+    dailySchedules: [
+      {
+        dayNumber: 1,
+        date: '2026-11-13',
+        timeString: 'Friday, 6:00 PM GMT',
+        sessionTitle: 'Opening Rally & Career Insights'
+      },
+      {
+        dayNumber: 2,
+        date: '2026-11-14',
+        timeString: 'Saturday, 10:00 AM & 4:00 PM GMT',
+        sessionTitle: 'Workshops, Mentorship & Breakout Labs'
+      },
+      {
+        dayNumber: 3,
+        date: '2026-11-15',
+        timeString: 'Sunday, 9:00 AM GMT',
+        sessionTitle: 'Grand Commissioning & Anointing Service'
+      }
+    ],
     speakers: [
       {
         fullName: 'Pastor (Dr.) Taiwo Adetunji',
@@ -820,6 +853,12 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                     <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-[11px] font-black uppercase tracking-wider shadow-md">
                       {ev.category || 'Special Event'}
                     </span>
+                    {(ev.isMultiDay || (ev.dailySchedules && ev.dailySchedules.length > 1) || ev.timeString?.includes('Days •')) && (
+                      <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[11px] font-black uppercase tracking-wider shadow-md flex items-center space-x-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>{ev.dailySchedules?.length || 3}-Day Program</span>
+                      </span>
+                    )}
                     {ev.registrationRequired && (
                       <span className="px-3 py-1 rounded-full bg-blue-900/90 text-blue-200 text-[11px] font-bold uppercase tracking-wider border border-blue-400/40 backdrop-blur-md">
                         Registration Required
@@ -2286,7 +2325,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
             <div className="p-6 sm:p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
               
               {/* KEY EVENT SPECS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs sm:text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs sm:text-sm">
                 <div className="flex items-center space-x-3 text-slate-200">
                   <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
                   <div>
@@ -2301,7 +2340,58 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                     <span className="font-semibold text-white">{selectedEventForDetails.venue}</span>
                   </div>
                 </div>
+                <div className="flex items-center space-x-3 text-slate-200">
+                  <Users className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Seating Capacity</span>
+                    <span className="font-semibold text-emerald-300">
+                      {selectedEventForDetails.maxCapacity && selectedEventForDetails.maxCapacity > 0
+                        ? `${selectedEventForDetails.maxCapacity} Allocated Seats`
+                        : 'Open / Unlimited Seating'}
+                    </span>
+                  </div>
+                </div>
               </div>
+
+              {/* MULTI-DAY SCHEDULE BREAKDOWN IF CONFIGURED */}
+              {selectedEventForDetails.dailySchedules && selectedEventForDetails.dailySchedules.length > 1 && (
+                <div className="p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/30 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <h4 className="text-xs font-mono uppercase tracking-widest text-emerald-400 font-extrabold flex items-center space-x-2">
+                      <Calendar className="w-4 h-4 text-emerald-400" />
+                      <span>{selectedEventForDetails.dailySchedules.length}-Day Program Timetable &amp; Sessions</span>
+                    </h4>
+                    <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950 px-2.5 py-0.5 rounded-full border border-emerald-500/40 font-bold">
+                      All Sessions Open
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {selectedEventForDetails.dailySchedules.map((day, dIdx) => (
+                      <div
+                        key={dIdx}
+                        className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 text-[10px] font-black uppercase font-mono border border-emerald-500/30">
+                            Day {day.dayNumber}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-semibold">{day.date}</span>
+                        </div>
+                        <div className="text-xs font-extrabold text-white flex items-center gap-1.5 pt-0.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>{day.timeString}</span>
+                        </div>
+                        {day.sessionTitle && (
+                          <div className="text-[11px] text-amber-300/90 font-medium italic pt-1 border-t border-slate-900">
+                            {day.sessionTitle}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* EVENT DESCRIPTION */}
               <div className="space-y-2">

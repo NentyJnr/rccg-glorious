@@ -71,6 +71,14 @@ export interface EventSpeakerItem {
   displayOrder?: number;
 }
 
+export interface EventDailyScheduleItem {
+  id?: string;
+  dayNumber: number;
+  date: string;
+  timeString: string;
+  sessionTitle?: string;
+}
+
 export interface ParishEventItem {
   id: string;
   title: string;
@@ -78,6 +86,7 @@ export interface ParishEventItem {
   description: string;
   coverImageUrl: string;
   eventDate: string;
+  endDate?: string;
   timeString: string;
   venue: string;
   category: string;
@@ -85,8 +94,87 @@ export interface ParishEventItem {
   registrationRequired: boolean;
   status: 'Upcoming' | 'Completed' | 'Cancelled';
   maxCapacity?: number;
+  isMultiDay?: boolean;
+  dailySchedules?: EventDailyScheduleItem[];
   speakers?: EventSpeakerItem[];
 }
+
+export const formatMultiDaySummary = (schedules: EventDailyScheduleItem[]): string => {
+  if (!schedules || schedules.length === 0) return '';
+  if (schedules.length === 1) {
+    return schedules[0].timeString || '';
+  }
+  const parts = schedules.map(s => {
+    let dayLabel = `Day ${s.dayNumber}`;
+    if (s.date) {
+      try {
+        const partsDate = s.date.split('-');
+        if (partsDate.length === 3) {
+          const d = new Date(Number(partsDate[0]), Number(partsDate[1]) - 1, Number(partsDate[2]));
+          dayLabel = `Day ${s.dayNumber} (${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`;
+        }
+      } catch {}
+    }
+    const titlePart = s.sessionTitle && s.sessionTitle.trim() ? ` [${s.sessionTitle.trim()}]` : '';
+    return `${dayLabel}: ${s.timeString || 'TBD'}${titlePart}`;
+  });
+  return `${schedules.length} Days • ${parts.join(' | ')}`;
+};
+
+export const parseScheduleFromString = (timeString: string, eventDate: string): EventDailyScheduleItem[] => {
+  if (!timeString || (!timeString.includes('Day ') && !timeString.includes('|'))) {
+    return [
+      {
+        dayNumber: 1,
+        date: eventDate ? eventDate.split('T')[0] : new Date().toISOString().split('T')[0],
+        timeString: timeString || '6:00 PM GMT',
+        sessionTitle: 'Main Service'
+      }
+    ];
+  }
+
+  const cleanStr = timeString.replace(/^\d+\s+Days\s*•\s*/i, '');
+  const segments = cleanStr.split('|').map(s => s.trim()).filter(Boolean);
+
+  if (segments.length === 0) {
+    return [
+      {
+        dayNumber: 1,
+        date: eventDate ? eventDate.split('T')[0] : new Date().toISOString().split('T')[0],
+        timeString: timeString,
+        sessionTitle: 'Main Service'
+      }
+    ];
+  }
+
+  const baseDate = eventDate ? new Date(eventDate) : new Date();
+
+  return segments.map((seg, idx) => {
+    let time = seg;
+    let title = '';
+    const titleMatch = seg.match(/\[(.*?)\]/);
+    if (titleMatch) {
+      title = titleMatch[1];
+      seg = seg.replace(/\[.*?\]/, '').trim();
+    }
+
+    const colonIdx = seg.indexOf(':');
+    if (colonIdx > -1) {
+      time = seg.substring(colonIdx + 1).trim();
+    }
+
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + idx);
+    const dateStr = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : '';
+
+    return {
+      dayNumber: idx + 1,
+      date: dateStr,
+      timeString: time,
+      sessionTitle: title
+    };
+  });
+};
 
 const INITIAL_ADMIN_EVENTS: ParishEventItem[] = [
   {
@@ -136,14 +224,36 @@ const INITIAL_ADMIN_EVENTS: ParishEventItem[] = [
     theme: 'Empowered for Dominion & Excellence',
     description: 'Empowering young professionals, students, and emerging kingdom leaders with biblical wisdom, career strategies, and spiritual capacity to excel.',
     coverImageUrl: '/event_youth_summit.jpg',
-    eventDate: '2026-11-14',
-    timeString: 'Saturday, November 14, 2026 • 10:00 AM GMT',
+    eventDate: '2026-11-13',
+    endDate: '2026-11-15',
+    timeString: '3 Days • Day 1 (Nov 13): 6:00 PM | Day 2 (Nov 14): 10:00 AM & 4:00 PM | Day 3 (Nov 15): 9:00 AM',
     venue: 'Youth Center & Online Virtual Live Stream',
     category: 'Youth & Leadership',
     isFeatured: true,
     registrationRequired: true,
     status: 'Upcoming',
-    maxCapacity: 350,
+    maxCapacity: undefined,
+    isMultiDay: true,
+    dailySchedules: [
+      {
+        dayNumber: 1,
+        date: '2026-11-13',
+        timeString: 'Friday, 6:00 PM GMT',
+        sessionTitle: 'Opening Rally & Career Insights'
+      },
+      {
+        dayNumber: 2,
+        date: '2026-11-14',
+        timeString: 'Saturday, 10:00 AM & 4:00 PM GMT',
+        sessionTitle: 'Workshops, Mentorship & Breakout Labs'
+      },
+      {
+        dayNumber: 3,
+        date: '2026-11-15',
+        timeString: 'Sunday, 9:00 AM GMT',
+        sessionTitle: 'Grand Commissioning & Anointing Service'
+      }
+    ],
     speakers: [
       {
         fullName: 'Pastor (Dr.) Taiwo Adetunji',
@@ -1140,12 +1250,18 @@ export default function App() {
   const [uploadedFlyerFileSize, setUploadedFlyerFileSize] = useState<string | null>(null);
   const [formEventDate, setFormEventDate] = useState('2026-10-24');
   const [formEventTimeString, setFormEventTimeString] = useState('Friday, October 24, 2026 • 9:00 PM GMT');
+  const [formEventIsMultiDay, setFormEventIsMultiDay] = useState(false);
+  const [formEventDailySchedules, setFormEventDailySchedules] = useState<EventDailyScheduleItem[]>([
+    { dayNumber: 1, date: '2026-10-24', timeString: 'Friday, 6:00 PM GMT', sessionTitle: 'Opening Revival Service' },
+    { dayNumber: 2, date: '2026-10-25', timeString: 'Saturday, 10:00 AM & 5:00 PM GMT', sessionTitle: 'Word & Impartation' },
+    { dayNumber: 3, date: '2026-10-26', timeString: 'Sunday, 8:00 AM GMT', sessionTitle: 'Grand Thanksgiving' }
+  ]);
   const [formEventVenue, setFormEventVenue] = useState('Main Sanctuary Auditorium, RCCG Glorious Church Parish');
   const [formEventCategory, setFormEventCategory] = useState('Praise & Worship');
   const [formEventIsFeatured, setFormEventIsFeatured] = useState(true);
   const [formEventRegistrationRequired, setFormEventRegistrationRequired] = useState(true);
   const [formEventStatus, setFormEventStatus] = useState<'Upcoming' | 'Completed' | 'Cancelled'>('Upcoming');
-  const [formEventMaxCapacity, setFormEventMaxCapacity] = useState<number | ''>(500);
+  const [formEventMaxCapacity, setFormEventMaxCapacity] = useState<number | ''>('');
   const [formEventSpeakers, setFormEventSpeakers] = useState<EventSpeakerItem[]>([
     {
       fullName: 'Pastor (Dr.) Taiwo Adetunji',
@@ -1210,14 +1326,23 @@ export default function App() {
     setUploadedFlyerFileName(null);
     setUploadedFlyerFileSize(null);
     setFormEventCoverImageMode('upload');
-    setFormEventDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
+    const defaultDate = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+    const day2 = new Date(Date.now() + 8 * 86400000).toISOString().split('T')[0];
+    const day3 = new Date(Date.now() + 9 * 86400000).toISOString().split('T')[0];
+    setFormEventDate(defaultDate);
+    setFormEventIsMultiDay(false);
+    setFormEventDailySchedules([
+      { dayNumber: 1, date: defaultDate, timeString: 'Friday, 6:00 PM GMT', sessionTitle: 'Opening Revival Service' },
+      { dayNumber: 2, date: day2, timeString: 'Saturday, 10:00 AM & 5:00 PM GMT', sessionTitle: 'Workshops & Word Encounter' },
+      { dayNumber: 3, date: day3, timeString: 'Sunday, 8:00 AM GMT', sessionTitle: 'Grand Thanksgiving Service' }
+    ]);
     setFormEventTimeString('Friday, 6:00 PM GMT');
     setFormEventVenue('Main Sanctuary Auditorium, RCCG Glorious Church Parish');
     setFormEventCategory('Praise & Worship');
     setFormEventIsFeatured(true);
     setFormEventRegistrationRequired(true);
     setFormEventStatus('Upcoming');
-    setFormEventMaxCapacity(500);
+    setFormEventMaxCapacity(''); // Seating capacity is strictly optional!
     setFormEventSpeakers([
       {
         fullName: 'Pastor (Dr.) Taiwo Adetunji',
@@ -1240,14 +1365,37 @@ export default function App() {
     setUploadedFlyerFileName(null);
     setUploadedFlyerFileSize(null);
     setFormEventCoverImageMode(ev.coverImageUrl?.startsWith('data:') ? 'upload' : 'url');
-    setFormEventDate(ev.eventDate ? ev.eventDate.split('T')[0] : '');
+    const evDateStr = ev.eventDate ? ev.eventDate.split('T')[0] : '';
+    setFormEventDate(evDateStr);
     setFormEventTimeString(ev.timeString || '');
     setFormEventVenue(ev.venue || '');
     setFormEventCategory(ev.category || 'General');
     setFormEventIsFeatured(ev.isFeatured);
     setFormEventRegistrationRequired(ev.registrationRequired);
     setFormEventStatus(ev.status);
-    setFormEventMaxCapacity(ev.maxCapacity ?? '');
+    setFormEventMaxCapacity(ev.maxCapacity !== undefined && ev.maxCapacity !== null ? ev.maxCapacity : '');
+
+    const hasMultiDays = ev.isMultiDay || (ev.dailySchedules && ev.dailySchedules.length > 1) || (ev.timeString && (ev.timeString.includes('Day 1') || ev.timeString.includes('|')));
+    setFormEventIsMultiDay(!!hasMultiDays);
+
+    if (ev.dailySchedules && ev.dailySchedules.length > 0) {
+      setFormEventDailySchedules(ev.dailySchedules.map(d => ({ ...d })));
+    } else if (hasMultiDays) {
+      setFormEventDailySchedules(parseScheduleFromString(ev.timeString, evDateStr));
+    } else {
+      const d1 = evDateStr || new Date().toISOString().split('T')[0];
+      const nextD = new Date(d1);
+      nextD.setDate(nextD.getDate() + 1);
+      const d2 = nextD.toISOString().split('T')[0];
+      nextD.setDate(nextD.getDate() + 1);
+      const d3 = nextD.toISOString().split('T')[0];
+      setFormEventDailySchedules([
+        { dayNumber: 1, date: d1, timeString: ev.timeString || 'Friday, 6:00 PM GMT', sessionTitle: 'Main Service' },
+        { dayNumber: 2, date: d2, timeString: 'Saturday, 10:00 AM & 5:00 PM GMT', sessionTitle: 'Session 2' },
+        { dayNumber: 3, date: d3, timeString: 'Sunday, 8:00 AM GMT', sessionTitle: 'Grand Service' }
+      ]);
+    }
+
     setFormEventSpeakers(
       ev.speakers && ev.speakers.length > 0
         ? ev.speakers.map(s => ({ ...s }))
@@ -1263,6 +1411,80 @@ export default function App() {
           ]
     );
     setIsEventModalOpen(true);
+  };
+
+  const handleAddDailyScheduleRow = () => {
+    setFormEventDailySchedules(prev => {
+      const last = prev[prev.length - 1];
+      let nextDate = formEventDate;
+      if (last && last.date) {
+        try {
+          const parts = last.date.split('-');
+          if (parts.length === 3) {
+            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            d.setDate(d.getDate() + 1);
+            nextDate = d.toISOString().split('T')[0];
+          }
+        } catch {}
+      }
+      const updated = [
+        ...prev,
+        {
+          dayNumber: prev.length + 1,
+          date: nextDate,
+          timeString: '6:00 PM GMT',
+          sessionTitle: ''
+        }
+      ];
+      setFormEventTimeString(formatMultiDaySummary(updated));
+      return updated;
+    });
+  };
+
+  const handleRemoveDailyScheduleRow = (index: number) => {
+    setFormEventDailySchedules(prev => {
+      const filtered = prev.filter((_, idx) => idx !== index);
+      const reindexed = filtered.map((item, idx) => ({ ...item, dayNumber: idx + 1 }));
+      setFormEventTimeString(formatMultiDaySummary(reindexed));
+      return reindexed;
+    });
+  };
+
+  const handleDailyScheduleChange = (index: number, field: keyof EventDailyScheduleItem, value: any) => {
+    setFormEventDailySchedules(prev => {
+      const updated = prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item));
+      if (index === 0 && field === 'date') {
+        setFormEventDate(value);
+      }
+      setFormEventTimeString(formatMultiDaySummary(updated));
+      return updated;
+    });
+  };
+
+  const handleSetPresetMultiDay = (dayCount: number) => {
+    const startDateStr = formEventDate || new Date().toISOString().split('T')[0];
+    const parts = startDateStr.split('-');
+    const baseDate = parts.length === 3
+      ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+      : new Date();
+
+    const presets: EventDailyScheduleItem[] = [];
+    for (let i = 0; i < dayCount; i++) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      const defaultTime = i === 0 ? 'Friday, 6:00 PM GMT' : i === 1 ? 'Saturday, 10:00 AM & 5:00 PM GMT' : 'Sunday, 8:00 AM GMT';
+      const defaultTitle = i === 0 ? 'Opening Revival & Encounter' : i === 1 ? 'Workshops & Word Impartation' : 'Grand Thanksgiving & Anointing';
+      presets.push({
+        dayNumber: i + 1,
+        date: dateStr,
+        timeString: defaultTime,
+        sessionTitle: defaultTitle
+      });
+    }
+    setFormEventIsMultiDay(true);
+    setFormEventDailySchedules(presets);
+    setFormEventTimeString(formatMultiDaySummary(presets));
   };
 
   const handleAddSpeakerRow = () => {
@@ -1299,19 +1521,36 @@ export default function App() {
 
     const validSpeakers = formEventSpeakers.filter(s => s.fullName && s.fullName.trim() !== '');
 
+    let effectiveDate = formEventDate ? new Date(formEventDate).toISOString() : new Date().toISOString();
+    let effectiveTimeString = formEventTimeString.trim();
+    let effectiveEndDate: string | undefined = undefined;
+
+    if (formEventIsMultiDay && formEventDailySchedules.length > 0) {
+      if (formEventDailySchedules[0].date) {
+        effectiveDate = new Date(formEventDailySchedules[0].date).toISOString();
+      }
+      effectiveEndDate = formEventDailySchedules[formEventDailySchedules.length - 1].date;
+      if (!effectiveTimeString) {
+        effectiveTimeString = formatMultiDaySummary(formEventDailySchedules);
+      }
+    }
+
     const eventPayload: Partial<ParishEventItem> = {
       title: formEventTitle.trim(),
       theme: formEventTheme.trim(),
       description: formEventDescription.trim(),
       coverImageUrl: formEventCoverImageUrl.trim() || '/event_praise_night.jpg',
-      eventDate: formEventDate ? new Date(formEventDate).toISOString() : new Date().toISOString(),
-      timeString: formEventTimeString.trim(),
+      eventDate: effectiveDate,
+      endDate: effectiveEndDate,
+      timeString: effectiveTimeString,
       venue: formEventVenue.trim(),
       category: formEventCategory.trim(),
       isFeatured: formEventIsFeatured,
       registrationRequired: formEventRegistrationRequired,
       status: formEventStatus,
-      maxCapacity: formEventMaxCapacity ? Number(formEventMaxCapacity) : undefined,
+      maxCapacity: (formEventMaxCapacity !== '' && !isNaN(Number(formEventMaxCapacity))) ? Number(formEventMaxCapacity) : undefined,
+      isMultiDay: formEventIsMultiDay,
+      dailySchedules: formEventIsMultiDay ? formEventDailySchedules : undefined,
       speakers: validSpeakers
     };
 
@@ -4487,12 +4726,18 @@ export default function App() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                         
-                        <div className="absolute top-3 left-3 flex gap-2">
+                        <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
                           <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow">
                             {ev.category}
                           </span>
+                          {(ev.isMultiDay || (ev.dailySchedules && ev.dailySchedules.length > 1) || ev.timeString?.includes('Days •')) && (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow flex items-center space-x-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>{ev.dailySchedules?.length || 3}-Day Program</span>
+                            </span>
+                          )}
                           {ev.isFeatured && (
-                            <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow flex items-center space-x-1">
+                            <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider shadow flex items-center space-x-1">
                               <Sparkles className="w-3 h-3" />
                               <span>Featured</span>
                             </span>
@@ -4531,15 +4776,42 @@ export default function App() {
                           </p>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 pt-2 border-t border-slate-100">
-                            <div className="flex items-center space-x-2 text-slate-600">
+                            <div className="flex items-center space-x-2 text-slate-600 min-w-0">
                               <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                               <span className="truncate">{ev.timeString || ev.eventDate}</span>
                             </div>
-                            <div className="flex items-center space-x-2 text-slate-600">
+                            <div className="flex items-center space-x-2 text-slate-600 min-w-0">
                               <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                               <span className="truncate">{ev.venue}</span>
                             </div>
                           </div>
+
+                          {/* MULTI-DAY BREAKDOWN IF CONFIGURED */}
+                          {ev.dailySchedules && ev.dailySchedules.length > 1 && (
+                            <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-1.5 mt-2">
+                              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-900 flex items-center justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3 text-amber-600" />
+                                  <span>{ev.dailySchedules.length}-Day Schedule Breakdown</span>
+                                </span>
+                                <span className="text-[9px] bg-amber-200/70 text-amber-950 px-1.5 py-0.5 rounded font-bold">
+                                  Daily Times
+                                </span>
+                              </div>
+                              <div className="space-y-1">
+                                {ev.dailySchedules.map((day, dIdx) => (
+                                  <div key={dIdx} className="flex items-center justify-between text-[11px] bg-white/70 px-2 py-1 rounded border border-amber-100">
+                                    <span className="font-bold text-slate-900 shrink-0">
+                                      Day {day.dayNumber} ({day.date}):
+                                    </span>
+                                    <span className="text-amber-900 font-semibold truncate ml-2 text-right">
+                                      {day.timeString} {day.sessionTitle ? `• ${day.sessionTitle}` : ''}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* MINISTERS & GUEST SPEAKERS LIST */}
@@ -4612,8 +4884,17 @@ export default function App() {
                             </button>
                           </div>
 
-                          <div className="text-[11px] text-slate-500 font-medium">
-                            {ev.maxCapacity ? `Max Capacity: ${ev.maxCapacity} Seats` : 'Open Seating'}
+                          <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
+                            {ev.maxCapacity && ev.maxCapacity > 0 ? (
+                              <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold">
+                                Max Capacity: {ev.maxCapacity} Seats
+                              </span>
+                            ) : (
+                              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-bold flex items-center gap-1">
+                                <Users className="w-3 h-3 text-emerald-600" />
+                                <span>Open / Unlimited Seating</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -4903,38 +5184,222 @@ export default function App() {
                 </div>
 
                 {/* 3. DATE, TIME, VENUE & SETTINGS */}
+                {/* 3. DATE, SCHEDULE, VENUE & SETTINGS */}
                 <div className="space-y-4">
-                  <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
-                    3. Date, Venue &amp; Registration
-                  </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-2 gap-2">
+                    <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400">
+                      3. Date, Schedule, Venue &amp; Registration
+                    </span>
 
+                    {/* DURATION MODE TOGGLE: SINGLE VS MULTI-DAY */}
+                    <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormEventIsMultiDay(false);
+                          if (formEventDailySchedules.length > 0 && formEventDailySchedules[0].timeString) {
+                            setFormEventTimeString(formEventDailySchedules[0].timeString);
+                          }
+                        }}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center space-x-1.5 ${
+                          !formEventIsMultiDay
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Single-Day Event</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormEventIsMultiDay(true);
+                          setFormEventTimeString(formatMultiDaySummary(formEventDailySchedules));
+                        }}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center space-x-1.5 ${
+                          formEventIsMultiDay
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Multi-Day Program ({formEventDailySchedules.length} Days)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* MULTI-DAY SCHEDULE BUILDER */}
+                  {formEventIsMultiDay ? (
+                    <div className="space-y-3 p-4 rounded-2xl bg-amber-50/50 border border-amber-200">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/60 pb-2.5">
+                        <div>
+                          <h4 className="text-xs font-extrabold text-amber-950 flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-amber-600" />
+                            <span>Day-by-Day Event Schedule &amp; Timetable</span>
+                          </h4>
+                          <p className="text-[11px] text-amber-800 font-medium">
+                            Each day of this event can have its dedicated date, specific session time, and title.
+                          </p>
+                        </div>
+
+                        {/* PRESETS & ADD DAY BUTTON */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleSetPresetMultiDay(3)}
+                            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition cursor-pointer"
+                          >
+                            + 3-Day Weekend
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSetPresetMultiDay(2)}
+                            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition cursor-pointer"
+                          >
+                            + 2-Day Program
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleAddDailyScheduleRow}
+                            className="px-3 py-1 text-[11px] font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition flex items-center space-x-1 cursor-pointer shadow-xs"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add Day</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* DAILY ROWS LIST */}
+                      <div className="space-y-3 pt-1">
+                        {formEventDailySchedules.map((schedule, sIdx) => (
+                          <div
+                            key={sIdx}
+                            className="p-3.5 rounded-xl bg-white border border-amber-200/90 shadow-2xs space-y-2.5"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-mono font-black uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                <span>Day {schedule.dayNumber}</span>
+                              </span>
+
+                              {formEventDailySchedules.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveDailyScheduleRow(sIdx)}
+                                  className="text-rose-500 hover:text-rose-700 text-xs font-semibold flex items-center space-x-1 cursor-pointer"
+                                  title="Remove this day"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Remove Day</span>
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  Day {schedule.dayNumber} Date *
+                                </label>
+                                <input
+                                  type="date"
+                                  required
+                                  value={schedule.date}
+                                  onChange={(e) => handleDailyScheduleChange(sIdx, 'date', e.target.value)}
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  Day {schedule.dayNumber} Time / Sessions *
+                                </label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={schedule.timeString}
+                                  onChange={(e) => handleDailyScheduleChange(sIdx, 'timeString', e.target.value)}
+                                  placeholder="e.g. 6:00 PM GMT or 10:00 AM & 5:00 PM"
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  Session Theme / Focus (Optional)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={schedule.sessionTitle || ''}
+                                  onChange={(e) => handleDailyScheduleChange(sIdx, 'sessionTitle', e.target.value)}
+                                  placeholder="e.g. Revival & Impartation"
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-amber-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* DISPLAY TIME SUMMARY PREVIEW */}
+                      <div className="p-3 bg-white/80 rounded-xl border border-amber-200/80 space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-slate-700 flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Generated Timetable Summary:</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full font-bold">
+                            Live Summary
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          value={formEventTimeString}
+                          onChange={(e) => setFormEventTimeString(e.target.value)}
+                          placeholder="Auto-generated timetable summary..."
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-900 focus:bg-white"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* SINGLE-DAY FORM ROW */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Event Date (YYYY-MM-DD) *
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={formEventDate}
+                          onChange={(e) => {
+                            setFormEventDate(e.target.value);
+                            if (formEventDailySchedules.length > 0) {
+                              handleDailyScheduleChange(0, 'date', e.target.value);
+                            }
+                          }}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Display Time String *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formEventTimeString}
+                          onChange={(e) => setFormEventTimeString(e.target.value)}
+                          placeholder="e.g. Friday, October 24, 2026 • 9:00 PM GMT"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-amber-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VENUE AND OPTIONAL SEATING CAPACITY */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Event Date (YYYY-MM-DD) *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formEventDate}
-                        onChange={(e) => setFormEventDate(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Display Time String
-                      </label>
-                      <input
-                        type="text"
-                        value={formEventTimeString}
-                        onChange={(e) => setFormEventTimeString(e.target.value)}
-                        placeholder="e.g. Friday, October 24, 2026 • 9:00 PM GMT"
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900"
-                      />
-                    </div>
-
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
                         Venue / Auditorium *
@@ -4945,20 +5410,26 @@ export default function App() {
                         value={formEventVenue}
                         onChange={(e) => setFormEventVenue(e.target.value)}
                         placeholder="e.g. Main Sanctuary Auditorium, RCCG Glorious Church Parish"
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Max Seating Capacity
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Max Seating Capacity
+                        </label>
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          Optional (Leave blank for unlimited)
+                        </span>
+                      </div>
                       <input
                         type="number"
+                        min="1"
                         value={formEventMaxCapacity}
-                        onChange={(e) => setFormEventMaxCapacity(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
-                        placeholder="e.g. 500"
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                        onChange={(e) => setFormEventMaxCapacity(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
+                        placeholder="Unlimited (leave blank if no capacity limit)"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
                       />
                     </div>
                   </div>

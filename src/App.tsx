@@ -57,7 +57,8 @@ import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
 import { PortalComingSoonPage } from './components/PortalComingSoonPage';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
-import { API_BASE_URL } from './services/apiClient';
+import { api, API_BASE_URL, clearAuthSession } from './services/apiClient';
+import { processSsoCallback } from './services/ssoService';
 
 export interface EventSpeakerItem {
   id?: string;
@@ -70,6 +71,14 @@ export interface EventSpeakerItem {
   displayOrder?: number;
 }
 
+export interface EventDailyScheduleItem {
+  id?: string;
+  dayNumber: number;
+  date: string;
+  timeString: string;
+  sessionTitle?: string;
+}
+
 export interface ParishEventItem {
   id: string;
   title: string;
@@ -77,6 +86,7 @@ export interface ParishEventItem {
   description: string;
   coverImageUrl: string;
   eventDate: string;
+  endDate?: string;
   timeString: string;
   venue: string;
   category: string;
@@ -84,8 +94,87 @@ export interface ParishEventItem {
   registrationRequired: boolean;
   status: 'Upcoming' | 'Completed' | 'Cancelled';
   maxCapacity?: number;
+  isMultiDay?: boolean;
+  dailySchedules?: EventDailyScheduleItem[];
   speakers?: EventSpeakerItem[];
 }
+
+export const formatMultiDaySummary = (schedules: EventDailyScheduleItem[]): string => {
+  if (!schedules || schedules.length === 0) return '';
+  if (schedules.length === 1) {
+    return schedules[0].timeString || '';
+  }
+  const parts = schedules.map(s => {
+    let dayLabel = `Day ${s.dayNumber}`;
+    if (s.date) {
+      try {
+        const partsDate = s.date.split('-');
+        if (partsDate.length === 3) {
+          const d = new Date(Number(partsDate[0]), Number(partsDate[1]) - 1, Number(partsDate[2]));
+          dayLabel = `Day ${s.dayNumber} (${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`;
+        }
+      } catch {}
+    }
+    const titlePart = s.sessionTitle && s.sessionTitle.trim() ? ` [${s.sessionTitle.trim()}]` : '';
+    return `${dayLabel}: ${s.timeString || 'TBD'}${titlePart}`;
+  });
+  return `${schedules.length} Days • ${parts.join(' | ')}`;
+};
+
+export const parseScheduleFromString = (timeString: string, eventDate: string): EventDailyScheduleItem[] => {
+  if (!timeString || (!timeString.includes('Day ') && !timeString.includes('|'))) {
+    return [
+      {
+        dayNumber: 1,
+        date: eventDate ? eventDate.split('T')[0] : new Date().toISOString().split('T')[0],
+        timeString: timeString || '6:00 PM GMT',
+        sessionTitle: 'Main Service'
+      }
+    ];
+  }
+
+  const cleanStr = timeString.replace(/^\d+\s+Days\s*•\s*/i, '');
+  const segments = cleanStr.split('|').map(s => s.trim()).filter(Boolean);
+
+  if (segments.length === 0) {
+    return [
+      {
+        dayNumber: 1,
+        date: eventDate ? eventDate.split('T')[0] : new Date().toISOString().split('T')[0],
+        timeString: timeString,
+        sessionTitle: 'Main Service'
+      }
+    ];
+  }
+
+  const baseDate = eventDate ? new Date(eventDate) : new Date();
+
+  return segments.map((seg, idx) => {
+    let time = seg;
+    let title = '';
+    const titleMatch = seg.match(/\[(.*?)\]/);
+    if (titleMatch) {
+      title = titleMatch[1];
+      seg = seg.replace(/\[.*?\]/, '').trim();
+    }
+
+    const colonIdx = seg.indexOf(':');
+    if (colonIdx > -1) {
+      time = seg.substring(colonIdx + 1).trim();
+    }
+
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + idx);
+    const dateStr = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : '';
+
+    return {
+      dayNumber: idx + 1,
+      date: dateStr,
+      timeString: time,
+      sessionTitle: title
+    };
+  });
+};
 
 const INITIAL_ADMIN_EVENTS: ParishEventItem[] = [
   {
@@ -135,14 +224,36 @@ const INITIAL_ADMIN_EVENTS: ParishEventItem[] = [
     theme: 'Empowered for Dominion & Excellence',
     description: 'Empowering young professionals, students, and emerging kingdom leaders with biblical wisdom, career strategies, and spiritual capacity to excel.',
     coverImageUrl: '/event_youth_summit.jpg',
-    eventDate: '2026-11-14',
-    timeString: 'Saturday, November 14, 2026 • 10:00 AM GMT',
+    eventDate: '2026-11-13',
+    endDate: '2026-11-15',
+    timeString: '3 Days • Day 1 (Nov 13): 6:00 PM | Day 2 (Nov 14): 10:00 AM & 4:00 PM | Day 3 (Nov 15): 9:00 AM',
     venue: 'Youth Center & Online Virtual Live Stream',
     category: 'Youth & Leadership',
     isFeatured: true,
     registrationRequired: true,
     status: 'Upcoming',
-    maxCapacity: 350,
+    maxCapacity: undefined,
+    isMultiDay: true,
+    dailySchedules: [
+      {
+        dayNumber: 1,
+        date: '2026-11-13',
+        timeString: 'Friday, 6:00 PM GMT',
+        sessionTitle: 'Opening Rally & Career Insights'
+      },
+      {
+        dayNumber: 2,
+        date: '2026-11-14',
+        timeString: 'Saturday, 10:00 AM & 4:00 PM GMT',
+        sessionTitle: 'Workshops, Mentorship & Breakout Labs'
+      },
+      {
+        dayNumber: 3,
+        date: '2026-11-15',
+        timeString: 'Sunday, 9:00 AM GMT',
+        sessionTitle: 'Grand Commissioning & Anointing Service'
+      }
+    ],
     speakers: [
       {
         fullName: 'Pastor (Dr.) Taiwo Adetunji',
@@ -761,6 +872,19 @@ export default function App() {
 
     setMembers(prev => [newMember, ...prev]);
     setUploadSuccessBanner(`Successfully registered ${newMember.fullName} into parish records!`);
+
+    // Sync to central database
+    api.post('/Members', {
+      fullName: newMember.fullName,
+      email: newMember.email,
+      phone: newMember.whatsappNumber,
+      role: newMember.role,
+      department: newMember.assignedDepartment
+    }).then(res => {
+      if (res.success) {
+        showNotification(`${newMember.fullName} synchronized to central membership database!`, 'success');
+      }
+    }).catch(e => console.warn('Member live sync error:', e));
     setRegSurname('');
     setRegFirstname('');
     setRegWhatsapp('');
@@ -1097,6 +1221,7 @@ export default function App() {
   const [isEditDepartmentModalOpen, setIsEditDepartmentModalOpen] = useState(false);
 
   const [users, setUsers] = useState<User[]>([
+    { id: 'u0', fullName: 'Super Administrator', email: 'neotroltd@gmail.com', phone: '+2348000000000', role: 'SuperAdmin', mustChangePassword: false, isActive: true },
     { id: 'u1', fullName: 'System Administrator', email: 'admin@rccgglorious.org', phone: '+2348000000000', role: 'SystemAdmin', mustChangePassword: false, isActive: true },
     { id: 'u2', fullName: 'Pastor In Charge', email: 'pastor@rccgglorious.org', phone: '+2348000000001', role: 'Pastor', mustChangePassword: false, isActive: true },
     { id: 'u3', fullName: 'Sister Grace Usang (HOD Ushering)', email: 'hod.ushering@rccgglorious.org', phone: '+2348000000002', role: 'HOD', assignedDepartment: 'Ushering & Protocol', mustChangePassword: false, isActive: true },
@@ -1120,14 +1245,23 @@ export default function App() {
   const [formEventTheme, setFormEventTheme] = useState('');
   const [formEventDescription, setFormEventDescription] = useState('');
   const [formEventCoverImageUrl, setFormEventCoverImageUrl] = useState('/event_praise_night.jpg');
+  const [formEventCoverImageMode, setFormEventCoverImageMode] = useState<'upload' | 'url'>('upload');
+  const [uploadedFlyerFileName, setUploadedFlyerFileName] = useState<string | null>(null);
+  const [uploadedFlyerFileSize, setUploadedFlyerFileSize] = useState<string | null>(null);
   const [formEventDate, setFormEventDate] = useState('2026-10-24');
   const [formEventTimeString, setFormEventTimeString] = useState('Friday, October 24, 2026 • 9:00 PM GMT');
+  const [formEventIsMultiDay, setFormEventIsMultiDay] = useState(false);
+  const [formEventDailySchedules, setFormEventDailySchedules] = useState<EventDailyScheduleItem[]>([
+    { dayNumber: 1, date: '2026-10-24', timeString: 'Friday, 6:00 PM GMT', sessionTitle: 'Opening Revival Service' },
+    { dayNumber: 2, date: '2026-10-25', timeString: 'Saturday, 10:00 AM & 5:00 PM GMT', sessionTitle: 'Word & Impartation' },
+    { dayNumber: 3, date: '2026-10-26', timeString: 'Sunday, 8:00 AM GMT', sessionTitle: 'Grand Thanksgiving' }
+  ]);
   const [formEventVenue, setFormEventVenue] = useState('Main Sanctuary Auditorium, RCCG Glorious Church Parish');
   const [formEventCategory, setFormEventCategory] = useState('Praise & Worship');
   const [formEventIsFeatured, setFormEventIsFeatured] = useState(true);
   const [formEventRegistrationRequired, setFormEventRegistrationRequired] = useState(true);
   const [formEventStatus, setFormEventStatus] = useState<'Upcoming' | 'Completed' | 'Cancelled'>('Upcoming');
-  const [formEventMaxCapacity, setFormEventMaxCapacity] = useState<number | ''>(500);
+  const [formEventMaxCapacity, setFormEventMaxCapacity] = useState<number | ''>('');
   const [formEventSpeakers, setFormEventSpeakers] = useState<EventSpeakerItem[]>([
     {
       fullName: 'Pastor (Dr.) Taiwo Adetunji',
@@ -1139,15 +1273,42 @@ export default function App() {
     }
   ]);
 
+  const handleFlyerFileUpload = (file: File) => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showNotification('Please upload a valid image file (.png, .jpg, .jpeg, .webp).', 'error');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showNotification('Flyer file size exceeds 10MB limit. Please upload an optimized image.', 'error');
+      return;
+    }
+
+    const fileSizeStr = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    setUploadedFlyerFileName(file.name);
+    setUploadedFlyerFileSize(fileSizeStr);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setFormEventCoverImageUrl(reader.result);
+        showNotification(`Event flyer "${file.name}" loaded successfully!`, 'success');
+      }
+    };
+    reader.onerror = () => {
+      showNotification('Failed to read flyer image file.', 'error');
+    };
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     const fetchParishEvents = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/Events`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-            setEvents(json.data);
-          }
+        const res = await api.get<any[]>('/Events');
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setEvents(res.data);
         }
       } catch (err) {
         console.warn('Events API unavailable, using initialized state:', err);
@@ -1162,14 +1323,26 @@ export default function App() {
     setFormEventTheme('');
     setFormEventDescription('');
     setFormEventCoverImageUrl('/event_praise_night.jpg');
-    setFormEventDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
+    setUploadedFlyerFileName(null);
+    setUploadedFlyerFileSize(null);
+    setFormEventCoverImageMode('upload');
+    const defaultDate = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+    const day2 = new Date(Date.now() + 8 * 86400000).toISOString().split('T')[0];
+    const day3 = new Date(Date.now() + 9 * 86400000).toISOString().split('T')[0];
+    setFormEventDate(defaultDate);
+    setFormEventIsMultiDay(false);
+    setFormEventDailySchedules([
+      { dayNumber: 1, date: defaultDate, timeString: 'Friday, 6:00 PM GMT', sessionTitle: 'Opening Revival Service' },
+      { dayNumber: 2, date: day2, timeString: 'Saturday, 10:00 AM & 5:00 PM GMT', sessionTitle: 'Workshops & Word Encounter' },
+      { dayNumber: 3, date: day3, timeString: 'Sunday, 8:00 AM GMT', sessionTitle: 'Grand Thanksgiving Service' }
+    ]);
     setFormEventTimeString('Friday, 6:00 PM GMT');
     setFormEventVenue('Main Sanctuary Auditorium, RCCG Glorious Church Parish');
     setFormEventCategory('Praise & Worship');
     setFormEventIsFeatured(true);
     setFormEventRegistrationRequired(true);
     setFormEventStatus('Upcoming');
-    setFormEventMaxCapacity(500);
+    setFormEventMaxCapacity(''); // Seating capacity is strictly optional!
     setFormEventSpeakers([
       {
         fullName: 'Pastor (Dr.) Taiwo Adetunji',
@@ -1189,14 +1362,40 @@ export default function App() {
     setFormEventTheme(ev.theme || '');
     setFormEventDescription(ev.description || '');
     setFormEventCoverImageUrl(ev.coverImageUrl || '/event_praise_night.jpg');
-    setFormEventDate(ev.eventDate ? ev.eventDate.split('T')[0] : '');
+    setUploadedFlyerFileName(null);
+    setUploadedFlyerFileSize(null);
+    setFormEventCoverImageMode(ev.coverImageUrl?.startsWith('data:') ? 'upload' : 'url');
+    const evDateStr = ev.eventDate ? ev.eventDate.split('T')[0] : '';
+    setFormEventDate(evDateStr);
     setFormEventTimeString(ev.timeString || '');
     setFormEventVenue(ev.venue || '');
     setFormEventCategory(ev.category || 'General');
     setFormEventIsFeatured(ev.isFeatured);
     setFormEventRegistrationRequired(ev.registrationRequired);
     setFormEventStatus(ev.status);
-    setFormEventMaxCapacity(ev.maxCapacity ?? '');
+    setFormEventMaxCapacity(ev.maxCapacity !== undefined && ev.maxCapacity !== null ? ev.maxCapacity : '');
+
+    const hasMultiDays = ev.isMultiDay || (ev.dailySchedules && ev.dailySchedules.length > 1) || (ev.timeString && (ev.timeString.includes('Day 1') || ev.timeString.includes('|')));
+    setFormEventIsMultiDay(!!hasMultiDays);
+
+    if (ev.dailySchedules && ev.dailySchedules.length > 0) {
+      setFormEventDailySchedules(ev.dailySchedules.map(d => ({ ...d })));
+    } else if (hasMultiDays) {
+      setFormEventDailySchedules(parseScheduleFromString(ev.timeString, evDateStr));
+    } else {
+      const d1 = evDateStr || new Date().toISOString().split('T')[0];
+      const nextD = new Date(d1);
+      nextD.setDate(nextD.getDate() + 1);
+      const d2 = nextD.toISOString().split('T')[0];
+      nextD.setDate(nextD.getDate() + 1);
+      const d3 = nextD.toISOString().split('T')[0];
+      setFormEventDailySchedules([
+        { dayNumber: 1, date: d1, timeString: ev.timeString || 'Friday, 6:00 PM GMT', sessionTitle: 'Main Service' },
+        { dayNumber: 2, date: d2, timeString: 'Saturday, 10:00 AM & 5:00 PM GMT', sessionTitle: 'Session 2' },
+        { dayNumber: 3, date: d3, timeString: 'Sunday, 8:00 AM GMT', sessionTitle: 'Grand Service' }
+      ]);
+    }
+
     setFormEventSpeakers(
       ev.speakers && ev.speakers.length > 0
         ? ev.speakers.map(s => ({ ...s }))
@@ -1212,6 +1411,80 @@ export default function App() {
           ]
     );
     setIsEventModalOpen(true);
+  };
+
+  const handleAddDailyScheduleRow = () => {
+    setFormEventDailySchedules(prev => {
+      const last = prev[prev.length - 1];
+      let nextDate = formEventDate;
+      if (last && last.date) {
+        try {
+          const parts = last.date.split('-');
+          if (parts.length === 3) {
+            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            d.setDate(d.getDate() + 1);
+            nextDate = d.toISOString().split('T')[0];
+          }
+        } catch {}
+      }
+      const updated = [
+        ...prev,
+        {
+          dayNumber: prev.length + 1,
+          date: nextDate,
+          timeString: '6:00 PM GMT',
+          sessionTitle: ''
+        }
+      ];
+      setFormEventTimeString(formatMultiDaySummary(updated));
+      return updated;
+    });
+  };
+
+  const handleRemoveDailyScheduleRow = (index: number) => {
+    setFormEventDailySchedules(prev => {
+      const filtered = prev.filter((_, idx) => idx !== index);
+      const reindexed = filtered.map((item, idx) => ({ ...item, dayNumber: idx + 1 }));
+      setFormEventTimeString(formatMultiDaySummary(reindexed));
+      return reindexed;
+    });
+  };
+
+  const handleDailyScheduleChange = (index: number, field: keyof EventDailyScheduleItem, value: any) => {
+    setFormEventDailySchedules(prev => {
+      const updated = prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item));
+      if (index === 0 && field === 'date') {
+        setFormEventDate(value);
+      }
+      setFormEventTimeString(formatMultiDaySummary(updated));
+      return updated;
+    });
+  };
+
+  const handleSetPresetMultiDay = (dayCount: number) => {
+    const startDateStr = formEventDate || new Date().toISOString().split('T')[0];
+    const parts = startDateStr.split('-');
+    const baseDate = parts.length === 3
+      ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+      : new Date();
+
+    const presets: EventDailyScheduleItem[] = [];
+    for (let i = 0; i < dayCount; i++) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      const defaultTime = i === 0 ? 'Friday, 6:00 PM GMT' : i === 1 ? 'Saturday, 10:00 AM & 5:00 PM GMT' : 'Sunday, 8:00 AM GMT';
+      const defaultTitle = i === 0 ? 'Opening Revival & Encounter' : i === 1 ? 'Workshops & Word Impartation' : 'Grand Thanksgiving & Anointing';
+      presets.push({
+        dayNumber: i + 1,
+        date: dateStr,
+        timeString: defaultTime,
+        sessionTitle: defaultTitle
+      });
+    }
+    setFormEventIsMultiDay(true);
+    setFormEventDailySchedules(presets);
+    setFormEventTimeString(formatMultiDaySummary(presets));
   };
 
   const handleAddSpeakerRow = () => {
@@ -1248,19 +1521,36 @@ export default function App() {
 
     const validSpeakers = formEventSpeakers.filter(s => s.fullName && s.fullName.trim() !== '');
 
+    let effectiveDate = formEventDate ? new Date(formEventDate).toISOString() : new Date().toISOString();
+    let effectiveTimeString = formEventTimeString.trim();
+    let effectiveEndDate: string | undefined = undefined;
+
+    if (formEventIsMultiDay && formEventDailySchedules.length > 0) {
+      if (formEventDailySchedules[0].date) {
+        effectiveDate = new Date(formEventDailySchedules[0].date).toISOString();
+      }
+      effectiveEndDate = formEventDailySchedules[formEventDailySchedules.length - 1].date;
+      if (!effectiveTimeString) {
+        effectiveTimeString = formatMultiDaySummary(formEventDailySchedules);
+      }
+    }
+
     const eventPayload: Partial<ParishEventItem> = {
       title: formEventTitle.trim(),
       theme: formEventTheme.trim(),
       description: formEventDescription.trim(),
       coverImageUrl: formEventCoverImageUrl.trim() || '/event_praise_night.jpg',
-      eventDate: formEventDate ? new Date(formEventDate).toISOString() : new Date().toISOString(),
-      timeString: formEventTimeString.trim(),
+      eventDate: effectiveDate,
+      endDate: effectiveEndDate,
+      timeString: effectiveTimeString,
       venue: formEventVenue.trim(),
       category: formEventCategory.trim(),
       isFeatured: formEventIsFeatured,
       registrationRequired: formEventRegistrationRequired,
       status: formEventStatus,
-      maxCapacity: formEventMaxCapacity ? Number(formEventMaxCapacity) : undefined,
+      maxCapacity: (formEventMaxCapacity !== '' && !isNaN(Number(formEventMaxCapacity))) ? Number(formEventMaxCapacity) : undefined,
+      isMultiDay: formEventIsMultiDay,
+      dailySchedules: formEventIsMultiDay ? formEventDailySchedules : undefined,
       speakers: validSpeakers
     };
 
@@ -1275,11 +1565,10 @@ export default function App() {
       setIsEventModalOpen(false);
 
       try {
-        await fetch(`${API_BASE_URL}/Events/${editingEvent.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(eventPayload)
-        });
+        const res = await api.put(`/Events/${editingEvent.id}`, eventPayload);
+        if (res.success) {
+          showNotification(`Event "${updatedEvent.title}" updated in central database!`, 'success');
+        }
       } catch (err) {
         console.warn('API update offline, saved locally');
       }
@@ -1295,11 +1584,10 @@ export default function App() {
       setIsEventModalOpen(false);
 
       try {
-        await fetch(`${API_BASE_URL}/Events`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(eventPayload)
-        });
+        const res = await api.post('/Events', eventPayload);
+        if (res.success) {
+          showNotification(`Parish Event "${newEvent.title}" saved to central database!`, 'success');
+        }
       } catch (err) {
         console.warn('API post offline, saved locally');
       }
@@ -1316,7 +1604,7 @@ export default function App() {
         setEvents(prev => prev.filter(e => e.id !== id));
         showNotification(`Event "${title}" has been removed.`);
         try {
-          await fetch(`${API_BASE_URL}/Events/${id}`, { method: 'DELETE' });
+          await api.delete(`/Events/${id}`);
         } catch {}
       }
     });
@@ -1422,11 +1710,7 @@ export default function App() {
     setIsAddSetupModalOpen(false);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/service-types`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newItem.name, category: newItem.category, isActive: true })
-      });
+      await api.post('/Setup/service-types', { name: newItem.name, category: newItem.category, isActive: true });
     } catch {}
   };
 
@@ -1534,11 +1818,7 @@ export default function App() {
     setEditingServiceType(null);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/service-types/${editingServiceType.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated)
-      });
+      await api.put(`/Setup/service-types/${editingServiceType.id}`, updated);
     } catch {}
   };
 
@@ -1553,9 +1833,7 @@ export default function App() {
         showNotification(`Service Type "${name}" deleted.`);
 
         try {
-          await fetch(`${API_BASE_URL}/Setup/service-types/${id}`, {
-            method: 'DELETE'
-          });
+          await api.delete(`/Setup/service-types/${id}`);
         } catch {}
       }
     });
@@ -1583,11 +1861,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/offering-categories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newItem.name, code: code, isActive: true })
-      });
+      await api.post('/Setup/offering-categories', { name: newItem.name, code: code, isActive: true });
     } catch {}
   };
 
@@ -1622,11 +1896,7 @@ export default function App() {
     setEditingOfferingCategory(null);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/offering-categories/${editingOfferingCategory.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: updatedItem.name, code: updatedCode, isActive: true })
-      });
+      await api.put(`/Setup/offering-categories/${editingOfferingCategory.id}`, { name: updatedItem.name, code: updatedCode, isActive: true });
     } catch {}
   };
 
@@ -1641,9 +1911,7 @@ export default function App() {
         showNotification(`Offering Category "${name}" deleted successfully.`);
 
         try {
-          await fetch(`${API_BASE_URL}/Setup/offering-categories/${id}`, {
-            method: 'DELETE'
-          });
+          await api.delete(`/Setup/offering-categories/${id}`);
         } catch {}
       }
     });
@@ -1668,11 +1936,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/ministers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newItem.title, fullName: newItem.fullName })
-      });
+      await api.post('/Setup/ministers', { title: newItem.title, fullName: newItem.fullName });
     } catch {}
   };
 
@@ -1704,11 +1968,7 @@ export default function App() {
     setShowAddSetupForm(false);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/departments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newDep)
-      });
+      await api.post('/Setup/departments', newDep);
     } catch {}
   };
 
@@ -1749,11 +2009,7 @@ export default function App() {
     setEditingDepartment(null);
 
     try {
-      await fetch(`${API_BASE_URL}/Setup/departments/${editingDepartment.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedItem)
-      });
+      await api.put(`/Setup/departments/${editingDepartment.id}`, updatedItem);
     } catch {}
   };
 
@@ -1768,9 +2024,7 @@ export default function App() {
         showNotification(`Department "${name}" deleted successfully.`);
 
         try {
-          await fetch(`${API_BASE_URL}/Setup/departments/${id}`, {
-            method: 'DELETE'
-          });
+          await api.delete(`/Setup/departments/${id}`);
         } catch {}
       }
     });
@@ -1903,6 +2157,34 @@ export default function App() {
 
     setReports([newReport, ...reports]);
     showNotification(`Service Report submitted! Gross: ${org.baseCurrency} ${totalCalculatedGrossOffering.toLocaleString()} | Expenses: -${org.baseCurrency} ${totalCalculatedExpenses.toLocaleString()} | Net Remittance: ${org.baseCurrency} ${totalCalculatedNetOffering.toLocaleString()}`);
+
+    // Submit directly to live API database
+    try {
+      const matchedServiceType = serviceTypes.find(st => st.name === serviceTypeName);
+      const matchedMinister = ministers.find(m => m.fullName === selectedPreacher);
+      
+      const reportPayload = {
+        serviceTypeId: matchedServiceType?.id && !matchedServiceType.id.startsWith('st_') ? matchedServiceType.id : '00000000-0000-0000-0000-000000000000',
+        serviceDate: new Date(serviceDate).toISOString(),
+        menCount: Number(menCount) || 0,
+        womenCount: Number(womenCount) || 0,
+        childrenCount: Number(childrenCount) || 0,
+        firstTimersCount: Number(firstTimers) || 0,
+        newConvertsCount: Number(newConverts) || 0,
+        preacherMinisterId: matchedMinister?.id && !matchedMinister.id.startsWith('m_') ? matchedMinister.id : null,
+        singleOfferingAmount: totalCalculatedNetOffering,
+        createdByUserId: currentUser?.id && !currentUser.id.startsWith('u-') ? currentUser.id : '00000000-0000-0000-0000-000000000000'
+      };
+
+      api.post('/service-reports', reportPayload).then(res => {
+        if (res.success) {
+          showNotification('Service Report successfully persisted to central database!', 'success');
+        }
+      }).catch(err => console.warn('Service report background sync:', err));
+    } catch (err) {
+      console.warn('Report submission fallback:', err);
+    }
+
     setActiveTab('dashboard');
   };
 
@@ -2271,6 +2553,69 @@ export default function App() {
 
   // Current Authenticated User Session
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [ssoLoadingMessage, setSsoLoadingMessage] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const hasToken = window.location.hash.includes('id_token') || 
+        window.location.search.includes('id_token') ||
+        window.location.pathname.includes('/auth/callback');
+      return hasToken ? 'Verifying secure Single Sign-On credentials with parish server...' : null;
+    }
+    return null;
+  });
+
+  // Hydrate user session from localStorage on initial load & handle SSO redirect callbacks
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('cms_auth_user');
+      const savedToken = localStorage.getItem('cms_auth_token');
+      if (savedUser && savedToken) {
+        setCurrentUser(JSON.parse(savedUser));
+      }
+    } catch (err) {
+      console.warn('[Session] Failed to hydrate user session:', err);
+    }
+
+    // Process SSO OIDC Callback (Google / Microsoft Entra ID)
+    processSsoCallback()
+      .then((result) => {
+        setSsoLoadingMessage(null);
+        if (result.isCallback) {
+          if (result.success && result.user) {
+            setCurrentUser(result.user as any);
+            setViewMode('portal');
+            setShowDraftLogin(false);
+            showNotification(`Welcome, ${result.user.fullName}! Signed in successfully via Single Sign-On.`);
+          } else if (result.error) {
+            setViewMode('portal');
+            setShowDraftLogin(true);
+            showNotification(result.error, 'error');
+          }
+        }
+      })
+      .catch((err) => {
+        setSsoLoadingMessage(null);
+        console.warn('[SSO Callback] Error processing callback:', err);
+      });
+
+    const handleUnauthorized = () => {
+      clearAuthSession();
+      setCurrentUser(null);
+      showNotification('Session expired or unauthorized. Please sign in again.', 'error');
+    };
+    window.addEventListener('cms:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('cms:unauthorized', handleUnauthorized);
+  }, []);
+
+  // Live API Connection Monitor
+  const [apiOnline, setApiOnline] = useState<boolean>(true);
+
+  useEffect(() => {
+    api.checkHealth().then(res => setApiOnline(res.online));
+    const interval = setInterval(() => {
+      api.checkHealth().then(res => setApiOnline(res.online));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'membership' && userSubTab !== 'portal-users') {
@@ -2965,6 +3310,21 @@ export default function App() {
     );
   }
 
+  if (ssoLoadingMessage) {
+    return (
+      <div className="min-h-screen bg-[#0b0f19] flex flex-col items-center justify-center p-6 text-white font-sans select-none">
+        <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 p-3 mb-6 shadow-2xl flex items-center justify-center animate-pulse">
+          <img src={org.logoUrl} alt="Parish Logo" className="w-full h-full object-contain" />
+        </div>
+        <div className="w-10 h-10 border-4 border-white/10 border-t-amber-400 rounded-full animate-spin mb-4" />
+        <h2 className="text-lg font-bold tracking-tight text-white mb-2">Authenticating Single Sign-On</h2>
+        <p className="text-xs text-slate-400 max-w-sm text-center leading-relaxed">
+          {ssoLoadingMessage}
+        </p>
+      </div>
+    );
+  }
+
   if (viewMode === 'website') {
     return (
       <ChurchWebsite
@@ -3226,6 +3586,7 @@ export default function App() {
 
             <button
               onClick={() => {
+                clearAuthSession();
                 setCurrentUser(null);
                 showNotification('Signed out of portal session.', 'success');
               }}
@@ -3275,6 +3636,19 @@ export default function App() {
               <Globe className="w-3.5 h-3.5 text-blue-600" />
               <span className="hidden sm:inline">Public Website</span>
             </button>
+
+            {/* Live API Health Status Badge */}
+            <div 
+              title={`API Backend: ${API_BASE_URL}`}
+              className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition shadow-xs ${
+                apiOnline 
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                  : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${apiOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span>{apiOnline ? 'MonsterASP API' : 'Offline Mode'}</span>
+            </div>
 
             <div className="hidden sm:flex items-center space-x-2 text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
               <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
@@ -4352,12 +4726,18 @@ export default function App() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                         
-                        <div className="absolute top-3 left-3 flex gap-2">
+                        <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
                           <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow">
                             {ev.category}
                           </span>
+                          {(ev.isMultiDay || (ev.dailySchedules && ev.dailySchedules.length > 1) || ev.timeString?.includes('Days •')) && (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow flex items-center space-x-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>{ev.dailySchedules?.length || 3}-Day Program</span>
+                            </span>
+                          )}
                           {ev.isFeatured && (
-                            <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow flex items-center space-x-1">
+                            <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider shadow flex items-center space-x-1">
                               <Sparkles className="w-3 h-3" />
                               <span>Featured</span>
                             </span>
@@ -4396,15 +4776,42 @@ export default function App() {
                           </p>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 pt-2 border-t border-slate-100">
-                            <div className="flex items-center space-x-2 text-slate-600">
+                            <div className="flex items-center space-x-2 text-slate-600 min-w-0">
                               <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                               <span className="truncate">{ev.timeString || ev.eventDate}</span>
                             </div>
-                            <div className="flex items-center space-x-2 text-slate-600">
+                            <div className="flex items-center space-x-2 text-slate-600 min-w-0">
                               <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                               <span className="truncate">{ev.venue}</span>
                             </div>
                           </div>
+
+                          {/* MULTI-DAY BREAKDOWN IF CONFIGURED */}
+                          {ev.dailySchedules && ev.dailySchedules.length > 1 && (
+                            <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-1.5 mt-2">
+                              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-900 flex items-center justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3 text-amber-600" />
+                                  <span>{ev.dailySchedules.length}-Day Schedule Breakdown</span>
+                                </span>
+                                <span className="text-[9px] bg-amber-200/70 text-amber-950 px-1.5 py-0.5 rounded font-bold">
+                                  Daily Times
+                                </span>
+                              </div>
+                              <div className="space-y-1">
+                                {ev.dailySchedules.map((day, dIdx) => (
+                                  <div key={dIdx} className="flex items-center justify-between text-[11px] bg-white/70 px-2 py-1 rounded border border-amber-100">
+                                    <span className="font-bold text-slate-900 shrink-0">
+                                      Day {day.dayNumber} ({day.date}):
+                                    </span>
+                                    <span className="text-amber-900 font-semibold truncate ml-2 text-right">
+                                      {day.timeString} {day.sessionTitle ? `• ${day.sessionTitle}` : ''}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* MINISTERS & GUEST SPEAKERS LIST */}
@@ -4477,8 +4884,17 @@ export default function App() {
                             </button>
                           </div>
 
-                          <div className="text-[11px] text-slate-500 font-medium">
-                            {ev.maxCapacity ? `Max Capacity: ${ev.maxCapacity} Seats` : 'Open Seating'}
+                          <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
+                            {ev.maxCapacity && ev.maxCapacity > 0 ? (
+                              <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold">
+                                Max Capacity: {ev.maxCapacity} Seats
+                              </span>
+                            ) : (
+                              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-bold flex items-center gap-1">
+                                <Users className="w-3 h-3 text-emerald-600" />
+                                <span>Open / Unlimited Seating</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -4592,94 +5008,398 @@ export default function App() {
 
                 {/* 2. COVER FLYER ARTWORK */}
                 <div className="space-y-4">
-                  <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
-                    2. Cover Flyer Artwork
-                  </span>
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                    <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400">
+                      2. Cover Flyer Artwork
+                    </span>
+                    <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setFormEventCoverImageMode('upload')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition flex items-center gap-1.5 cursor-pointer ${
+                          formEventCoverImageMode === 'upload'
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        <Upload className="w-3 h-3 text-amber-500" />
+                        <span>Upload File</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormEventCoverImageMode('url')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition flex items-center gap-1.5 cursor-pointer ${
+                          formEventCoverImageMode === 'url'
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        <Link className="w-3 h-3 text-blue-500" />
+                        <span>URL / Presets</span>
+                      </button>
+                    </div>
+                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-                    <div className="sm:col-span-2 space-y-2">
-                      <label className="block text-xs font-bold text-slate-700">
-                        Cover Image / Flyer URL
-                      </label>
-                      <input
-                        type="text"
-                        value={formEventCoverImageUrl}
-                        onChange={(e) => setFormEventCoverImageUrl(e.target.value)}
-                        placeholder="/event_praise_night.jpg or https://..."
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 focus:bg-white focus:outline-amber-500"
-                      />
-                      
-                      {/* SAMPLE FLYER PRESET BUTTONS */}
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        <span className="text-[11px] text-slate-400 font-semibold self-center">Presets:</span>
-                        <button
-                          type="button"
-                          onClick={() => setFormEventCoverImageUrl('/event_praise_night.jpg')}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
-                        >
-                          Praise Night Flyer
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFormEventCoverImageUrl('/event_youth_summit.jpg')}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
-                        >
-                          Youth Summit Flyer
-                        </button>
-                      </div>
+                    <div className="sm:col-span-2 space-y-3">
+                      {formEventCoverImageMode === 'upload' ? (
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-700">
+                            Upload Event Flyer / Poster Artwork
+                          </label>
+
+                          {/* DROPZONE / FILE PICKER */}
+                          <div
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const file = e.dataTransfer.files?.[0];
+                              if (file) handleFlyerFileUpload(file);
+                            }}
+                            className="border-2 border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/40 hover:bg-amber-50/70 rounded-2xl p-4 text-center transition flex flex-col items-center justify-center space-y-2 cursor-pointer group"
+                            onClick={() => document.getElementById('eventFlyerFileInput')?.click()}
+                          >
+                            <input
+                              type="file"
+                              id="eventFlyerFileInput"
+                              accept="image/png,image/jpeg,image/jpg,image/webp"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFlyerFileUpload(file);
+                              }}
+                            />
+                            
+                            <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-110 transition">
+                              <Upload className="w-5 h-5" />
+                            </div>
+
+                            <div>
+                              <span className="text-xs font-bold text-slate-800 group-hover:text-amber-700 block">
+                                Click to browse or drag &amp; drop event flyer
+                              </span>
+                              <span className="text-[11px] text-slate-500">
+                                Supports PNG, JPG, JPEG, WEBP (High resolution, up to 10MB)
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* FILE ATTACHED STATUS BADGE */}
+                          {uploadedFlyerFileName && (
+                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
+                              <div className="flex items-center gap-2 truncate">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                <span className="font-bold truncate">{uploadedFlyerFileName}</span>
+                                {uploadedFlyerFileSize && (
+                                  <span className="text-[10px] text-emerald-600 font-mono bg-emerald-100 px-1.5 py-0.5 rounded">
+                                    {uploadedFlyerFileSize}
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setUploadedFlyerFileName(null);
+                                  setUploadedFlyerFileSize(null);
+                                  setFormEventCoverImageUrl('/event_praise_night.jpg');
+                                }}
+                                className="text-xs text-rose-600 hover:text-rose-800 font-bold ml-2 cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-700">
+                            Cover Image / Flyer URL
+                          </label>
+                          <input
+                            type="text"
+                            value={formEventCoverImageUrl}
+                            onChange={(e) => setFormEventCoverImageUrl(e.target.value)}
+                            placeholder="/event_praise_night.jpg or https://..."
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 focus:bg-white focus:outline-amber-500"
+                          />
+                          
+                          {/* SAMPLE FLYER PRESET BUTTONS */}
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <span className="text-[11px] text-slate-400 font-semibold self-center">Presets:</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormEventCoverImageUrl('/event_praise_night.jpg');
+                                setUploadedFlyerFileName(null);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
+                            >
+                              Praise Night Flyer
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormEventCoverImageUrl('/event_youth_summit.jpg');
+                                setUploadedFlyerFileName(null);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
+                            >
+                              Youth Summit Flyer
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* FLYER PREVIEW BOX */}
-                    <div className="h-28 rounded-2xl bg-slate-900 border border-slate-200 overflow-hidden relative shadow-inner flex items-center justify-center">
+                    <div className="h-32 sm:h-36 rounded-2xl bg-slate-900 border border-slate-200 overflow-hidden relative shadow-md flex items-center justify-center group">
                       {formEventCoverImageUrl ? (
-                        <img
-                          src={formEventCoverImageUrl}
-                          alt="Flyer Preview"
-                          className="w-full h-full object-cover"
-                        />
+                        <>
+                          <img
+                            src={formEventCoverImageUrl}
+                            alt="Flyer Preview"
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-white text-[10px] font-mono">
+                            <span className="bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded font-bold">
+                              Preview
+                            </span>
+                            {formEventCoverImageUrl.startsWith('data:') && (
+                              <span className="bg-emerald-500/80 px-1.5 py-0.5 rounded text-[9px] font-sans font-bold">
+                                Uploaded
+                              </span>
+                            )}
+                          </div>
+                        </>
                       ) : (
-                        <span className="text-[11px] text-slate-400 font-medium">No flyer set</span>
+                        <div className="flex flex-col items-center justify-center p-3 text-slate-400 space-y-1">
+                          <Camera className="w-6 h-6 text-slate-500" />
+                          <span className="text-[11px] font-medium">No flyer selected</span>
+                        </div>
                       )}
-                      <div className="absolute bottom-1 right-1 bg-slate-950/70 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
-                        Preview
-                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* 3. DATE, TIME, VENUE & SETTINGS */}
+                {/* 3. DATE, SCHEDULE, VENUE & SETTINGS */}
                 <div className="space-y-4">
-                  <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
-                    3. Date, Venue &amp; Registration
-                  </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-2 gap-2">
+                    <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400">
+                      3. Date, Schedule, Venue &amp; Registration
+                    </span>
 
+                    {/* DURATION MODE TOGGLE: SINGLE VS MULTI-DAY */}
+                    <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormEventIsMultiDay(false);
+                          if (formEventDailySchedules.length > 0 && formEventDailySchedules[0].timeString) {
+                            setFormEventTimeString(formEventDailySchedules[0].timeString);
+                          }
+                        }}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center space-x-1.5 ${
+                          !formEventIsMultiDay
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Single-Day Event</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormEventIsMultiDay(true);
+                          setFormEventTimeString(formatMultiDaySummary(formEventDailySchedules));
+                        }}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center space-x-1.5 ${
+                          formEventIsMultiDay
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Multi-Day Program ({formEventDailySchedules.length} Days)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* MULTI-DAY SCHEDULE BUILDER */}
+                  {formEventIsMultiDay ? (
+                    <div className="space-y-3 p-4 rounded-2xl bg-amber-50/50 border border-amber-200">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/60 pb-2.5">
+                        <div>
+                          <h4 className="text-xs font-extrabold text-amber-950 flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-amber-600" />
+                            <span>Day-by-Day Event Schedule &amp; Timetable</span>
+                          </h4>
+                          <p className="text-[11px] text-amber-800 font-medium">
+                            Each day of this event can have its dedicated date, specific session time, and title.
+                          </p>
+                        </div>
+
+                        {/* PRESETS & ADD DAY BUTTON */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleSetPresetMultiDay(3)}
+                            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition cursor-pointer"
+                          >
+                            + 3-Day Weekend
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSetPresetMultiDay(2)}
+                            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition cursor-pointer"
+                          >
+                            + 2-Day Program
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleAddDailyScheduleRow}
+                            className="px-3 py-1 text-[11px] font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition flex items-center space-x-1 cursor-pointer shadow-xs"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add Day</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* DAILY ROWS LIST */}
+                      <div className="space-y-3 pt-1">
+                        {formEventDailySchedules.map((schedule, sIdx) => (
+                          <div
+                            key={sIdx}
+                            className="p-3.5 rounded-xl bg-white border border-amber-200/90 shadow-2xs space-y-2.5"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-mono font-black uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                <span>Day {schedule.dayNumber}</span>
+                              </span>
+
+                              {formEventDailySchedules.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveDailyScheduleRow(sIdx)}
+                                  className="text-rose-500 hover:text-rose-700 text-xs font-semibold flex items-center space-x-1 cursor-pointer"
+                                  title="Remove this day"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Remove Day</span>
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  Day {schedule.dayNumber} Date *
+                                </label>
+                                <input
+                                  type="date"
+                                  required
+                                  value={schedule.date}
+                                  onChange={(e) => handleDailyScheduleChange(sIdx, 'date', e.target.value)}
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  Day {schedule.dayNumber} Time / Sessions *
+                                </label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={schedule.timeString}
+                                  onChange={(e) => handleDailyScheduleChange(sIdx, 'timeString', e.target.value)}
+                                  placeholder="e.g. 6:00 PM GMT or 10:00 AM & 5:00 PM"
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  Session Theme / Focus (Optional)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={schedule.sessionTitle || ''}
+                                  onChange={(e) => handleDailyScheduleChange(sIdx, 'sessionTitle', e.target.value)}
+                                  placeholder="e.g. Revival & Impartation"
+                                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-amber-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* DISPLAY TIME SUMMARY PREVIEW */}
+                      <div className="p-3 bg-white/80 rounded-xl border border-amber-200/80 space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-slate-700 flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Generated Timetable Summary:</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full font-bold">
+                            Live Summary
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          value={formEventTimeString}
+                          onChange={(e) => setFormEventTimeString(e.target.value)}
+                          placeholder="Auto-generated timetable summary..."
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-900 focus:bg-white"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* SINGLE-DAY FORM ROW */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Event Date (YYYY-MM-DD) *
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={formEventDate}
+                          onChange={(e) => {
+                            setFormEventDate(e.target.value);
+                            if (formEventDailySchedules.length > 0) {
+                              handleDailyScheduleChange(0, 'date', e.target.value);
+                            }
+                          }}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Display Time String *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formEventTimeString}
+                          onChange={(e) => setFormEventTimeString(e.target.value)}
+                          placeholder="e.g. Friday, October 24, 2026 • 9:00 PM GMT"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-amber-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VENUE AND OPTIONAL SEATING CAPACITY */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Event Date (YYYY-MM-DD) *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formEventDate}
-                        onChange={(e) => setFormEventDate(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Display Time String
-                      </label>
-                      <input
-                        type="text"
-                        value={formEventTimeString}
-                        onChange={(e) => setFormEventTimeString(e.target.value)}
-                        placeholder="e.g. Friday, October 24, 2026 • 9:00 PM GMT"
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900"
-                      />
-                    </div>
-
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">
                         Venue / Auditorium *
@@ -4690,20 +5410,26 @@ export default function App() {
                         value={formEventVenue}
                         onChange={(e) => setFormEventVenue(e.target.value)}
                         placeholder="e.g. Main Sanctuary Auditorium, RCCG Glorious Church Parish"
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Max Seating Capacity
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Max Seating Capacity
+                        </label>
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          Optional (Leave blank for unlimited)
+                        </span>
+                      </div>
                       <input
                         type="number"
+                        min="1"
                         value={formEventMaxCapacity}
-                        onChange={(e) => setFormEventMaxCapacity(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
-                        placeholder="e.g. 500"
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                        onChange={(e) => setFormEventMaxCapacity(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
+                        placeholder="Unlimited (leave blank if no capacity limit)"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-amber-500"
                       />
                     </div>
                   </div>
@@ -4861,7 +5587,28 @@ export default function App() {
                               placeholder="/dr_taiwo_adetunji.jpg"
                               className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-800"
                             />
-                            <div className="flex gap-1.5 mt-1">
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              <label className="text-[10px] text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded cursor-pointer flex items-center gap-1 font-bold">
+                                <Upload className="w-2.5 h-2.5" />
+                                <span>Upload</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = () => {
+                                        if (typeof reader.result === 'string') {
+                                          handleSpeakerChange(idx, 'photoUrl', reader.result);
+                                        }
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
                               <button
                                 type="button"
                                 onClick={() => handleSpeakerChange(idx, 'photoUrl', '/adeboye-enoch-jpeg.webp')}
