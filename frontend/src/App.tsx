@@ -2274,6 +2274,15 @@ export default function App() {
 
   // Current Authenticated User Session
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [ssoLoadingMessage, setSsoLoadingMessage] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const hasToken = window.location.hash.includes('id_token') || 
+        window.location.search.includes('id_token') ||
+        window.location.pathname.includes('/auth/callback');
+      return hasToken ? 'Verifying secure Single Sign-On credentials with parish server...' : null;
+    }
+    return null;
+  });
 
   // Hydrate user session from localStorage on initial load & handle SSO redirect callbacks
   useEffect(() => {
@@ -2288,18 +2297,26 @@ export default function App() {
     }
 
     // Process SSO OIDC Callback (Google / Microsoft Entra ID)
-    processSsoCallback().then((result) => {
-      if (result.isCallback) {
-        if (result.success && result.user) {
-          setCurrentUser(result.user as any);
-          setViewMode('portal');
-          setShowDraftLogin(false);
-          showNotification(`Welcome, ${result.user.fullName}! Signed in successfully via Single Sign-On.`);
-        } else if (result.error) {
-          showNotification(result.error, 'error');
+    processSsoCallback()
+      .then((result) => {
+        setSsoLoadingMessage(null);
+        if (result.isCallback) {
+          if (result.success && result.user) {
+            setCurrentUser(result.user as any);
+            setViewMode('portal');
+            setShowDraftLogin(false);
+            showNotification(`Welcome, ${result.user.fullName}! Signed in successfully via Single Sign-On.`);
+          } else if (result.error) {
+            setViewMode('portal');
+            setShowDraftLogin(true);
+            showNotification(result.error, 'error');
+          }
         }
-      }
-    });
+      })
+      .catch((err) => {
+        setSsoLoadingMessage(null);
+        console.warn('[SSO Callback] Error processing callback:', err);
+      });
 
     const handleUnauthorized = () => {
       clearAuthSession();
@@ -3010,6 +3027,21 @@ export default function App() {
             </form>
           )}
         </div>
+      </div>
+    );
+  }
+
+  if (ssoLoadingMessage) {
+    return (
+      <div className="min-h-screen bg-[#0b0f19] flex flex-col items-center justify-center p-6 text-white font-sans select-none">
+        <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 p-3 mb-6 shadow-2xl flex items-center justify-center animate-pulse">
+          <img src={org.logoUrl} alt="Parish Logo" className="w-full h-full object-contain" />
+        </div>
+        <div className="w-10 h-10 border-4 border-white/10 border-t-amber-400 rounded-full animate-spin mb-4" />
+        <h2 className="text-lg font-bold tracking-tight text-white mb-2">Authenticating Single Sign-On</h2>
+        <p className="text-xs text-slate-400 max-w-sm text-center leading-relaxed">
+          {ssoLoadingMessage}
+        </p>
       </div>
     );
   }
