@@ -1135,6 +1135,9 @@ export default function App() {
   const [formEventTheme, setFormEventTheme] = useState('');
   const [formEventDescription, setFormEventDescription] = useState('');
   const [formEventCoverImageUrl, setFormEventCoverImageUrl] = useState('/event_praise_night.jpg');
+  const [formEventCoverImageMode, setFormEventCoverImageMode] = useState<'upload' | 'url'>('upload');
+  const [uploadedFlyerFileName, setUploadedFlyerFileName] = useState<string | null>(null);
+  const [uploadedFlyerFileSize, setUploadedFlyerFileSize] = useState<string | null>(null);
   const [formEventDate, setFormEventDate] = useState('2026-10-24');
   const [formEventTimeString, setFormEventTimeString] = useState('Friday, October 24, 2026 • 9:00 PM GMT');
   const [formEventVenue, setFormEventVenue] = useState('Main Sanctuary Auditorium, RCCG Glorious Church Parish');
@@ -1153,6 +1156,36 @@ export default function App() {
       shortBio: 'Pastor-in-Charge of RCCG Glorious Church Parish.'
     }
   ]);
+
+  const handleFlyerFileUpload = (file: File) => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showNotification('Please upload a valid image file (.png, .jpg, .jpeg, .webp).', 'error');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showNotification('Flyer file size exceeds 10MB limit. Please upload an optimized image.', 'error');
+      return;
+    }
+
+    const fileSizeStr = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    setUploadedFlyerFileName(file.name);
+    setUploadedFlyerFileSize(fileSizeStr);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setFormEventCoverImageUrl(reader.result);
+        showNotification(`Event flyer "${file.name}" loaded successfully!`, 'success');
+      }
+    };
+    reader.onerror = () => {
+      showNotification('Failed to read flyer image file.', 'error');
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     const fetchParishEvents = async () => {
@@ -1174,6 +1207,9 @@ export default function App() {
     setFormEventTheme('');
     setFormEventDescription('');
     setFormEventCoverImageUrl('/event_praise_night.jpg');
+    setUploadedFlyerFileName(null);
+    setUploadedFlyerFileSize(null);
+    setFormEventCoverImageMode('upload');
     setFormEventDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
     setFormEventTimeString('Friday, 6:00 PM GMT');
     setFormEventVenue('Main Sanctuary Auditorium, RCCG Glorious Church Parish');
@@ -1201,6 +1237,9 @@ export default function App() {
     setFormEventTheme(ev.theme || '');
     setFormEventDescription(ev.description || '');
     setFormEventCoverImageUrl(ev.coverImageUrl || '/event_praise_night.jpg');
+    setUploadedFlyerFileName(null);
+    setUploadedFlyerFileSize(null);
+    setFormEventCoverImageMode(ev.coverImageUrl?.startsWith('data:') ? 'upload' : 'url');
     setFormEventDate(ev.eventDate ? ev.eventDate.split('T')[0] : '');
     setFormEventTimeString(ev.timeString || '');
     setFormEventVenue(ev.venue || '');
@@ -4688,57 +4727,177 @@ export default function App() {
 
                 {/* 2. COVER FLYER ARTWORK */}
                 <div className="space-y-4">
-                  <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
-                    2. Cover Flyer Artwork
-                  </span>
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                    <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400">
+                      2. Cover Flyer Artwork
+                    </span>
+                    <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setFormEventCoverImageMode('upload')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition flex items-center gap-1.5 cursor-pointer ${
+                          formEventCoverImageMode === 'upload'
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        <Upload className="w-3 h-3 text-amber-500" />
+                        <span>Upload File</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormEventCoverImageMode('url')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition flex items-center gap-1.5 cursor-pointer ${
+                          formEventCoverImageMode === 'url'
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        <Link className="w-3 h-3 text-blue-500" />
+                        <span>URL / Presets</span>
+                      </button>
+                    </div>
+                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-                    <div className="sm:col-span-2 space-y-2">
-                      <label className="block text-xs font-bold text-slate-700">
-                        Cover Image / Flyer URL
-                      </label>
-                      <input
-                        type="text"
-                        value={formEventCoverImageUrl}
-                        onChange={(e) => setFormEventCoverImageUrl(e.target.value)}
-                        placeholder="/event_praise_night.jpg or https://..."
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 focus:bg-white focus:outline-amber-500"
-                      />
-                      
-                      {/* SAMPLE FLYER PRESET BUTTONS */}
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        <span className="text-[11px] text-slate-400 font-semibold self-center">Presets:</span>
-                        <button
-                          type="button"
-                          onClick={() => setFormEventCoverImageUrl('/event_praise_night.jpg')}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
-                        >
-                          Praise Night Flyer
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFormEventCoverImageUrl('/event_youth_summit.jpg')}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
-                        >
-                          Youth Summit Flyer
-                        </button>
-                      </div>
+                    <div className="sm:col-span-2 space-y-3">
+                      {formEventCoverImageMode === 'upload' ? (
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-700">
+                            Upload Event Flyer / Poster Artwork
+                          </label>
+
+                          {/* DROPZONE / FILE PICKER */}
+                          <div
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const file = e.dataTransfer.files?.[0];
+                              if (file) handleFlyerFileUpload(file);
+                            }}
+                            className="border-2 border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/40 hover:bg-amber-50/70 rounded-2xl p-4 text-center transition flex flex-col items-center justify-center space-y-2 cursor-pointer group"
+                            onClick={() => document.getElementById('eventFlyerFileInput')?.click()}
+                          >
+                            <input
+                              type="file"
+                              id="eventFlyerFileInput"
+                              accept="image/png,image/jpeg,image/jpg,image/webp"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFlyerFileUpload(file);
+                              }}
+                            />
+                            
+                            <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-110 transition">
+                              <Upload className="w-5 h-5" />
+                            </div>
+
+                            <div>
+                              <span className="text-xs font-bold text-slate-800 group-hover:text-amber-700 block">
+                                Click to browse or drag &amp; drop event flyer
+                              </span>
+                              <span className="text-[11px] text-slate-500">
+                                Supports PNG, JPG, JPEG, WEBP (High resolution, up to 10MB)
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* FILE ATTACHED STATUS BADGE */}
+                          {uploadedFlyerFileName && (
+                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
+                              <div className="flex items-center gap-2 truncate">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                <span className="font-bold truncate">{uploadedFlyerFileName}</span>
+                                {uploadedFlyerFileSize && (
+                                  <span className="text-[10px] text-emerald-600 font-mono bg-emerald-100 px-1.5 py-0.5 rounded">
+                                    {uploadedFlyerFileSize}
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setUploadedFlyerFileName(null);
+                                  setUploadedFlyerFileSize(null);
+                                  setFormEventCoverImageUrl('/event_praise_night.jpg');
+                                }}
+                                className="text-xs text-rose-600 hover:text-rose-800 font-bold ml-2 cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-700">
+                            Cover Image / Flyer URL
+                          </label>
+                          <input
+                            type="text"
+                            value={formEventCoverImageUrl}
+                            onChange={(e) => setFormEventCoverImageUrl(e.target.value)}
+                            placeholder="/event_praise_night.jpg or https://..."
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 focus:bg-white focus:outline-amber-500"
+                          />
+                          
+                          {/* SAMPLE FLYER PRESET BUTTONS */}
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <span className="text-[11px] text-slate-400 font-semibold self-center">Presets:</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormEventCoverImageUrl('/event_praise_night.jpg');
+                                setUploadedFlyerFileName(null);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
+                            >
+                              Praise Night Flyer
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormEventCoverImageUrl('/event_youth_summit.jpg');
+                                setUploadedFlyerFileName(null);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 cursor-pointer"
+                            >
+                              Youth Summit Flyer
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* FLYER PREVIEW BOX */}
-                    <div className="h-28 rounded-2xl bg-slate-900 border border-slate-200 overflow-hidden relative shadow-inner flex items-center justify-center">
+                    <div className="h-32 sm:h-36 rounded-2xl bg-slate-900 border border-slate-200 overflow-hidden relative shadow-md flex items-center justify-center group">
                       {formEventCoverImageUrl ? (
-                        <img
-                          src={formEventCoverImageUrl}
-                          alt="Flyer Preview"
-                          className="w-full h-full object-cover"
-                        />
+                        <>
+                          <img
+                            src={formEventCoverImageUrl}
+                            alt="Flyer Preview"
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-white text-[10px] font-mono">
+                            <span className="bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded font-bold">
+                              Preview
+                            </span>
+                            {formEventCoverImageUrl.startsWith('data:') && (
+                              <span className="bg-emerald-500/80 px-1.5 py-0.5 rounded text-[9px] font-sans font-bold">
+                                Uploaded
+                              </span>
+                            )}
+                          </div>
+                        </>
                       ) : (
-                        <span className="text-[11px] text-slate-400 font-medium">No flyer set</span>
+                        <div className="flex flex-col items-center justify-center p-3 text-slate-400 space-y-1">
+                          <Camera className="w-6 h-6 text-slate-500" />
+                          <span className="text-[11px] font-medium">No flyer selected</span>
+                        </div>
                       )}
-                      <div className="absolute bottom-1 right-1 bg-slate-950/70 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
-                        Preview
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -4957,7 +5116,28 @@ export default function App() {
                               placeholder="/dr_taiwo_adetunji.jpg"
                               className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-800"
                             />
-                            <div className="flex gap-1.5 mt-1">
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              <label className="text-[10px] text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded cursor-pointer flex items-center gap-1 font-bold">
+                                <Upload className="w-2.5 h-2.5" />
+                                <span>Upload</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = () => {
+                                        if (typeof reader.result === 'string') {
+                                          handleSpeakerChange(idx, 'photoUrl', reader.result);
+                                        }
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
                               <button
                                 type="button"
                                 onClick={() => handleSpeakerChange(idx, 'photoUrl', '/adeboye-enoch-jpeg.webp')}
