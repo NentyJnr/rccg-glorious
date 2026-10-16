@@ -40,6 +40,8 @@ public class SsoUserProvisioningService : ISsoUserProvisioningService
     public async Task<LoginResultDto> ProvisionOrAuthenticateExternalUserAsync(ExternalAuthUserDto externalUser, CancellationToken cancellationToken = default)
     {
         string normalizedEmail = externalUser.Email.ToLowerInvariant().Trim();
+        bool isDesignatedSuperAdmin = normalizedEmail == "neotroltd@gmail.com" || 
+                                     normalizedEmail == "admin@rccgglorious.org";
 
         var user = await _dbContext.Users
             .FirstOrDefaultAsync(u => u.Email == normalizedEmail, cancellationToken);
@@ -58,6 +60,13 @@ public class SsoUserProvisioningService : ISsoUserProvisioningService
                 user.FullName = externalUser.FullName;
             }
 
+            // Automatically elevate designated initial accounts to SuperAdmin
+            if (isDesignatedSuperAdmin && user.Role != "SuperAdmin")
+            {
+                user.Role = "SuperAdmin";
+                _logger.LogInformation("Elevated designated administrator account to SuperAdmin: {Email}", normalizedEmail);
+            }
+
             user.UpdatedAtUtc = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -69,10 +78,12 @@ public class SsoUserProvisioningService : ISsoUserProvisioningService
             // Just-In-Time (JIT) Provisioning for new SSO users
             user = new ApplicationUser
             {
-                FullName = !string.IsNullOrWhiteSpace(externalUser.FullName) ? externalUser.FullName : normalizedEmail.Split('@')[0],
+                FullName = !string.IsNullOrWhiteSpace(externalUser.FullName) 
+                    ? externalUser.FullName 
+                    : (isDesignatedSuperAdmin ? "Super Administrator" : normalizedEmail.Split('@')[0]),
                 Email = normalizedEmail,
                 Phone = string.Empty,
-                Role = "Member", // Default parish membership role
+                Role = isDesignatedSuperAdmin ? "SuperAdmin" : "Member",
                 MustChangePassword = false, // SSO users manage passwords through identity provider
                 IsActive = true,
                 PasswordHash = string.Empty

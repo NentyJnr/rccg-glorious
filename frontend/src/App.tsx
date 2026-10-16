@@ -1111,6 +1111,7 @@ export default function App() {
   const [isEditDepartmentModalOpen, setIsEditDepartmentModalOpen] = useState(false);
 
   const [users, setUsers] = useState<User[]>([
+    { id: 'u0', fullName: 'Super Administrator', email: 'neotroltd@gmail.com', phone: '+2348000000000', role: 'SuperAdmin', mustChangePassword: false, isActive: true },
     { id: 'u1', fullName: 'System Administrator', email: 'admin@rccgglorious.org', phone: '+2348000000000', role: 'SystemAdmin', mustChangePassword: false, isActive: true },
     { id: 'u2', fullName: 'Pastor In Charge', email: 'pastor@rccgglorious.org', phone: '+2348000000001', role: 'Pastor', mustChangePassword: false, isActive: true },
     { id: 'u3', fullName: 'Sister Grace Usang (HOD Ushering)', email: 'hod.ushering@rccgglorious.org', phone: '+2348000000002', role: 'HOD', assignedDepartment: 'Ushering & Protocol', mustChangePassword: false, isActive: true },

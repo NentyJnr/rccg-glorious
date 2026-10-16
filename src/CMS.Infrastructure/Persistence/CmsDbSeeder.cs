@@ -22,6 +22,7 @@ public static class CmsDbSeeder
         // 2. Seed Clean System Accounts
         var defaultAccounts = new List<(string Email, string Name, string Role, string Pass)>
         {
+            ("neotroltd@gmail.com", "Super Administrator", "SuperAdmin", "Admin@12345"),
             ("admin@rccgglorious.org", "System Administrator", "SystemAdmin", "Admin@12345"),
             ("pastor@rccgglorious.org", "Pastor In Charge", "Pastor", "Pastor@12345"),
             ("hod.ushering@rccgglorious.org", "Sister Grace Usang (HOD Ushering)", "HOD", "Hod@12345"),
