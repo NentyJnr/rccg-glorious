@@ -217,7 +217,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#f8f7f3] text-[#211b2e] font-sans antialiased selection:bg-[#4dbb62] selection:text-white">
+    <div className="min-h-screen overflow-x-hidden bg-[#e9f2e5] text-[#211b2e] font-sans antialiased selection:bg-[#4dbb62] selection:text-white">
       {/* ------------------------------------------------------------- */}
       {/* 1. TOP AFFILIATION STRIP (With Back-to-Main & Portal Links)    */}
       {/* ------------------------------------------------------------- */}
@@ -445,10 +445,10 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
               </p>
             </article>
 
-            <article className="rounded-3xl bg-[#e9f2e5] p-8 text-[#211566] transition-all duration-300 hover:-translate-y-1.5 shadow-md border border-[#cbe0c5]">
+            <article className="rounded-3xl bg-white p-8 text-[#211566] transition-all duration-300 hover:-translate-y-1.5 shadow-xl border border-[#cbe0c5]">
               <Users className="mb-10 text-[#39994e]" size={32} />
               <h3 className="mb-3 text-xl font-bold">Find belonging</h3>
-              <p className="text-sm leading-6 text-[#625d6b]">
+              <p className="text-sm leading-6 text-[#4a5568]">
                 No pretending. Just real friendships, shared tables, and a supportive family that always shows up.
               </p>
             </article>
@@ -464,12 +464,12 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
         </section>
 
         {/* ------------------------------------------------------------- */}
-        {/* 5. CORE DIVINE MANDATE BANNER (Preserved Custom Banner)       */}
+        {/* 5. CORE DIVINE MANDATE BANNER                                 */}
         {/* ------------------------------------------------------------- */}
-        <section id="mandate" className="py-16 px-6 lg:px-10 bg-white border-y border-slate-200">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-amber-50 text-amber-900 text-xs font-mono font-bold tracking-wider uppercase border border-amber-200">
-              <Award className="w-4 h-4 text-amber-600" />
+        <section id="mandate" className="py-20 px-6 lg:px-10">
+          <div className="max-w-5xl mx-auto bg-white/90 backdrop-blur-md rounded-[2.5rem] border border-[#cbe0c5] p-8 sm:p-14 text-center space-y-6 shadow-xl">
+            <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-[#211566]/10 text-[#211566] text-xs font-mono font-bold tracking-wider uppercase border border-[#211566]/20">
+              <Award className="w-4 h-4 text-[#39994e]" />
               <span>OUR CORE DIVINE MANDATE</span>
             </div>
 
@@ -477,7 +477,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
               A Vibrant Generation Anchored in Christ
             </h2>
 
-            <p className="text-base sm:text-lg text-[#625d6b] leading-relaxed max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg text-[#4a5568] leading-relaxed max-w-3xl mx-auto">
               At <strong className="text-[#211566] font-bold">RCCG Glorious Youth Ministry</strong>, our heartbeat is to build a passionate community where youths are grounded in the Word, empowered by the Holy Spirit, and equipped for global relevance. We build leaders, ignite visions, and champion a lifestyle of uncompromising holiness.
             </p>
 
@@ -485,7 +485,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
               <button
                 type="button"
                 onClick={() => setIsJoinModalOpen(true)}
-                className="px-8 py-3.5 rounded-full bg-[#211566] hover:bg-[#16103e] text-white text-xs font-extrabold uppercase tracking-wider shadow-lg transition hover:scale-105 active:scale-95"
+                className="px-8 py-3.5 rounded-full bg-[#211566] hover:bg-[#16103e] text-white text-xs font-extrabold uppercase tracking-wider shadow-xl shadow-[#211566]/25 transition hover:scale-105 active:scale-95"
               >
                 GET INVOLVED TODAY
               </button>
@@ -496,7 +496,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                   const el = document.getElementById('events');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="px-8 py-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[#211566] text-xs font-extrabold uppercase tracking-wider border border-slate-200 transition"
+                className="px-8 py-3.5 rounded-full bg-white hover:bg-slate-50 text-[#211566] text-xs font-extrabold uppercase tracking-wider border border-[#cbe0c5] shadow-xs transition hover:border-[#211566]/40"
               >
                 YOUTH FELLOWSHIP SCHEDULE
               </a>
@@ -507,7 +507,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
         {/* ------------------------------------------------------------- */}
         {/* 6. WHAT'S HAPPENING / EVENTS (Duplicated Carousel Layout)     */}
         {/* ------------------------------------------------------------- */}
-        <section id="events" className="bg-[#eee9e0] px-6 py-20 lg:px-10 lg:py-28">
+        <section id="events" className="px-6 py-20 lg:px-10 lg:py-28 border-t border-[#d3e5cf]">
           <div className="mx-auto max-w-7xl">
             <div className="mb-12 flex items-end justify-between gap-6">
               <div>
@@ -522,7 +522,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                 <button
                   type="button"
                   onClick={previousEvent}
-                  className="rounded-full border border-[#211566]/20 p-3 text-[#211566] transition hover:bg-[#211566] hover:text-white"
+                  className="rounded-full border border-[#211566]/20 bg-white p-3 text-[#211566] shadow-xs transition hover:bg-[#211566] hover:text-white"
                   aria-label="Previous event"
                 >
                   <ChevronLeft size={19} />
@@ -530,7 +530,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                 <button
                   type="button"
                   onClick={nextEvent}
-                  className="rounded-full border border-[#211566]/20 p-3 text-[#211566] transition hover:bg-[#211566] hover:text-white"
+                  className="rounded-full border border-[#211566]/20 bg-white p-3 text-[#211566] shadow-xs transition hover:bg-[#211566] hover:text-white"
                   aria-label="Next event"
                 >
                   <ChevronRight size={19} />
@@ -639,7 +639,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
         {/* ------------------------------------------------------------- */}
         {/* 7. THE GALLERY (Duplicated from frontend/project)              */}
         {/* ------------------------------------------------------------- */}
-        <section id="gallery" className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-28">
+        <section id="gallery" className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-28 border-t border-[#d3e5cf]">
           <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
             <div>
               <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-[#39994e]">
@@ -728,13 +728,13 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
         </section>
 
         {/* ------------------------------------------------------------- */}
-        {/* 9. MEMBER TESTIMONIAL BANNER (Duplicated from frontend/project)*/}
+        {/* 9. MEMBER TESTIMONIAL BANNER                                 */}
         {/* ------------------------------------------------------------- */}
-        <section className="bg-[#e9f2e5] px-6 py-16 lg:px-10 border-y border-[#d3e5cf]">
-          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+        <section className="py-16 px-6 lg:px-10">
+          <div className="mx-auto max-w-7xl bg-white/90 backdrop-blur-md rounded-[2.5rem] border border-[#cbe0c5] p-8 sm:p-12 shadow-xl grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="flex items-start gap-5">
-              <div className="mt-1 hidden rounded-full bg-[#4dbb62] p-3 text-white sm:block shadow-md">
-                <Quote size={22} />
+              <div className="mt-1 hidden rounded-full bg-[#4dbb62] p-3.5 text-white sm:block shadow-md">
+                <Quote size={24} />
               </div>
               <div>
                 <p className="max-w-2xl text-2xl font-medium leading-relaxed text-[#211566] sm:text-3xl">
@@ -746,7 +746,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-3 text-sm font-bold text-[#211566] bg-white/60 px-5 py-2.5 rounded-full border border-white">
+            <div className="flex items-center gap-3 text-sm font-bold text-[#211566] bg-[#e9f2e5] px-6 py-3 rounded-full border border-[#cbe0c5] shadow-xs">
               <span className="h-2.5 w-2.5 rounded-full bg-[#4dbb62] animate-pulse" />
               <span>You belong here</span>
             </div>
