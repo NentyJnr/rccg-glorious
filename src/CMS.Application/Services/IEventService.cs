@@ -8,5 +8,7 @@ public interface IEventService
     Task<ParishEventDto?> GetEventByIdAsync(Guid id, CancellationToken ct = default);
     Task<ParishEventDto> CreateEventAsync(CreateParishEventRequestDto dto, CancellationToken ct = default);
     Task<ParishEventDto?> UpdateEventAsync(Guid id, UpdateParishEventRequestDto dto, CancellationToken ct = default);
+    Task<ParishEventDto> UpsertEventAsync(string idOrKey, UpdateParishEventRequestDto dto, CancellationToken ct = default);
     Task<bool> DeleteEventAsync(Guid id, CancellationToken ct = default);
+    Task<bool> DeleteEventByStringIdAsync(string idOrKey, CancellationToken ct = default);
 }

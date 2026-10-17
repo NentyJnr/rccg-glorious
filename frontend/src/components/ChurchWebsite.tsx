@@ -176,13 +176,15 @@ const INITIAL_PARISH_EVENTS: ParishEventItem[] = [
 interface ChurchWebsiteProps {
   onOpenPortal: () => void;
   parishName?: string;
+  customEvents?: ParishEventItem[];
 }
 
 type InfoModalKey = 'history' | 'vision' | 'beliefs' | 'structure' | 'health' | 'missions' | 'redemptionTv' | 'blog' | 'announcements' | 'youth' | null;
 
 export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
   onOpenPortal,
-  parishName = 'RCCG Glorious Church'
+  parishName = 'RCCG Glorious Church',
+  customEvents
 }) => {
   // Mobile Nav Toggle
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -246,9 +248,52 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
     setTimeout(() => setSiteToast(null), 5000);
   };
 
-  // Parish Events & Ministers State
-  const [parishEvents, setParishEvents] = useState<ParishEventItem[]>(INITIAL_PARISH_EVENTS);
+  // Parish Events & Ministers State with Live Portal Sync & Local Caching
+  const [parishEvents, setParishEvents] = useState<ParishEventItem[]>(() => {
+    if (customEvents && customEvents.length > 0) {
+      const active = customEvents.filter(e => e.status !== 'Draft');
+      if (active.length > 0) return active;
+    }
+    try {
+      const cached = localStorage.getItem('rccg_parish_events_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valid = parsed.filter((e: any) => e.status !== 'Draft');
+          if (valid.length > 0) return valid;
+        }
+      }
+    } catch {}
+    return INITIAL_PARISH_EVENTS;
+  });
+
   const [selectedEventForDetails, setSelectedEventForDetails] = useState<ParishEventItem | null>(null);
+
+  // Sync state if parent passes updated customEvents
+  useEffect(() => {
+    if (customEvents && customEvents.length > 0) {
+      const active = customEvents.filter(e => e.status !== 'Draft');
+      if (active.length > 0) {
+        setParishEvents(active);
+      }
+    }
+  }, [customEvents]);
+
+  // Real-time listener for events updated in the admin portal
+  useEffect(() => {
+    const handleEventsUpdated = (e: Event) => {
+      const customEvt = e as CustomEvent<ParishEventItem[]>;
+      if (customEvt.detail && Array.isArray(customEvt.detail)) {
+        const published = customEvt.detail.filter(item => item.status !== 'Draft');
+        if (published.length > 0) {
+          setParishEvents(published);
+        }
+      }
+    };
+
+    window.addEventListener('cms:events_updated', handleEventsUpdated);
+    return () => window.removeEventListener('cms:events_updated', handleEventsUpdated);
+  }, []);
 
   useEffect(() => {
     const loadParishEvents = async () => {
@@ -258,10 +303,23 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
           const publishedEvents = res.data.filter((e: any) => e.status !== 'Draft');
           if (publishedEvents.length > 0) {
             setParishEvents(publishedEvents);
+            try {
+              localStorage.setItem('rccg_parish_events_cache', JSON.stringify(res.data));
+            } catch {}
           }
         }
       } catch (err) {
         console.warn('[ChurchWebsite] Events API unavailable, running in resilient offline fallback mode.');
+        try {
+          const cached = localStorage.getItem('rccg_parish_events_cache');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const valid = parsed.filter((e: any) => e.status !== 'Draft');
+              if (valid.length > 0) setParishEvents(valid);
+            }
+          }
+        } catch {}
       }
     };
 

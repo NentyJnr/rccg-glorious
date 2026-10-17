@@ -23,7 +23,8 @@ public class EventService : IEventService
 
         if (!string.IsNullOrWhiteSpace(status) && !status.Equals("All", StringComparison.OrdinalIgnoreCase))
         {
-            query = query.Where(e => e.Status == status);
+            var trimmed = status.Trim().ToLower();
+            query = query.Where(e => e.Status.ToLower() == trimmed);
         }
 
         if (featuredOnly.HasValue && featuredOnly.Value)
@@ -198,9 +199,152 @@ public class EventService : IEventService
         return MapToDto(ev);
     }
 
+    public async Task<ParishEventDto> UpsertEventAsync(string idOrKey, UpdateParishEventRequestDto dto, CancellationToken ct = default)
+    {
+        ParishEvent? ev = null;
+
+        if (Guid.TryParse(idOrKey, out var parsedGuid))
+        {
+            ev = await _context.ParishEvents
+                .Include(e => e.Speakers)
+                .FirstOrDefaultAsync(e => e.Id == parsedGuid, ct);
+        }
+
+        if (ev == null && !string.IsNullOrWhiteSpace(dto.Title))
+        {
+            var targetTitle = dto.Title.Trim().ToLower();
+            ev = await _context.ParishEvents
+                .Include(e => e.Speakers)
+                .FirstOrDefaultAsync(e => e.Title.Trim().ToLower() == targetTitle, ct);
+        }
+
+        bool isDraft = string.Equals(dto.Status, "Draft", StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(dto.Title))
+        {
+            throw new ArgumentException("Event Title is mandatory.");
+        }
+
+        if (!isDraft && string.IsNullOrWhiteSpace(dto.Venue))
+        {
+            throw new ArgumentException("Event Venue is mandatory for published events.");
+        }
+
+        if (ev != null)
+        {
+            ev.Title = dto.Title.Trim();
+            ev.Theme = dto.Theme?.Trim() ?? string.Empty;
+            ev.Description = dto.Description?.Trim() ?? string.Empty;
+            ev.CoverImageUrl = dto.CoverImageUrl?.Trim() ?? string.Empty;
+            ev.EventDate = dto.EventDate == default ? ev.EventDate : dto.EventDate;
+            ev.TimeString = dto.TimeString?.Trim() ?? string.Empty;
+            ev.Venue = string.IsNullOrWhiteSpace(dto.Venue) ? (isDraft ? "TBA (Draft)" : ev.Venue) : dto.Venue.Trim();
+            ev.Category = string.IsNullOrWhiteSpace(dto.Category) ? "General" : dto.Category.Trim();
+            ev.IsFeatured = dto.IsFeatured;
+            ev.RegistrationRequired = dto.RegistrationRequired;
+            ev.Status = string.IsNullOrWhiteSpace(dto.Status) ? (isDraft ? "Draft" : "Upcoming") : dto.Status.Trim();
+            ev.MaxCapacity = dto.MaxCapacity;
+            ev.UpdatedAtUtc = DateTime.UtcNow;
+
+            if (dto.Speakers != null)
+            {
+                _context.EventSpeakers.RemoveRange(ev.Speakers);
+                ev.Speakers.Clear();
+
+                int order = 1;
+                foreach (var spk in dto.Speakers)
+                {
+                    if (!string.IsNullOrWhiteSpace(spk.FullName))
+                    {
+                        ev.Speakers.Add(new EventSpeaker
+                        {
+                            ParishEventId = ev.Id,
+                            FullName = spk.FullName.Trim(),
+                            EcclesiasticalTitle = string.IsNullOrWhiteSpace(spk.EcclesiasticalTitle) ? "Pastor" : spk.EcclesiasticalTitle.Trim(),
+                            MinistryRole = string.IsNullOrWhiteSpace(spk.MinistryRole) ? "Guest Speaker" : spk.MinistryRole.Trim(),
+                            PhotoUrl = spk.PhotoUrl?.Trim(),
+                            Organization = spk.Organization?.Trim(),
+                            ShortBio = spk.ShortBio?.Trim(),
+                            DisplayOrder = spk.DisplayOrder > 0 ? spk.DisplayOrder : order++,
+                            CreatedAtUtc = DateTime.UtcNow
+                        });
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync(ct);
+            return MapToDto(ev);
+        }
+        else
+        {
+            var newEvent = new ParishEvent
+            {
+                Title = dto.Title.Trim(),
+                Theme = dto.Theme?.Trim() ?? string.Empty,
+                Description = dto.Description?.Trim() ?? string.Empty,
+                CoverImageUrl = dto.CoverImageUrl?.Trim() ?? string.Empty,
+                EventDate = dto.EventDate == default ? DateTime.UtcNow.AddDays(7) : dto.EventDate,
+                TimeString = dto.TimeString?.Trim() ?? string.Empty,
+                Venue = string.IsNullOrWhiteSpace(dto.Venue) ? (isDraft ? "TBA (Draft)" : "Main Sanctuary Auditorium") : dto.Venue.Trim(),
+                Category = string.IsNullOrWhiteSpace(dto.Category) ? "General" : dto.Category.Trim(),
+                IsFeatured = dto.IsFeatured,
+                RegistrationRequired = dto.RegistrationRequired,
+                Status = string.IsNullOrWhiteSpace(dto.Status) ? (isDraft ? "Draft" : "Upcoming") : dto.Status.Trim(),
+                MaxCapacity = dto.MaxCapacity,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            if (dto.Speakers != null && dto.Speakers.Count > 0)
+            {
+                int order = 1;
+                foreach (var spk in dto.Speakers)
+                {
+                    if (!string.IsNullOrWhiteSpace(spk.FullName))
+                    {
+                        newEvent.Speakers.Add(new EventSpeaker
+                        {
+                            FullName = spk.FullName.Trim(),
+                            EcclesiasticalTitle = string.IsNullOrWhiteSpace(spk.EcclesiasticalTitle) ? "Pastor" : spk.EcclesiasticalTitle.Trim(),
+                            MinistryRole = string.IsNullOrWhiteSpace(spk.MinistryRole) ? "Guest Speaker" : spk.MinistryRole.Trim(),
+                            PhotoUrl = spk.PhotoUrl?.Trim(),
+                            Organization = spk.Organization?.Trim(),
+                            ShortBio = spk.ShortBio?.Trim(),
+                            DisplayOrder = spk.DisplayOrder > 0 ? spk.DisplayOrder : order++,
+                            CreatedAtUtc = DateTime.UtcNow
+                        });
+                    }
+                }
+            }
+
+            _context.ParishEvents.Add(newEvent);
+            await _context.SaveChangesAsync(ct);
+            return MapToDto(newEvent);
+        }
+    }
+
     public async Task<bool> DeleteEventAsync(Guid id, CancellationToken ct = default)
     {
         var ev = await _context.ParishEvents.FirstOrDefaultAsync(e => e.Id == id, ct);
+        if (ev == null) return false;
+
+        _context.ParishEvents.Remove(ev);
+        await _context.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> DeleteEventByStringIdAsync(string idOrKey, CancellationToken ct = default)
+    {
+        ParishEvent? ev = null;
+        if (Guid.TryParse(idOrKey, out var parsedGuid))
+        {
+            ev = await _context.ParishEvents.FirstOrDefaultAsync(e => e.Id == parsedGuid, ct);
+        }
+
+        if (ev == null && !string.IsNullOrWhiteSpace(idOrKey))
+        {
+            var target = idOrKey.Trim().ToLower();
+            ev = await _context.ParishEvents.FirstOrDefaultAsync(e => e.Title.Trim().ToLower() == target, ct);
+        }
+
         if (ev == null) return false;
 
         _context.ParishEvents.Remove(ev);

@@ -24,16 +24,26 @@ public class EventsController : ControllerBase
         return Ok(ApiResponseEnvelope<List<ParishEventDto>>.Ok(events, "Events retrieved successfully"));
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetEventById(Guid id, CancellationToken ct)
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetEventById(string id, CancellationToken ct)
     {
-        var ev = await _eventService.GetEventByIdAsync(id, ct);
-        if (ev == null)
+        if (Guid.TryParse(id, out var guidId))
         {
-            return NotFound(ApiResponseEnvelope<ParishEventDto>.Fail("Event not found"));
+            var ev = await _eventService.GetEventByIdAsync(guidId, ct);
+            if (ev != null)
+            {
+                return Ok(ApiResponseEnvelope<ParishEventDto>.Ok(ev));
+            }
         }
 
-        return Ok(ApiResponseEnvelope<ParishEventDto>.Ok(ev));
+        var all = await _eventService.GetEventsAsync(null, null, ct);
+        var match = all.FirstOrDefault(e => e.Title.Equals(id, StringComparison.OrdinalIgnoreCase));
+        if (match != null)
+        {
+            return Ok(ApiResponseEnvelope<ParishEventDto>.Ok(match));
+        }
+
+        return NotFound(ApiResponseEnvelope<ParishEventDto>.Fail("Event not found"));
     }
 
     [HttpPost]
@@ -42,7 +52,7 @@ public class EventsController : ControllerBase
         try
         {
             var created = await _eventService.CreateEventAsync(dto, ct);
-            return CreatedAtAction(nameof(GetEventById), new { id = created.Id }, ApiResponseEnvelope<ParishEventDto>.Ok(created, "Event created successfully"));
+            return CreatedAtAction(nameof(GetEventById), new { id = created.Id.ToString() }, ApiResponseEnvelope<ParishEventDto>.Ok(created, "Event created successfully"));
         }
         catch (ArgumentException ex)
         {
@@ -50,22 +60,24 @@ public class EventsController : ControllerBase
         }
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] UpdateParishEventRequestDto dto, CancellationToken ct)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateEvent(string id, [FromBody] UpdateParishEventRequestDto dto, CancellationToken ct)
     {
-        var updated = await _eventService.UpdateEventAsync(id, dto, ct);
-        if (updated == null)
+        try
         {
-            return NotFound(ApiResponseEnvelope<ParishEventDto>.Fail("Event not found"));
+            var updated = await _eventService.UpsertEventAsync(id, dto, ct);
+            return Ok(ApiResponseEnvelope<ParishEventDto>.Ok(updated, "Event saved successfully"));
         }
-
-        return Ok(ApiResponseEnvelope<ParishEventDto>.Ok(updated, "Event updated successfully"));
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponseEnvelope<ParishEventDto>.Fail(ex.Message));
+        }
     }
 
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> DeleteEvent(Guid id, CancellationToken ct)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteEvent(string id, CancellationToken ct)
     {
-        bool deleted = await _eventService.DeleteEventAsync(id, ct);
+        bool deleted = await _eventService.DeleteEventByStringIdAsync(id, ct);
         if (!deleted)
         {
             return NotFound(ApiResponseEnvelope<bool>.Fail("Event not found"));

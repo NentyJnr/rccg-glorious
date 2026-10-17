@@ -1235,7 +1235,18 @@ export default function App() {
   const [reports, setReports] = useState<ServiceReport[]>([]);
 
   // --- PARISH EVENTS & CONFERENCES STATE ---
-  const [events, setEvents] = useState<ParishEventItem[]>(INITIAL_ADMIN_EVENTS);
+  const [events, setEvents] = useState<ParishEventItem[]>(() => {
+    try {
+      const cached = localStorage.getItem('rccg_parish_events_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return INITIAL_ADMIN_EVENTS;
+  });
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ParishEventItem | null>(null);
   const [eventSearchQuery, setEventSearchQuery] = useState('');
@@ -1313,6 +1324,10 @@ export default function App() {
         const res = await api.get<any[]>('/Events');
         if (res.success && Array.isArray(res.data) && res.data.length > 0) {
           setEvents(res.data);
+          try {
+            localStorage.setItem('rccg_parish_events_cache', JSON.stringify(res.data));
+            window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: res.data }));
+          } catch {}
         }
       } catch (err) {
         console.warn('Events API unavailable, using initialized state:', err);
@@ -1687,7 +1702,14 @@ export default function App() {
         ...eventPayload
       } as ParishEventItem;
 
-      setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? updatedEvent : ev));
+      setEvents(prev => {
+        const next = prev.map(ev => ev.id === editingEvent.id ? updatedEvent : ev);
+        try {
+          localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+          window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+        } catch {}
+        return next;
+      });
 
       const successMsg = isDraftAction
         ? `Event draft "${updatedEvent.title}" updated!`
@@ -1699,8 +1721,17 @@ export default function App() {
       setIsEventModalOpen(false);
 
       try {
-        const res = await api.put(`/Events/${editingEvent.id}`, eventPayload);
-        if (res.success) {
+        const res = await api.put<ParishEventItem>(`/Events/${editingEvent.id}`, eventPayload);
+        if (res.success && res.data) {
+          const serverSaved = res.data;
+          setEvents(prev => {
+            const next = prev.map(ev => (ev.id === editingEvent.id || ev.id === serverSaved.id) ? { ...ev, ...serverSaved } : ev);
+            try {
+              localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+              window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+            } catch {}
+            return next;
+          });
           showNotification(isDraftAction ? `Draft saved to central database!` : `Event updated in central database!`, 'success');
         }
       } catch (err) {
@@ -1713,7 +1744,14 @@ export default function App() {
         ...eventPayload
       } as ParishEventItem;
 
-      setEvents(prev => [newEvent, ...prev]);
+      setEvents(prev => {
+        const next = [newEvent, ...prev];
+        try {
+          localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+          window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+        } catch {}
+        return next;
+      });
 
       const successMsg = isDraftAction
         ? `Event "${newEvent.title}" saved as Draft. You can return to complete or publish it anytime!`
@@ -1723,8 +1761,17 @@ export default function App() {
       setIsEventModalOpen(false);
 
       try {
-        const res = await api.post('/Events', eventPayload);
-        if (res.success) {
+        const res = await api.post<ParishEventItem>('/Events', eventPayload);
+        if (res.success && res.data) {
+          const serverSaved = res.data;
+          setEvents(prev => {
+            const next = prev.map(ev => ev.id === newId ? { ...ev, ...serverSaved } : ev);
+            try {
+              localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+              window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+            } catch {}
+            return next;
+          });
           showNotification(isDraftAction ? `Draft event saved to central database!` : `Parish Event saved to central database!`, 'success');
         }
       } catch (err) {
@@ -1745,7 +1792,14 @@ export default function App() {
       status: 'Upcoming'
     };
 
-    setEvents(prev => prev.map(e => e.id === ev.id ? updated : e));
+    setEvents(prev => {
+      const next = prev.map(e => e.id === ev.id ? updated : e);
+      try {
+        localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+        window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+      } catch {}
+      return next;
+    });
     showNotification(`Parish Event "${ev.title}" is now published live to the church portal!`, 'success');
 
     try {
@@ -1762,7 +1816,14 @@ export default function App() {
       confirmText: 'Yes, Delete',
       type: 'danger',
       onConfirm: async () => {
-        setEvents(prev => prev.filter(e => e.id !== id));
+        setEvents(prev => {
+          const next = prev.filter(e => e.id !== id);
+          try {
+            localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+            window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+          } catch {}
+          return next;
+        });
         showNotification(`Event "${title}" has been removed.`);
         try {
           await api.delete(`/Events/${id}`);
@@ -3491,6 +3552,7 @@ export default function App() {
       <ChurchWebsite
         onOpenPortal={() => setViewMode('portal')}
         parishName={org.parishName}
+        customEvents={events}
       />
     );
   }
