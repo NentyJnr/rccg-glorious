@@ -24,14 +24,17 @@ window.addEventListener('error', (e) => {
       e.message.includes('Loading chunk'))
   ) {
     console.warn('Stale chunk/MIME error detected. Purging caches and reloading...', e.message);
-    if ('caches' in window) {
-      caches.keys().then((keys) => {
-        Promise.all(keys.map((k) => caches.delete(k))).then(() => {
-          window.location.reload();
+    const win = window as any;
+    if (typeof win.caches !== 'undefined') {
+      win.caches.keys().then((keys: string[]) => {
+        Promise.all(keys.map((k: string) => win.caches.delete(k))).finally(() => {
+          win.location.reload();
         });
+      }).catch(() => {
+        win.location.reload();
       });
     } else {
-      window.location.reload();
+      win.location.reload();
     }
   }
 });
