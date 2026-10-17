@@ -221,41 +221,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#e9f2e5] text-[#211b2e] font-sans antialiased selection:bg-[#4dbb62] selection:text-white">
       {/* ------------------------------------------------------------- */}
-      {/* 1. TOP AFFILIATION STRIP (With Back-to-Main & Portal Links)    */}
-      {/* ------------------------------------------------------------- */}
-      <div className="bg-[#130E3A] border-b border-white/10 px-4 sm:px-6 py-2 text-white/90">
-        <div className="max-w-7xl mx-auto flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em]">
-          <div className="flex items-center space-x-2 truncate">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="truncate">{parishName} &bull; Youth Fellowship</span>
-          </div>
-
-          <div className="flex items-center space-x-4 shrink-0">
-            <button
-              type="button"
-              onClick={onReturnToMain}
-              className="inline-flex items-center space-x-1.5 text-white/80 hover:text-emerald-300 transition"
-              title="Return to Main Church Website"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Main Church Website</span>
-            </button>
-            <span className="text-white/20">|</span>
-            <button
-              type="button"
-              onClick={onOpenPortal}
-              className="inline-flex items-center space-x-1.5 text-white/80 hover:text-emerald-300 transition"
-              title="Open Parish CMS Portal"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Parish Portal</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ------------------------------------------------------------- */}
-      {/* 2. LIGHT MINT / PALE SAGE HEADER                              */}
+      {/* 1. LIGHT MINT / PALE SAGE HEADER                              */}
       {/* ------------------------------------------------------------- */}
       <header className="sticky top-0 z-30 border-b border-emerald-900/10 bg-[#EBF3EA]/95 text-slate-800 backdrop-blur-md transition-all shadow-xs">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5 lg:px-10">
@@ -334,17 +300,28 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
             >
               Leadership
             </a>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                setIsJoinModalOpen(true);
-              }}
-              className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-sm hover:shadow-md transition inline-flex items-center justify-center gap-2"
-            >
-              <span>Join the family</span>
-              <ArrowRight size={15} />
-            </button>
+            <div className="flex items-center gap-3 pt-2 lg:pt-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setIsJoinModalOpen(true);
+                }}
+                className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-sm hover:shadow-md transition inline-flex items-center justify-center gap-2"
+              >
+                <span>Join the family</span>
+                <ArrowRight size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={onReturnToMain}
+                className="px-4 py-2 rounded-full border border-slate-300 hover:border-emerald-600 hover:text-emerald-700 text-slate-700 font-semibold text-xs transition inline-flex items-center gap-1.5"
+                title="Return to Main Church Website"
+              >
+                <ArrowLeft size={13} />
+                <span>Church Site</span>
+              </button>
+            </div>
           </nav>
         </div>
       </header>
@@ -873,6 +850,13 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                 <a className="block hover:text-white transition" href="#team">
                   Our leaders
                 </a>
+                <button
+                  type="button"
+                  onClick={onReturnToMain}
+                  className="block text-left text-white/65 hover:text-white transition"
+                >
+                  &larr; Main Church Website
+                </button>
               </div>
             </div>
 
