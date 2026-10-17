@@ -686,30 +686,35 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
 
           <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-mono font-bold tracking-wider uppercase border border-amber-200">
             <Award className="w-3.5 h-3.5 text-amber-600" />
-            <span>Our Core Divine Mandate</span>
+            <span>OUR CORE DIVINE MANDATE</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#00356b] tracking-tight">
-            The Youth Ministry Mission
+            A Vibrant Generation Anchored in Christ
           </h2>
 
           <p className="text-lg sm:text-xl text-slate-600 leading-relaxed font-normal max-w-3xl mx-auto">
-            The mission of the <strong className="text-[#00356b] font-bold">RCCG Glorious Youth Ministry</strong> is to promote adolescent and young adult faith, holiness, and flourishing in a diverse and rapidly changing world by conducting scholarship, equipping leaders, and resourcing youth fellowships across Christian churches and campuses.
+            At <strong className="text-[#00356b] font-bold">RCCG Glorious Youth Ministry</strong>, our heartbeat is to build a passionate community where youths are grounded in the Word, empowered by the Holy Spirit, and equipped for global relevance. We build leaders, ignite visions, and champion a lifestyle of uncompromising holiness.
           </p>
 
           <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
             <button
               type="button"
               onClick={() => setIsJoinModalOpen(true)}
-              className="px-6 py-3 rounded-full bg-[#00356b] hover:bg-[#002244] text-white text-xs font-extrabold uppercase tracking-wider shadow-md transition"
+              className="px-7 py-3.5 rounded-full bg-[#00356b] hover:bg-[#002244] text-white text-xs font-extrabold uppercase tracking-wider shadow-md hover:shadow-lg transition-all"
             >
-              Get Involved with Glorious Youth
+              GET INVOLVED TODAY
             </button>
             <a
-              href="#resources"
-              className="px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold uppercase tracking-wider transition"
+              href="#events"
+              onClick={(e) => {
+                e.preventDefault();
+                const el = document.getElementById('events');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-7 py-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold uppercase tracking-wider border border-slate-200 shadow-xs transition-all"
             >
-              Browse Training Curriculums
+              YOUTH FELLOWSHIP SCHEDULE
             </a>
           </div>
         </div>
