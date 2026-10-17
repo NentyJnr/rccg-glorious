@@ -223,10 +223,10 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
       {/* ------------------------------------------------------------- */}
       {/* 1. TOP AFFILIATION STRIP (With Back-to-Main & Portal Links)    */}
       {/* ------------------------------------------------------------- */}
-      <div className="bg-[#211566] border-b border-white/10 px-4 sm:px-6 py-2 text-white/90">
+      <div className="bg-[#130E3A] border-b border-white/10 px-4 sm:px-6 py-2 text-white/90">
         <div className="max-w-7xl mx-auto flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em]">
           <div className="flex items-center space-x-2 truncate">
-            <span className="w-2 h-2 rounded-full bg-[#4dbb62] animate-pulse shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <span className="truncate">{parishName} &bull; Youth Fellowship</span>
           </div>
 
@@ -234,7 +234,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
             <button
               type="button"
               onClick={onReturnToMain}
-              className="inline-flex items-center space-x-1.5 text-white/80 hover:text-[#70d57e] transition"
+              className="inline-flex items-center space-x-1.5 text-white/80 hover:text-emerald-300 transition"
               title="Return to Main Church Website"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -244,7 +244,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
             <button
               type="button"
               onClick={onOpenPortal}
-              className="inline-flex items-center space-x-1.5 text-white/80 hover:text-[#70d57e] transition"
+              className="inline-flex items-center space-x-1.5 text-white/80 hover:text-emerald-300 transition"
               title="Open Parish CMS Portal"
             >
               <Lock className="w-3.5 h-3.5" />
@@ -255,9 +255,9 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* 2. TRANSLUCENT FLOATING HEADER                                */}
+      {/* 2. LIGHT MINT / PALE SAGE HEADER                              */}
       {/* ------------------------------------------------------------- */}
-      <header className="sticky top-0 z-30 border-b border-white/15 bg-[#211566]/90 text-white backdrop-blur-md transition-all">
+      <header className="sticky top-0 z-30 border-b border-emerald-900/10 bg-[#EBF3EA]/95 text-slate-800 backdrop-blur-md transition-all shadow-xs">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5 lg:px-10">
           <a
             href="#top"
@@ -268,24 +268,24 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
               <img
                 src={logo}
                 alt="Glorious Church Youths Logo"
-                className="h-10 sm:h-12 w-auto object-contain transition group-hover:scale-105"
+                className="h-10 sm:h-11 w-auto object-contain transition group-hover:scale-105"
                 onError={(e) => {
                   e.currentTarget.src = logoFallback;
                 }}
               />
             </div>
-            <div className="hidden border-l border-white/30 pl-3 sm:flex flex-col justify-center">
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white leading-tight">
-                Glorious
+            <div className="border-l border-slate-300 pl-3 flex flex-col justify-center">
+              <span className="block text-xs font-black tracking-widest text-[#130E3A] leading-tight">
+                GLORIOUS
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#71d17e] leading-tight">
-                Youth Fellowship
+              <span className="block text-[10px] font-bold tracking-wider text-emerald-600 leading-tight">
+                YOUTH FELLOWSHIP
               </span>
             </div>
           </a>
 
           <button
-            className="rounded-full border border-white/20 p-2 text-white lg:hidden hover:bg-white/10 transition"
+            className="rounded-full border border-slate-300 p-2 text-slate-800 lg:hidden hover:bg-emerald-900/5 transition"
             onClick={() => setMenuOpen((open) => !open)}
             aria-label="Toggle menu"
           >
@@ -295,42 +295,42 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
           <nav
             className={`${
               menuOpen
-                ? 'absolute left-0 right-0 top-[65px] flex flex-col bg-[#211566] px-6 py-6 shadow-2xl border-b border-white/10'
+                ? 'absolute left-0 right-0 top-[65px] flex flex-col bg-[#EBF3EA] px-6 py-6 shadow-2xl border-b border-emerald-900/10'
                 : 'hidden'
-            } gap-6 text-sm font-medium lg:static lg:flex lg:flex-row lg:items-center lg:bg-transparent lg:p-0 lg:shadow-none`}
+            } gap-8 text-sm font-semibold text-slate-800 lg:static lg:flex lg:flex-row lg:items-center lg:bg-transparent lg:p-0 lg:shadow-none`}
           >
             <a
               href="#about"
               onClick={() => setMenuOpen(false)}
-              className="text-white/80 transition hover:text-[#70d57e]"
+              className="hover:text-emerald-600 transition"
             >
               About us
             </a>
             <a
               href="#mandate"
               onClick={() => setMenuOpen(false)}
-              className="text-white/80 transition hover:text-[#70d57e]"
+              className="hover:text-emerald-600 transition"
             >
               Our Mandate
             </a>
             <a
               href="#events"
               onClick={() => setMenuOpen(false)}
-              className="text-white/80 transition hover:text-[#70d57e]"
+              className="hover:text-emerald-600 transition"
             >
               Events
             </a>
             <a
               href="#gallery"
               onClick={() => setMenuOpen(false)}
-              className="text-white/80 transition hover:text-[#70d57e]"
+              className="hover:text-emerald-600 transition"
             >
               Gallery
             </a>
             <a
               href="#team"
               onClick={() => setMenuOpen(false)}
-              className="text-white/80 transition hover:text-[#70d57e]"
+              className="hover:text-emerald-600 transition"
             >
               Leadership
             </a>
@@ -340,7 +340,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                 setMenuOpen(false);
                 setIsJoinModalOpen(true);
               }}
-              className="rounded-full bg-[#4dbb62] px-5 py-2.5 font-bold text-white shadow-lg shadow-[#4dbb62]/25 transition hover:bg-[#65ce75] hover:scale-105 active:scale-95 inline-flex items-center justify-center gap-2"
+              className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-sm hover:shadow-md transition inline-flex items-center justify-center gap-2"
             >
               <span>Join the family</span>
               <ArrowRight size={15} />
