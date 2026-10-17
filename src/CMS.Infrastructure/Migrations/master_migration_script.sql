@@ -332,7 +332,7 @@ IF NOT EXISTS (SELECT 1 FROM [OrganizationSettings])
 BEGIN
     INSERT INTO [OrganizationSettings] ([Id], [ParishName], [LogoUrl], [BaseCurrency], [CreatedAtUtc])
     VALUES (
-        NEWSEQUENTIALID(),
+        NEWID(),
         N'RCCG Glorious Parish',
         N'https://images.unsplash.com/photo-1548625361-185122c4f826?auto=format&fit=crop&q=80&w=300',
         N'NGN',
@@ -351,7 +351,7 @@ GO
 IF NOT EXISTS (SELECT 1 FROM [Users] WHERE [Email] = N'neotroltd@gmail.com')
 BEGIN
     INSERT INTO [Users] ([Id], [FullName], [Email], [Phone], [Role], [PasswordHash], [MustChangePassword], [IsActive], [CreatedAtUtc])
-    VALUES (NEWSEQUENTIALID(), N'Super Administrator', N'neotroltd@gmail.com', N'+2348000000000', N'SuperAdmin', N'byy53Y9LZeJOHD8/pbxXmCNJI38Rq86s1Fu8t01iHCU=', 0, 1, GETUTCDATE());
+    VALUES (NEWID(), N'Super Administrator', N'neotroltd@gmail.com', N'+2348000000000', N'SuperAdmin', N'byy53Y9LZeJOHD8/pbxXmCNJI38Rq86s1Fu8t01iHCU=', 0, 1, GETUTCDATE());
 END
 ELSE
 BEGIN
@@ -369,7 +369,7 @@ GO
 IF NOT EXISTS (SELECT 1 FROM [Users] WHERE [Email] = N'admin@rccgglorious.org')
 BEGIN
     INSERT INTO [Users] ([Id], [FullName], [Email], [Phone], [Role], [PasswordHash], [MustChangePassword], [IsActive], [CreatedAtUtc])
-    VALUES (NEWSEQUENTIALID(), N'System Administrator', N'admin@rccgglorious.org', N'+2348011111111', N'SystemAdmin', N'byy53Y9LZeJOHD8/pbxXmCNJI38Rq86s1Fu8t01iHCU=', 0, 1, GETUTCDATE());
+    VALUES (NEWID(), N'System Administrator', N'admin@rccgglorious.org', N'+2348011111111', N'SystemAdmin', N'byy53Y9LZeJOHD8/pbxXmCNJI38Rq86s1Fu8t01iHCU=', 0, 1, GETUTCDATE());
 END
 ELSE
 BEGIN
@@ -387,7 +387,7 @@ GO
 IF NOT EXISTS (SELECT 1 FROM [Users] WHERE [Email] = N'pastor@rccgglorious.org')
 BEGIN
     INSERT INTO [Users] ([Id], [FullName], [Email], [Phone], [Role], [PasswordHash], [MustChangePassword], [IsActive], [CreatedAtUtc])
-    VALUES (NEWSEQUENTIALID(), N'Pastor In Charge', N'pastor@rccgglorious.org', N'+2348022222222', N'Pastor', N'Y7Uh7dlJ2lJ6a1E9YK1kKzj9xUS5d02qL77ynMYg5pA=', 0, 1, GETUTCDATE());
+    VALUES (NEWID(), N'Pastor In Charge', N'pastor@rccgglorious.org', N'+2348022222222', N'Pastor', N'Y7Uh7dlJ2lJ6a1E9YK1kKzj9xUS5d02qL77ynMYg5pA=', 0, 1, GETUTCDATE());
 END
 ELSE
 BEGIN
@@ -405,7 +405,7 @@ GO
 IF NOT EXISTS (SELECT 1 FROM [Users] WHERE [Email] = N'hod.ushering@rccgglorious.org')
 BEGIN
     INSERT INTO [Users] ([Id], [FullName], [Email], [Phone], [Role], [PasswordHash], [MustChangePassword], [IsActive], [CreatedAtUtc])
-    VALUES (NEWSEQUENTIALID(), N'Sister Grace Usang (HOD Ushering)', N'hod.ushering@rccgglorious.org', N'+2348033333333', N'HOD', N'kptsRxXpOb2Qmv9IELBY4UnGL3EVWvfvSONCGU2NSZQ=', 0, 1, GETUTCDATE());
+    VALUES (NEWID(), N'Sister Grace Usang (HOD Ushering)', N'hod.ushering@rccgglorious.org', N'+2348033333333', N'HOD', N'kptsRxXpOb2Qmv9IELBY4UnGL3EVWvfvSONCGU2NSZQ=', 0, 1, GETUTCDATE());
 END;
 GO
 
@@ -413,7 +413,7 @@ GO
 IF NOT EXISTS (SELECT 1 FROM [Users] WHERE [Email] = N'hod.choir@rccgglorious.org')
 BEGIN
     INSERT INTO [Users] ([Id], [FullName], [Email], [Phone], [Role], [PasswordHash], [MustChangePassword], [IsActive], [CreatedAtUtc])
-    VALUES (NEWSEQUENTIALID(), N'Minister David Okafor (HOD Choir)', N'hod.choir@rccgglorious.org', N'+2348044444444', N'HOD', N'kptsRxXpOb2Qmv9IELBY4UnGL3EVWvfvSONCGU2NSZQ=', 0, 1, GETUTCDATE());
+    VALUES (NEWID(), N'Minister David Okafor (HOD Choir)', N'hod.choir@rccgglorious.org', N'+2348044444444', N'HOD', N'kptsRxXpOb2Qmv9IELBY4UnGL3EVWvfvSONCGU2NSZQ=', 0, 1, GETUTCDATE());
 END;
 GO
 
@@ -422,10 +422,10 @@ IF NOT EXISTS (SELECT 1 FROM [ServiceTypes])
 BEGIN
     INSERT INTO [ServiceTypes] ([Id], [Name], [Category], [IsActive], [CreatedAtUtc])
     VALUES 
-        (NEWSEQUENTIALID(), N'Sunday 1st Service', N'Sunday', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'Sunday 2nd Service', N'Sunday', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'Digging Deep', N'Midweek', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'Faith Clinic', N'Midweek', 1, GETUTCDATE());
+        (NEWID(), N'Sunday 1st Service', N'Sunday', 1, GETUTCDATE()),
+        (NEWID(), N'Sunday 2nd Service', N'Sunday', 1, GETUTCDATE()),
+        (NEWID(), N'Digging Deep', N'Midweek', 1, GETUTCDATE()),
+        (NEWID(), N'Faith Clinic', N'Midweek', 1, GETUTCDATE());
 END;
 GO
 
@@ -434,11 +434,11 @@ IF NOT EXISTS (SELECT 1 FROM [OfferingCategories])
 BEGIN
     INSERT INTO [OfferingCategories] ([Id], [Name], [Code], [IsActive], [CreatedAtUtc])
     VALUES 
-        (NEWSEQUENTIALID(), N'Sunday Offering', N'OFFR', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'Tithe', N'TITH', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'Building Fund', N'BLDG', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'Thanksgiving', N'THKG', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'First Fruit', N'FRST', 1, GETUTCDATE());
+        (NEWID(), N'Sunday Offering', N'OFFR', 1, GETUTCDATE()),
+        (NEWID(), N'Tithe', N'TITH', 1, GETUTCDATE()),
+        (NEWID(), N'Building Fund', N'BLDG', 1, GETUTCDATE()),
+        (NEWID(), N'Thanksgiving', N'THKG', 1, GETUTCDATE()),
+        (NEWID(), N'First Fruit', N'FRST', 1, GETUTCDATE());
 END;
 GO
 
@@ -447,12 +447,12 @@ IF NOT EXISTS (SELECT 1 FROM [Departments])
 BEGIN
     INSERT INTO [Departments] ([Id], [Name], [Code], [HeadOfDepartment], [Description], [MeetingSchedule], [IsActive], [CreatedAtUtc])
     VALUES 
-        (NEWSEQUENTIALID(), N'Ushering Department', N'USH-01', N'Sister Grace Usang', N'Sanctuary Protocol & Ushering', N'Sundays 7:00 AM', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'Choir & Praise Team', N'CHR-01', N'Minister David Okafor', N'Worship & Praise Administration', N'Saturdays 5:00 PM', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'Media & Technical', N'MED-01', N'Brother Daniel Chidubem', N'Audio, Video & Broadcast', N'Sundays 6:30 AM', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'Protocol & Security', N'PRT-01', N'Deacon James Vance', N'Parish Security & Order', N'Sundays 7:00 AM', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'House Fellowship', N'HFL-01', N'Brother Samuel Adebayo', N'Home Cell Administration', N'Wednesdays 6:00 PM', 1, GETUTCDATE()),
-        (NEWSEQUENTIALID(), N'Church on the Street (Outreach)', N'OUT-01', N'Evangelist Peter King', N'Evangelism & Community Outreach', N'3rd Saturdays 10:00 AM', 1, GETUTCDATE());
+        (NEWID(), N'Ushering Department', N'USH-01', N'Sister Grace Usang', N'Sanctuary Protocol & Ushering', N'Sundays 7:00 AM', 1, GETUTCDATE()),
+        (NEWID(), N'Choir & Praise Team', N'CHR-01', N'Minister David Okafor', N'Worship & Praise Administration', N'Saturdays 5:00 PM', 1, GETUTCDATE()),
+        (NEWID(), N'Media & Technical', N'MED-01', N'Brother Daniel Chidubem', N'Audio, Video & Broadcast', N'Sundays 6:30 AM', 1, GETUTCDATE()),
+        (NEWID(), N'Protocol & Security', N'PRT-01', N'Deacon James Vance', N'Parish Security & Order', N'Sundays 7:00 AM', 1, GETUTCDATE()),
+        (NEWID(), N'House Fellowship', N'HFL-01', N'Brother Samuel Adebayo', N'Home Cell Administration', N'Wednesdays 6:00 PM', 1, GETUTCDATE()),
+        (NEWID(), N'Church on the Street (Outreach)', N'OUT-01', N'Evangelist Peter King', N'Evangelism & Community Outreach', N'3rd Saturdays 10:00 AM', 1, GETUTCDATE());
 END;
 GO
 
