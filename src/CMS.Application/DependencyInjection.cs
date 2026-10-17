@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<IMemberService, MemberService>();
         services.AddScoped<ITestimonyService, TestimonyService>();
         services.AddScoped<IRosterService, RosterService>();
+        services.AddScoped<IUserService, UserService>();
 
         services.AddValidatorsFromAssemblyContaining<CreateServiceReportCommandValidator>();
 

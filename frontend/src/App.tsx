@@ -5,6 +5,7 @@ import {
   Calendar, 
   DollarSign, 
   UserPlus, 
+  Shield,
   ShieldCheck, 
   HeartHandshake, 
   MapPin, 
@@ -57,6 +58,7 @@ import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
 import { PortalComingSoonPage } from './components/PortalComingSoonPage';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
+import { UserAccessGovernance } from './components/UserAccessGovernance';
 import { api, API_BASE_URL, clearAuthSession } from './services/apiClient';
 import { processSsoCallback } from './services/ssoService';
 
@@ -6540,8 +6542,8 @@ export default function App() {
                       userSubTab === 'role-assignment' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                     }`}
                   >
-                    <Sliders className="w-4 h-4" />
-                    <span>Role & Department Assignment ({members.length})</span>
+                    <Shield className="w-4 h-4" />
+                    <span>User & Access Governance</span>
                   </button>
 
                   <button
@@ -7187,91 +7189,9 @@ export default function App() {
               </div>
             )}
 
-            {/* SUB-PANEL 4: ROLE & DEPARTMENT ASSIGNMENT PAGE */}
+            {/* SUB-PANEL 4: USER & ACCESS GOVERNANCE (ROLE ASSIGNMENT & PERMISSION MATRIX) */}
             {userSubTab === 'role-assignment' && (
-              <div className="space-y-6">
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                      <Sliders className="w-5 h-5 text-rccg-blue" />
-                      <span>Department Allocation & Role Elevation Portal</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Assign members to active departments, convert them to workforce workers, or elevate them to minister roles.</p>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs text-slate-600">
-                      <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
-                        <tr>
-                          <th className="py-3 px-4">Member Name</th>
-                          <th className="py-3 px-4">Whatsapp / Email</th>
-                          <th className="py-3 px-4">Birthday</th>
-                          <th className="py-3 px-4">Current Role</th>
-                          <th className="py-3 px-4">Assigned Department</th>
-                          <th className="py-3 px-4 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {members.map((m) => (
-                          <tr key={m.id} className="hover:bg-slate-50">
-                            <td className="py-4 px-4 font-bold text-slate-900">
-                              <div>{m.surname} {m.firstname}</div>
-                              {m.ecclesiasticalTitle && (
-                                <span className="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">
-                                  {m.ecclesiasticalTitle}
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-4 px-4 font-mono">
-                              <div>{m.whatsappNumber}</div>
-                              <div className="text-[11px] text-slate-400 font-sans">{m.email}</div>
-                            </td>
-                            <td className="py-4 px-4 font-bold text-rccg-blue">
-                              🎂 {m.dobMonth} {m.dobDay}
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                                m.role === 'Minister' 
-                                  ? 'bg-purple-100 text-purple-900' 
-                                  : m.role === 'Workforce' 
-                                  ? 'bg-blue-100 text-rccg-blue' 
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}>
-                                {m.role}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 font-bold text-slate-800">
-                              {m.assignedDepartment ? (
-                                <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                                  {m.assignedDepartment}
-                                </span>
-                              ) : (
-                                <span className="text-slate-400 italic">Unassigned</span>
-                              )}
-                            </td>
-                            <td className="py-4 px-4 text-right">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setRoleAssignModalMember(m);
-                                  setTargetRoleForMember(m.role);
-                                  setSelectedDeptForMember(m.assignedDepartment || 'Ushering & Protocol');
-                                  setSelectedTitleForMinister(m.ecclesiasticalTitle || 'Pastor');
-                                }}
-                                className="px-3.5 py-1.5 rounded-xl bg-rccg-blue text-white text-xs font-bold shadow hover:bg-rccg-navy transition cursor-pointer"
-                              >
-                                Change Role & Dept
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+              <UserAccessGovernance currentUser={currentUser} />
             )}
 
             {/* SUB-PANEL 2: MINISTERS DIRECTORY */}

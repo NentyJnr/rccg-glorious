@@ -49,3 +49,55 @@ public record ExternalAuthUserDto(
     string? AvatarUrl = null
 );
 
+public record UserListItemDto(
+    Guid Id,
+    string FullName,
+    string Email,
+    string Phone,
+    string Role,
+    bool IsActive,
+    DateTime CreatedAtUtc,
+    string? StaffCode = null
+);
+
+public record AssignRoleRequestDto(
+    Guid UserId,
+    string Role
+);
+
+public record RolePermissionDto(
+    string Role,
+    List<string> Permissions,
+    string? Description = null,
+    string? ClientSpecification = null
+);
+
+public record SaveRolePermissionsRequestDto(
+    string Role,
+    List<string> Permissions
+);
+
+public record StaffEmailChangeRequestDto(
+    Guid Id,
+    Guid UserId,
+    string StaffName,
+    string CurrentEmail,
+    string ProposedEmail,
+    string Reason,
+    string Status, // Pending, Approved, Rejected
+    DateTime RequestedAtUtc,
+    DateTime? ReviewedAtUtc = null
+);
+
+public record SubmitEmailChangeRequestDto(
+    Guid UserId,
+    string ProposedEmail,
+    string Reason
+);
+
+public record ReviewEmailChangeRequestDto(
+    bool Approve,
+    string? Note = null
+);
+
+
