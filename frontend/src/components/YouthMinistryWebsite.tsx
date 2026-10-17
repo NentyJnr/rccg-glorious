@@ -142,11 +142,11 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
       durationTag: 'Weekly Mid-Week Discipleship',
       location: 'Main Youth Chapel & YouTube Live Stream',
       description:
-        'Our core weekly convergence for adolescent and young adult discipleship. Experience acoustic worship ministration, deep biblical exposition, interactive Q&A on faith and contemporary challenges, and focused prayer.',
+        'Our core mid-week fellowship for spiritual growth and community. Experience passionate prayer sessions, transformative biblical messages, and interactive discussions that equip youths for impactful Christian living.',
       highlights: [
-        'Acoustic Worship & Holy Spirit Intercession',
-        'Practical Verse-by-Verse Scripture Study',
-        'Youth Small-Group Mentorship Circles'
+        'Prayer Sessions',
+        'Message',
+        'Discussions'
       ],
       actionLabel: 'Attend Next Wednesday',
       actionType: 'join' as const,
