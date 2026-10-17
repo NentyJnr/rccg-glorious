@@ -20,7 +20,6 @@ import {
   GraduationCap,
   Heart,
   Award,
-  Flame,
   MessageSquare,
   HelpCircle,
   Menu
@@ -376,20 +375,17 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
       {/* ------------------------------------------------------------- */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between">
-          {/* Logo / Brand */}
-          <div className="flex items-center space-x-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#00356b] to-blue-900 flex items-center justify-center text-white shadow-md shadow-blue-900/20">
-              <Flame className="w-6 h-6 text-amber-400" />
-            </div>
-            <div>
-              <div className="text-lg sm:text-xl font-black text-[#00356b] tracking-tight leading-none">
-                Glorious Youth Ministry
-              </div>
-              <div className="text-[11px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">
-                Faith &bull; Leadership &bull; Flourishing
-              </div>
-            </div>
-          </div>
+          {/* Official Youth Logo / Brand */}
+          <a href="#" className="flex items-center space-x-3 group py-1">
+            <img
+              src="/youth_logo.png"
+              alt="RCCG Glorious Church Youths Logo"
+              className="h-12 sm:h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => {
+                e.currentTarget.src = '/youth_logo.jpg';
+              }}
+            />
+          </a>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-7 text-xs font-bold text-slate-700 tracking-wide uppercase">
@@ -446,6 +442,19 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
           <div className="lg:hidden bg-white border-t border-slate-200 px-6 py-6 space-y-4 shadow-xl">
+            <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
+              <img
+                src="/youth_logo.png"
+                alt="RCCG Glorious Church Youths"
+                className="h-10 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = '/youth_logo.jpg';
+                }}
+              />
+              <span className="text-[10px] font-mono uppercase bg-blue-50 text-[#00356b] px-2.5 py-0.5 rounded-full font-bold">
+                Glorious Youths
+              </span>
+            </div>
             <nav className="flex flex-col space-y-3 text-sm font-bold text-slate-700 uppercase">
               <a
                 href="#about"
@@ -570,12 +579,16 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
 
-              {/* Watermark Logo / Badge */}
-              <div className="absolute top-6 right-6 p-3 rounded-2xl bg-white/90 backdrop-blur-md shadow-lg border border-white/40 flex items-center space-x-2">
-                <Flame className="w-5 h-5 text-amber-500" />
-                <span className="text-xs font-black text-[#00356b] uppercase tracking-wider">
-                  Glorious Youth
-                </span>
+              {/* Official Youth Logo Watermark Badge */}
+              <div className="absolute top-6 right-6 p-2 sm:p-2.5 rounded-2xl bg-white/95 backdrop-blur-md shadow-lg border border-white/60 flex items-center">
+                <img
+                  src="/youth_logo.png"
+                  alt="RCCG Glorious Church Youths"
+                  className="h-7 sm:h-8 w-auto object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = '/youth_logo.jpg';
+                  }}
+                />
               </div>
 
               {/* Caption Tag */}
@@ -633,6 +646,19 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
       {/* ------------------------------------------------------------- */}
       <section id="about" className="py-16 sm:py-20 px-4 sm:px-8 bg-white text-center border-b border-slate-200">
         <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex justify-center">
+            <div className="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 shadow-xs inline-flex items-center">
+              <img
+                src="/youth_logo.png"
+                alt="RCCG Glorious Church Youths Mandate"
+                className="h-12 sm:h-14 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = '/youth_logo.jpg';
+                }}
+              />
+            </div>
+          </div>
+
           <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-mono font-bold tracking-wider uppercase border border-amber-200">
             <Award className="w-3.5 h-3.5 text-amber-600" />
             <span>Our Core Divine Mandate</span>
@@ -1057,18 +1083,15 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10">
             {/* Column 1: Parish Identity (col-span-3) */}
             <div className="lg:col-span-3 space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-900 border border-blue-700 flex items-center justify-center">
-                  <Flame className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black tracking-tight text-white leading-none">
-                    Glorious Youth
-                  </h3>
-                  <p className="text-[10px] text-blue-200 tracking-wider uppercase font-semibold mt-0.5">
-                    {parishName}
-                  </p>
-                </div>
+              <div className="inline-block bg-white p-2.5 rounded-2xl shadow-lg border border-white/20">
+                <img
+                  src="/youth_logo.png"
+                  alt="RCCG Glorious Church Youths"
+                  className="h-10 sm:h-12 w-auto object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = '/youth_logo.jpg';
+                  }}
+                />
               </div>
               <p className="text-blue-100/80 text-xs leading-relaxed">
                 Nurturing a generation of uncompromising believers grounded in spiritual excellence, moral courage, and impactful kingdom leadership.
@@ -1348,10 +1371,19 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
               <X className="w-5 h-5" />
             </button>
 
-            <div className="space-y-1">
-              <div className="inline-flex items-center space-x-2 px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-mono font-bold uppercase tracking-wider">
-                <Flame className="w-3.5 h-3.5 text-amber-500" />
-                <span>Glorious Youth Network</span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <img
+                  src="/youth_logo.png"
+                  alt="RCCG Glorious Church Youths"
+                  className="h-9 sm:h-10 w-auto object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = '/youth_logo.jpg';
+                  }}
+                />
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-mono font-bold uppercase tracking-wider">
+                  Glorious Youths
+                </span>
               </div>
               <h3 className="text-2xl font-black text-[#00356b]">
                 Join Youth Fellowship
