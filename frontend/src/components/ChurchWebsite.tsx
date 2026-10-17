@@ -920,9 +920,13 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                         <span>{ev.dailySchedules?.length || 3}-Day Program</span>
                       </span>
                     )}
-                    {ev.registrationRequired && (
+                    {ev.registrationRequired ? (
                       <span className="px-3 py-1 rounded-full bg-blue-900/90 text-blue-200 text-[11px] font-bold uppercase tracking-wider border border-blue-400/40 backdrop-blur-md">
                         Registration Required
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full bg-emerald-950/80 text-emerald-300 text-[11px] font-bold uppercase tracking-wider border border-emerald-500/30 backdrop-blur-md">
+                        Open Access • Free Entry
                       </span>
                     )}
                   </div>
@@ -995,27 +999,40 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedEventForDetails(ev)}
-                      className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-white font-extrabold text-xs uppercase tracking-wider border border-slate-700 transition flex items-center justify-center space-x-2"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>View Details &amp; Flyer</span>
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedEventName(ev.title);
-                        setEventModalOpen(true);
-                      }}
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg transition transform hover:scale-102 flex items-center justify-center space-x-2"
-                    >
-                      <UserCheck className="w-4 h-4" />
-                      <span>Register For Event</span>
-                    </button>
+                  <div className="pt-4" onClick={(e) => e.stopPropagation()}>
+                    {ev.registrationRequired ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedEventForDetails(ev)}
+                          className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-white font-extrabold text-xs uppercase tracking-wider border border-slate-700 transition flex items-center justify-center space-x-2"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>View Details &amp; Flyer</span>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedEventName(ev.title);
+                            setEventModalOpen(true);
+                          }}
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg transition transform hover:scale-102 flex items-center justify-center space-x-2"
+                        >
+                          <UserCheck className="w-4 h-4" />
+                          <span>Register For Event</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEventForDetails(ev)}
+                        className="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-white font-extrabold text-xs uppercase tracking-wider border border-slate-700 transition flex items-center justify-center space-x-2 shadow-md group"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition" />
+                        <span>View Details &amp; Flyer</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2364,9 +2381,13 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                   <span className="px-3 py-1 rounded-full bg-blue-900/90 text-blue-200 text-[11px] font-bold uppercase tracking-wider border border-blue-400/40 backdrop-blur-md">
                     {selectedEventForDetails.status}
                   </span>
-                  {selectedEventForDetails.registrationRequired && (
+                  {selectedEventForDetails.registrationRequired ? (
                     <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider border border-amber-500/40 backdrop-blur-md">
                       Registration Required
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold uppercase tracking-wider border border-emerald-500/40 backdrop-blur-md">
+                      Open Access • No Registration Required
                     </span>
                   )}
                 </div>
@@ -2555,19 +2576,21 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                 >
                   Close
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const eventTitle = selectedEventForDetails.title;
-                    setSelectedEventForDetails(null);
-                    setSelectedEventName(eventTitle);
-                    setEventModalOpen(true);
-                  }}
-                  className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition transform hover:scale-102 flex items-center justify-center space-x-2"
-                >
-                  <UserCheck className="w-4 h-4" />
-                  <span>Register for Event</span>
-                </button>
+                {selectedEventForDetails.registrationRequired && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const eventTitle = selectedEventForDetails.title;
+                      setSelectedEventForDetails(null);
+                      setSelectedEventName(eventTitle);
+                      setEventModalOpen(true);
+                    }}
+                    className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition transform hover:scale-102 flex items-center justify-center space-x-2"
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    <span>Register for Event</span>
+                  </button>
+                )}
               </div>
             </div>
 
