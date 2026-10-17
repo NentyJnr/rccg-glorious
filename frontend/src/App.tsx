@@ -3798,19 +3798,6 @@ export default function App() {
               <span className="hidden sm:inline">Public Website</span>
             </button>
 
-            {/* Live API Health Status Badge */}
-            <div 
-              title={`API Backend: ${API_BASE_URL}`}
-              className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition shadow-xs ${
-                apiOnline 
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                  : 'bg-amber-50 text-amber-700 border-amber-200'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${apiOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-              <span>{apiOnline ? 'MonsterASP API' : 'Offline Mode'}</span>
-            </div>
-
             <div className="hidden sm:flex items-center space-x-2 text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
               <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
               <span>Currency: <strong className="text-slate-800">{org.baseCurrency}</strong></span>
