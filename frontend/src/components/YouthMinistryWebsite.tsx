@@ -191,26 +191,6 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
       actionLabel: 'Relive Highlights / Inquire',
       actionType: 'info' as const,
       isPast: true
-    },
-    {
-      id: 'event-ignite-vigil',
-      type: 'monthly' as const,
-      status: 'Monthly All-Night Vigil',
-      statusBadgeColor: 'bg-purple-500/20 text-purple-300 border-purple-400/30',
-      title: 'Ignite Youth Worship Vigil',
-      schedule: 'Monthly • Last Friday Night • 10:00 PM GMT',
-      durationTag: 'All-Night Spiritual Incense',
-      location: 'Main Auditorium, RCCG Glorious Church',
-      description:
-        'A night of supernatural encounter and spiritual intensity. Gathering youths for deep acoustic intimacy, fervent midnight warfare prayer, prophetic utterances, deliverance, and divine impartation until daybreak.',
-      highlights: [
-        'Continuous Midnight Praises & Prophetic Ministration',
-        'Spiritual Breakthrough & Warfare Intercession',
-        'Holy Ghost Deliverance & Career Declarations'
-      ],
-      actionLabel: 'Attend Next Vigil',
-      actionType: 'join' as const,
-      isPast: false
     }
   ];
 
@@ -1339,7 +1319,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
           })()}
 
           {/* Interactive Event Selector Cards (Click any card to jump directly to slide) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
             {eventSlides.map((slide, idx) => {
               const isActive = activeEventSlide === idx;
               return (
@@ -1360,9 +1340,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                           ? 'Next Event'
                           : slide.type === 'weekly'
                           ? 'Weekly'
-                          : slide.type === 'past'
-                          ? 'Past Event'
-                          : 'Monthly'}
+                          : 'Past Event'}
                       </span>
                       {isActive && (
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
