@@ -22,4 +22,6 @@ public class SaveDepartmentDto
     public string Description { get; set; } = string.Empty;
     public string MeetingSchedule { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+    public string LeadershipCouncilJson { get; set; } = "[]";
 }
+

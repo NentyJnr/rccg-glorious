@@ -6,4 +6,6 @@ public interface IMemberService
 {
     Task<List<MemberListItemDto>> GetMembersAsync(string? departmentName, CancellationToken ct = default);
     Task<MemberListItemDto> RegisterMemberAsync(RegisterMemberRequestDto request, CancellationToken ct = default);
+    Task<YouthRegistrationResponseDto> RegisterYouthProspectAsync(YouthRegistrationRequestDto request, CancellationToken ct = default);
 }
+

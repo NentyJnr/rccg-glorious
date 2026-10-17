@@ -274,7 +274,8 @@ public class SetupService : ISetupService
             HeadOfDepartment = request.HeadOfDepartment?.Trim() ?? "",
             Description = request.Description?.Trim() ?? "",
             MeetingSchedule = request.MeetingSchedule?.Trim() ?? "",
-            IsActive = request.IsActive
+            IsActive = request.IsActive,
+            LeadershipCouncilJson = string.IsNullOrWhiteSpace(request.LeadershipCouncilJson) ? "[]" : request.LeadershipCouncilJson.Trim()
         };
 
         _dbContext.Departments.Add(entity);
@@ -311,7 +312,8 @@ public class SetupService : ISetupService
                 HeadOfDepartment = request.HeadOfDepartment?.Trim() ?? "",
                 Description = request.Description?.Trim() ?? "",
                 MeetingSchedule = request.MeetingSchedule?.Trim() ?? "",
-                IsActive = request.IsActive
+                IsActive = request.IsActive,
+                LeadershipCouncilJson = string.IsNullOrWhiteSpace(request.LeadershipCouncilJson) ? "[]" : request.LeadershipCouncilJson.Trim()
             };
             _dbContext.Departments.Add(existing);
         }
@@ -322,6 +324,7 @@ public class SetupService : ISetupService
             if (request.HeadOfDepartment != null) existing.HeadOfDepartment = request.HeadOfDepartment.Trim();
             if (request.Description != null) existing.Description = request.Description.Trim();
             if (request.MeetingSchedule != null) existing.MeetingSchedule = request.MeetingSchedule.Trim();
+            if (request.LeadershipCouncilJson != null) existing.LeadershipCouncilJson = request.LeadershipCouncilJson.Trim();
             existing.IsActive = request.IsActive;
             existing.UpdatedAtUtc = DateTime.UtcNow;
         }

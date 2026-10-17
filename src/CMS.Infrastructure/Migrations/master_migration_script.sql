@@ -481,5 +481,17 @@ BEGIN
 END;
 GO
 
+-- Migration: Add LeadershipCouncilJson to Departments
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns 
+    WHERE object_id = OBJECT_ID(N'[Departments]') 
+    AND name = 'LeadershipCouncilJson'
+)
+BEGIN
+    ALTER TABLE [Departments] ADD [LeadershipCouncilJson] NVARCHAR(MAX) NOT NULL DEFAULT '[]';
+END;
+GO
+
 COMMIT TRANSACTION;
 GO
+

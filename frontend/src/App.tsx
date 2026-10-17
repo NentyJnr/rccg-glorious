@@ -437,6 +437,14 @@ interface OfferingCategoryItem {
   isActive: boolean;
 }
 
+export interface LeadershipCouncilMember {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  roleTitle: string;
+}
+
 interface DepartmentItem {
   id: string;
   name: string;
@@ -445,6 +453,8 @@ interface DepartmentItem {
   description?: string;
   meetingSchedule?: string;
   isActive: boolean;
+  leadershipCouncil?: LeadershipCouncilMember[];
+  leadershipCouncilJson?: string;
 }
 
 const getHodDepartment = (user: User | null): string => {
@@ -1171,7 +1181,20 @@ export default function App() {
     { id: 'd3', name: 'Technical & Media Unit', code: 'TEC-01', headOfDepartment: 'Brother Samuel', meetingSchedule: 'Sunday 07:00 AM', description: 'Sound engineering, live streaming, projection, and media production.', isActive: true },
     { id: 'd4', name: 'Sunday School & Believers Class', code: 'SDS-01', headOfDepartment: 'Pastor Oluwaseun Adeleke', meetingSchedule: 'Sunday 07:45 AM', description: 'Doctrinal teaching, manual distribution, and discipleship classes.', isActive: true },
     { id: 'd5', name: 'Sanctuary Keepers', code: 'SNK-01', headOfDepartment: 'Sister Grace Usang', meetingSchedule: 'Saturday 07:00 AM', description: 'Sanctuary cleanliness, floral arrangement, and environment care.', isActive: true },
-    { id: 'd6', name: 'Welfare & Mercy Unit', code: 'WLF-01', headOfDepartment: 'Deaconess Mary Johnson', meetingSchedule: 'First Sunday 12:00 PM', description: 'Member care, food/clothing support, and benevolent visitation.', isActive: true }
+    { id: 'd6', name: 'Welfare & Mercy Unit', code: 'WLF-01', headOfDepartment: 'Deaconess Mary Johnson', meetingSchedule: 'First Sunday 12:00 PM', description: 'Member care, food/clothing support, and benevolent visitation.', isActive: true },
+    { 
+      id: 'd7', 
+      name: 'Youth Ministry', 
+      code: 'YTH-01', 
+      headOfDepartment: 'Brother Samuel Adebayo', 
+      meetingSchedule: 'Wednesday 06:00 PM', 
+      description: 'Discipleship, spiritual formation, mentorship, and leadership excellence for young adults and teenagers.', 
+      isActive: true,
+      leadershipCouncil: [
+        { id: 'yc-1', name: 'Brother Samuel Adebayo', email: 'samuel.adebayo@rccgglorious.org', phone: '+234 801 234 5678', roleTitle: 'Youth President / HOD' },
+        { id: 'yc-2', name: 'Sister Grace Usang', email: 'grace.usang@rccgglorious.org', phone: '+234 802 345 6789', roleTitle: 'Youth Follow-up & Welfare' }
+      ]
+    }
   ]);
 
   // Modal Visibility States
@@ -1240,6 +1263,9 @@ export default function App() {
   const [editDepartmentSchedule, setEditDepartmentSchedule] = useState('');
   const [editDepartmentDescription, setEditDepartmentDescription] = useState('');
   const [isEditDepartmentModalOpen, setIsEditDepartmentModalOpen] = useState(false);
+  const [editDepartmentLeadershipCouncil, setEditDepartmentLeadershipCouncil] = useState<LeadershipCouncilMember[]>([]);
+  const [newExecPersonName, setNewExecPersonName] = useState('');
+  const [newExecRoleTitle, setNewExecRoleTitle] = useState('Youth Executive');
 
   const [users, setUsers] = useState<User[]>([
     { id: 'u0', fullName: 'Super Administrator', email: 'neotroltd@gmail.com', phone: '+2348000000000', role: 'SuperAdmin', mustChangePassword: false, isActive: true },
@@ -2220,7 +2246,60 @@ export default function App() {
     setEditDepartmentHod(dep.headOfDepartment || '');
     setEditDepartmentSchedule(dep.meetingSchedule || '');
     setEditDepartmentDescription(dep.description || '');
+
+    // Parse leadership council if present
+    let council: LeadershipCouncilMember[] = [];
+    if (dep.leadershipCouncil && Array.isArray(dep.leadershipCouncil)) {
+      council = [...dep.leadershipCouncil];
+    } else if (dep.leadershipCouncilJson) {
+      try {
+        council = JSON.parse(dep.leadershipCouncilJson);
+      } catch {}
+    }
+    setEditDepartmentLeadershipCouncil(council);
+    setNewExecPersonName('');
+    setNewExecRoleTitle('Youth Executive');
     setIsEditDepartmentModalOpen(true);
+  };
+
+  const handleAddExecutiveToDepartment = () => {
+    if (!newExecPersonName.trim()) {
+      showNotification('Please select a member or minister to assign.', 'error');
+      return;
+    }
+
+    let email = '';
+    let phone = '';
+    const foundMember = members.find(m => m.fullName === newExecPersonName);
+    if (foundMember) {
+      email = foundMember.email || '';
+      phone = foundMember.whatsappNumber || '';
+    } else {
+      const foundMinister = ministers.find(m => `${m.title} ${m.fullName}` === newExecPersonName || m.fullName === newExecPersonName);
+      if (foundMinister) {
+        email = `${foundMinister.fullName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@rccgglorious.org`;
+      }
+    }
+
+    if (!email) {
+      email = `${newExecPersonName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@rccgglorious.org`;
+    }
+
+    const newExec: LeadershipCouncilMember = {
+      id: Date.now().toString(),
+      name: newExecPersonName.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      roleTitle: newExecRoleTitle.trim() || 'Youth Executive'
+    };
+
+    setEditDepartmentLeadershipCouncil(prev => [...prev.filter(e => e.name !== newExec.name), newExec]);
+    showNotification(`Assigned "${newExec.name}" as ${newExec.roleTitle}!`);
+    setNewExecPersonName('');
+  };
+
+  const handleRemoveExecutiveFromDepartment = (execId: string) => {
+    setEditDepartmentLeadershipCouncil(prev => prev.filter(e => e.id !== execId));
   };
 
   const handleUpdateDepartment = async (e: React.FormEvent) => {
@@ -2232,13 +2311,16 @@ export default function App() {
     }
 
     const updatedCode = editDepartmentCode.trim() || editDepartmentName.trim().slice(0, 3).toUpperCase() + '-01';
+    const councilJson = JSON.stringify(editDepartmentLeadershipCouncil);
     const updatedItem: DepartmentItem = {
       ...editingDepartment,
       name: editDepartmentName.trim(),
       code: updatedCode,
       headOfDepartment: editDepartmentHod.trim() || 'Unassigned',
       meetingSchedule: editDepartmentSchedule.trim() || 'To be scheduled',
-      description: editDepartmentDescription.trim() || 'Parish department unit.'
+      description: editDepartmentDescription.trim() || 'Parish department unit.',
+      leadershipCouncil: editDepartmentLeadershipCouncil,
+      leadershipCouncilJson: councilJson
     };
 
     setDepartments((prev) =>
@@ -2250,7 +2332,15 @@ export default function App() {
     setEditingDepartment(null);
 
     try {
-      await api.put(`/Setup/departments/${editingDepartment.id}`, updatedItem);
+      await api.put(`/Setup/departments/${editingDepartment.id}`, {
+        name: updatedItem.name,
+        code: updatedItem.code,
+        headOfDepartment: updatedItem.headOfDepartment,
+        meetingSchedule: updatedItem.meetingSchedule,
+        description: updatedItem.description,
+        isActive: updatedItem.isActive,
+        leadershipCouncilJson: councilJson
+      });
     } catch {}
   };
 
@@ -10068,6 +10158,103 @@ export default function App() {
                   placeholder="Sanctuary protocol, guest reception, etc."
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
                 />
+              </div>
+
+              {/* EXECUTIVE COUNCIL & NOTIFICATION OFFICIALS */}
+              <div className="pt-3 border-t border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>Executive Council &amp; Notification Recipients</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Officials whose emails receive alerts when new members register.
+                    </p>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-rccg-blue text-[10px] font-bold font-mono">
+                    {editDepartmentLeadershipCouncil.length} Assigned
+                  </span>
+                </div>
+
+                {/* Add Executive Mini-form */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <select
+                      value={newExecPersonName}
+                      onChange={(e) => setNewExecPersonName(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    >
+                      <option value="">-- Pick Member or Minister --</option>
+                      <optgroup label="Ordained Ministers / Pastors">
+                        {ministers.map((m) => (
+                          <option key={m.id} value={`${m.title} ${m.fullName}`}>
+                            {m.title} {m.fullName}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Parish Members">
+                        {members.map((mem) => (
+                          <option key={mem.id} value={mem.fullName}>
+                            {mem.fullName} ({mem.email || 'No email'})
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+
+                    <input
+                      type="text"
+                      value={newExecRoleTitle}
+                      onChange={(e) => setNewExecRoleTitle(e.target.value)}
+                      placeholder="e.g. Youth President, Secretary, Follow-up"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleAddExecutiveToDepartment}
+                      className="px-3 py-1 bg-rccg-blue hover:bg-blue-900 text-white text-[11px] font-bold rounded-lg transition"
+                    >
+                      + Assign Executive
+                    </button>
+                  </div>
+                </div>
+
+                {/* Current Council List */}
+                {editDepartmentLeadershipCouncil.length > 0 ? (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                    {editDepartmentLeadershipCouncil.map((exec) => (
+                      <div
+                        key={exec.id || exec.name}
+                        className="p-2 rounded-xl bg-white border border-slate-200 flex items-center justify-between text-xs"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>{exec.name}</span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                              {exec.roleTitle}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-mono truncate">
+                            ✉ {exec.email} {exec.phone ? `• ☎ ${exec.phone}` : ''}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExecutiveFromDepartment(exec.id)}
+                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition"
+                          title="Remove Executive"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-2 text-center text-[11px] text-slate-400 italic bg-white rounded-xl border border-dashed border-slate-200">
+                    No additional executives assigned yet. Notifications will route to HOD and fallback admin.
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 flex gap-3">

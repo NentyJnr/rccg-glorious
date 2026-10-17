@@ -20,4 +20,24 @@ public class EmailNotificationService : IEmailNotificationService
 
         return Task.CompletedTask;
     }
+
+    public Task SendYouthRegistrationAlertAsync(
+        IEnumerable<string> recipientEmails,
+        string registrantName,
+        string registrantEmail,
+        string registrantPhone,
+        string category,
+        string primaryInterest,
+        CancellationToken cancellationToken = default)
+    {
+        var emailList = recipientEmails?.Where(e => !string.IsNullOrWhiteSpace(e)).Distinct().ToList() ?? new List<string>();
+        var recipientsDisplay = emailList.Count > 0 ? string.Join(", ", emailList) : "youth-leadership@rccggloriouschurch.org (Fallback)";
+
+        _logger.LogInformation(
+            "DISPATCHING YOUTH REGISTRATION ALERT to Officials [{Recipients}]: New Registrant '{Name}' | Email: {Email} | Phone: {Phone} | Category: {Category} | Interest: {Interest}",
+            recipientsDisplay, registrantName, registrantEmail, registrantPhone, category, primaryInterest);
+
+        return Task.CompletedTask;
+    }
 }
+

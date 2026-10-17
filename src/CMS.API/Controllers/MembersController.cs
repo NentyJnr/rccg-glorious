@@ -36,4 +36,19 @@ public class MembersController : ControllerBase
             return BadRequest(ApiResponseEnvelope<MemberListItemDto>.Fail(ex.Message));
         }
     }
+
+    [HttpPost("youth-register")]
+    public async Task<IActionResult> RegisterYouthProspect([FromBody] YouthRegistrationRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var registered = await _memberService.RegisterYouthProspectAsync(request, cancellationToken);
+            return Ok(ApiResponseEnvelope<YouthRegistrationResponseDto>.Ok(registered, registered.Message));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponseEnvelope<YouthRegistrationResponseDto>.Fail(ex.Message));
+        }
+    }
 }
+
