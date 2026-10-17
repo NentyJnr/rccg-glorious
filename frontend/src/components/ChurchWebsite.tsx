@@ -67,7 +67,7 @@ export interface ParishEventItem {
   category: string;
   isFeatured: boolean;
   registrationRequired: boolean;
-  status: 'Upcoming' | 'Completed' | 'Cancelled';
+  status: 'Upcoming' | 'Completed' | 'Cancelled' | 'Draft';
   maxCapacity?: number;
   isMultiDay?: boolean;
   dailySchedules?: EventDailyScheduleItem[];
@@ -255,7 +255,10 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
       try {
         const res = await api.get<any[]>('/Events?status=Upcoming');
         if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-          setParishEvents(res.data);
+          const publishedEvents = res.data.filter((e: any) => e.status !== 'Draft');
+          if (publishedEvents.length > 0) {
+            setParishEvents(publishedEvents);
+          }
         }
       } catch (err) {
         console.warn('[ChurchWebsite] Events API unavailable, running in resilient offline fallback mode.');

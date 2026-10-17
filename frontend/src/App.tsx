@@ -92,7 +92,7 @@ export interface ParishEventItem {
   category: string;
   isFeatured: boolean;
   registrationRequired: boolean;
-  status: 'Upcoming' | 'Completed' | 'Cancelled';
+  status: 'Upcoming' | 'Completed' | 'Cancelled' | 'Draft';
   maxCapacity?: number;
   isMultiDay?: boolean;
   dailySchedules?: EventDailyScheduleItem[];
@@ -1260,7 +1260,9 @@ export default function App() {
   const [formEventCategory, setFormEventCategory] = useState('Praise & Worship');
   const [formEventIsFeatured, setFormEventIsFeatured] = useState(true);
   const [formEventRegistrationRequired, setFormEventRegistrationRequired] = useState(true);
-  const [formEventStatus, setFormEventStatus] = useState<'Upcoming' | 'Completed' | 'Cancelled'>('Upcoming');
+  const [formEventStatus, setFormEventStatus] = useState<'Upcoming' | 'Completed' | 'Cancelled' | 'Draft'>('Upcoming');
+  const [hasLocalDraft, setHasLocalDraft] = useState(false);
+  const [localDraftTitle, setLocalDraftTitle] = useState<string>('');
   const [formEventMaxCapacity, setFormEventMaxCapacity] = useState<number | ''>('');
   const [formEventSpeakers, setFormEventSpeakers] = useState<EventSpeakerItem[]>([
     {
@@ -1353,10 +1355,108 @@ export default function App() {
         shortBio: 'Pastor-in-Charge of RCCG Glorious Church Parish.'
       }
     ]);
+    // Check if there is an uncommitted draft in localStorage
+    try {
+      const savedDraft = localStorage.getItem('rccg_event_form_draft');
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && (parsed.title || parsed.description || parsed.theme)) {
+          setHasLocalDraft(true);
+          setLocalDraftTitle(parsed.title || 'Untitled Draft Event');
+        } else {
+          setHasLocalDraft(false);
+        }
+      } else {
+        setHasLocalDraft(false);
+      }
+    } catch {
+      setHasLocalDraft(false);
+    }
+
     setIsEventModalOpen(true);
   };
 
+  const handleRestoreLocalDraft = () => {
+    try {
+      const savedDraft = localStorage.getItem('rccg_event_form_draft');
+      if (!savedDraft) return;
+      const d = JSON.parse(savedDraft);
+      if (d.title !== undefined) setFormEventTitle(d.title);
+      if (d.theme !== undefined) setFormEventTheme(d.theme);
+      if (d.description !== undefined) setFormEventDescription(d.description);
+      if (d.coverImageUrl) setFormEventCoverImageUrl(d.coverImageUrl);
+      if (d.eventDate) setFormEventDate(d.eventDate);
+      if (d.timeString) setFormEventTimeString(d.timeString);
+      if (d.venue !== undefined) setFormEventVenue(d.venue);
+      if (d.category) setFormEventCategory(d.category);
+      if (d.isFeatured !== undefined) setFormEventIsFeatured(d.isFeatured);
+      if (d.registrationRequired !== undefined) setFormEventRegistrationRequired(d.registrationRequired);
+      if (d.status) setFormEventStatus(d.status);
+      if (d.maxCapacity !== undefined) setFormEventMaxCapacity(d.maxCapacity);
+      if (d.isMultiDay !== undefined) setFormEventIsMultiDay(d.isMultiDay);
+      if (d.dailySchedules && Array.isArray(d.dailySchedules)) setFormEventDailySchedules(d.dailySchedules);
+      if (d.speakers && Array.isArray(d.speakers)) setFormEventSpeakers(d.speakers);
+      setHasLocalDraft(false);
+      showNotification('Restored draft from previous session!', 'success');
+    } catch {
+      showNotification('Failed to restore saved draft', 'error');
+    }
+  };
+
+  const handleDiscardLocalDraft = () => {
+    localStorage.removeItem('rccg_event_form_draft');
+    setHasLocalDraft(false);
+    showNotification('Local draft discarded.');
+  };
+
+  useEffect(() => {
+    if (isEventModalOpen && !editingEvent) {
+      if (formEventTitle.trim() || formEventTheme.trim() || formEventDescription.trim()) {
+        const draftObj = {
+          title: formEventTitle,
+          theme: formEventTheme,
+          description: formEventDescription,
+          coverImageUrl: formEventCoverImageUrl,
+          eventDate: formEventDate,
+          timeString: formEventTimeString,
+          venue: formEventVenue,
+          category: formEventCategory,
+          isFeatured: formEventIsFeatured,
+          registrationRequired: formEventRegistrationRequired,
+          status: formEventStatus,
+          maxCapacity: formEventMaxCapacity,
+          isMultiDay: formEventIsMultiDay,
+          dailySchedules: formEventDailySchedules,
+          speakers: formEventSpeakers,
+          savedAt: new Date().toISOString()
+        };
+        try {
+          localStorage.setItem('rccg_event_form_draft', JSON.stringify(draftObj));
+        } catch {}
+      }
+    }
+  }, [
+    isEventModalOpen,
+    editingEvent,
+    formEventTitle,
+    formEventTheme,
+    formEventDescription,
+    formEventCoverImageUrl,
+    formEventDate,
+    formEventTimeString,
+    formEventVenue,
+    formEventCategory,
+    formEventIsFeatured,
+    formEventRegistrationRequired,
+    formEventStatus,
+    formEventMaxCapacity,
+    formEventIsMultiDay,
+    formEventDailySchedules,
+    formEventSpeakers
+  ]);
+
   const handleOpenEditEventModal = (ev: ParishEventItem) => {
+    setHasLocalDraft(false);
     setEditingEvent(ev);
     setFormEventTitle(ev.title);
     setFormEventTheme(ev.theme || '');
@@ -1512,11 +1612,20 @@ export default function App() {
     );
   };
 
-  const handleSaveEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formEventTitle.trim() || !formEventVenue.trim()) {
-      showNotification('Event Title and Venue are required.', 'error');
-      return;
+  const handleSaveEvent = async (e?: React.FormEvent, isDraftAction: boolean = false) => {
+    if (e) e.preventDefault();
+
+    // Validation
+    if (isDraftAction) {
+      if (!formEventTitle.trim()) {
+        showNotification('Please enter at least an Event Title to save as draft.', 'error');
+        return;
+      }
+    } else {
+      if (!formEventTitle.trim() || !formEventVenue.trim()) {
+        showNotification('Event Title and Venue are required to publish.', 'error');
+        return;
+      }
     }
 
     const validSpeakers = formEventSpeakers.filter(s => s.fullName && s.fullName.trim() !== '');
@@ -1535,6 +1644,16 @@ export default function App() {
       }
     }
 
+    // Determine target lifecycle status
+    let targetStatus: 'Upcoming' | 'Completed' | 'Cancelled' | 'Draft';
+    if (isDraftAction) {
+      targetStatus = 'Draft';
+    } else {
+      targetStatus = formEventStatus === 'Draft' ? 'Upcoming' : formEventStatus;
+    }
+
+    const effectiveVenue = formEventVenue.trim() || (isDraftAction ? 'To be announced / Parish Sanctuary (Draft)' : 'Main Sanctuary Auditorium');
+
     const eventPayload: Partial<ParishEventItem> = {
       title: formEventTitle.trim(),
       theme: formEventTheme.trim(),
@@ -1543,16 +1662,22 @@ export default function App() {
       eventDate: effectiveDate,
       endDate: effectiveEndDate,
       timeString: effectiveTimeString,
-      venue: formEventVenue.trim(),
+      venue: effectiveVenue,
       category: formEventCategory.trim(),
       isFeatured: formEventIsFeatured,
       registrationRequired: formEventRegistrationRequired,
-      status: formEventStatus,
+      status: targetStatus,
       maxCapacity: (formEventMaxCapacity !== '' && !isNaN(Number(formEventMaxCapacity))) ? Number(formEventMaxCapacity) : undefined,
       isMultiDay: formEventIsMultiDay,
       dailySchedules: formEventIsMultiDay ? formEventDailySchedules : undefined,
       speakers: validSpeakers
     };
+
+    // Clear local auto-save cache since we are saving explicitly
+    try {
+      localStorage.removeItem('rccg_event_form_draft');
+      setHasLocalDraft(false);
+    } catch {}
 
     if (editingEvent) {
       const updatedEvent: ParishEventItem = {
@@ -1561,13 +1686,20 @@ export default function App() {
       } as ParishEventItem;
 
       setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? updatedEvent : ev));
-      showNotification(`Event "${updatedEvent.title}" updated successfully!`);
+
+      const successMsg = isDraftAction
+        ? `Event draft "${updatedEvent.title}" updated!`
+        : (editingEvent.status === 'Draft' && targetStatus === 'Upcoming')
+        ? `Draft "${updatedEvent.title}" is now published live!`
+        : `Event "${updatedEvent.title}" updated successfully!`;
+
+      showNotification(successMsg, 'success');
       setIsEventModalOpen(false);
 
       try {
         const res = await api.put(`/Events/${editingEvent.id}`, eventPayload);
         if (res.success) {
-          showNotification(`Event "${updatedEvent.title}" updated in central database!`, 'success');
+          showNotification(isDraftAction ? `Draft saved to central database!` : `Event updated in central database!`, 'success');
         }
       } catch (err) {
         console.warn('API update offline, saved locally');
@@ -1580,17 +1712,44 @@ export default function App() {
       } as ParishEventItem;
 
       setEvents(prev => [newEvent, ...prev]);
-      showNotification(`Parish Event "${newEvent.title}" published!`);
+
+      const successMsg = isDraftAction
+        ? `Event "${newEvent.title}" saved as Draft. You can return to complete or publish it anytime!`
+        : `Parish Event "${newEvent.title}" published!`;
+
+      showNotification(successMsg, 'success');
       setIsEventModalOpen(false);
 
       try {
         const res = await api.post('/Events', eventPayload);
         if (res.success) {
-          showNotification(`Parish Event "${newEvent.title}" saved to central database!`, 'success');
+          showNotification(isDraftAction ? `Draft event saved to central database!` : `Parish Event saved to central database!`, 'success');
         }
       } catch (err) {
         console.warn('API post offline, saved locally');
       }
+    }
+  };
+
+  const handleQuickPublishDraft = async (ev: ParishEventItem) => {
+    if (!ev.venue || ev.venue.includes('(Draft)')) {
+      showNotification(`Please review and specify a confirmed venue before publishing "${ev.title}".`, 'error');
+      handleOpenEditEventModal(ev);
+      return;
+    }
+
+    const updated: ParishEventItem = {
+      ...ev,
+      status: 'Upcoming'
+    };
+
+    setEvents(prev => prev.map(e => e.id === ev.id ? updated : e));
+    showNotification(`Parish Event "${ev.title}" is now published live to the church portal!`, 'success');
+
+    try {
+      await api.put(`/Events/${ev.id}`, { ...ev, status: 'Upcoming' });
+    } catch {
+      console.warn('API offline, updated locally');
     }
   };
 
@@ -4586,7 +4745,19 @@ export default function App() {
                   <span className="text-[11px] font-bold uppercase tracking-wider">Total Gatherings</span>
                   <Calendar className="w-4 h-4 text-amber-500" />
                 </div>
-                <div className="text-2xl font-extrabold text-slate-900">{events.length}</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-2xl font-extrabold text-slate-900">{events.length}</div>
+                  {events.filter(e => e.status === 'Draft').length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setEventStatusFilter('Draft')}
+                      className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-2 py-0.5 rounded-full hover:bg-amber-200 transition cursor-pointer"
+                      title="Filter to view unpublished drafts"
+                    >
+                      {events.filter(e => e.status === 'Draft').length} Drafts
+                    </button>
+                  )}
+                </div>
                 <span className="text-xs text-slate-400 mt-1 block">Scheduled programs</span>
               </div>
 
@@ -4666,6 +4837,7 @@ export default function App() {
                   >
                     <option value="All">All Statuses</option>
                     <option value="Upcoming">Upcoming</option>
+                    <option value="Draft">Drafts Only</option>
                     <option value="Completed">Completed</option>
                     <option value="Cancelled">Cancelled</option>
                   </select>
@@ -4750,9 +4922,11 @@ export default function App() {
                               ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
                               : ev.status === 'Completed'
                               ? 'bg-slate-800/80 text-slate-300 border-slate-600'
+                              : ev.status === 'Draft'
+                              ? 'bg-amber-950/90 text-amber-300 border-amber-500/60 shadow-md ring-1 ring-amber-400/40'
                               : 'bg-red-950/80 text-red-300 border-red-500/40'
                           }`}>
-                            {ev.status}
+                            {ev.status === 'Draft' ? '📝 Draft (Unpublished)' : ev.status}
                           </span>
                         </div>
 
@@ -4863,16 +5037,39 @@ export default function App() {
                           )}
                         </div>
 
+                        {/* UNPUBLISHED DRAFT NOTICE & QUICK PUBLISH BANNER */}
+                        {ev.status === 'Draft' && (
+                          <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300/80 flex items-center justify-between gap-2 text-xs">
+                            <div className="flex items-center space-x-1.5 text-amber-900 font-bold min-w-0">
+                              <FileText className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span className="truncate">Unpublished Draft &bull; Hidden from website</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickPublishDraft(ev)}
+                              className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-lg text-[10px] uppercase tracking-wider transition shadow-xs cursor-pointer flex items-center space-x-1 shrink-0"
+                              title="Publish this event live to the parish website"
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              <span>Publish Now</span>
+                            </button>
+                          </div>
+                        )}
+
                         {/* CARD ACTION BUTTONS */}
                         <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                           <div className="flex items-center space-x-2">
                             <button
                               type="button"
                               onClick={() => handleOpenEditEventModal(ev)}
-                              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
+                              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer ${
+                                ev.status === 'Draft'
+                                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 shadow-xs'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                              }`}
                             >
                               <Pencil className="w-3.5 h-3.5 text-amber-600" />
-                              <span>Edit Event</span>
+                              <span>{ev.status === 'Draft' ? 'Resume & Complete Draft' : 'Edit Event'}</span>
                             </button>
                             <button
                               type="button"
@@ -4939,6 +5136,35 @@ export default function App() {
               {/* MODAL FORM BODY */}
               <form onSubmit={handleSaveEvent} className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
                 
+                {/* UNSAVED SESSION DRAFT RECOVERY BANNER */}
+                {hasLocalDraft && !editingEvent && (
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
+                    <div className="flex items-center space-x-2 text-amber-900 font-medium">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <div>
+                        <span className="font-bold">Unfinished event draft detected:</span>{' '}
+                        <span className="italic">"{localDraftTitle}"</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleRestoreLocalDraft}
+                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition cursor-pointer shadow-xs"
+                      >
+                        Restore Draft
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDiscardLocalDraft}
+                        className="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs border border-slate-300 transition cursor-pointer"
+                      >
+                        Discard
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* 1. BASIC DETAILS */}
                 <div className="space-y-4">
                   <span className="text-xs font-mono font-extrabold uppercase tracking-widest text-slate-400 block border-b border-slate-200 pb-1">
@@ -5442,7 +5668,8 @@ export default function App() {
                         onChange={(e) => setFormEventStatus(e.target.value as any)}
                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
                       >
-                        <option value="Upcoming">Upcoming</option>
+                        <option value="Upcoming">Upcoming (Active / Published)</option>
+                        <option value="Draft">Draft (Unpublished / In Progress)</option>
                         <option value="Completed">Completed</option>
                         <option value="Cancelled">Cancelled</option>
                       </select>
@@ -5732,20 +5959,47 @@ export default function App() {
                 </div>
 
                 {/* MODAL ACTIONS FOOTER */}
-                <div className="pt-4 border-t border-slate-200 flex items-center justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsEventModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition cursor-pointer"
-                  >
-                    {editingEvent ? 'Update Event & Speakers' : 'Publish Parish Event'}
-                  </button>
+                <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2 text-xs text-slate-500">
+                    <span className={`inline-block w-2.5 h-2.5 rounded-full ${
+                      formEventStatus === 'Draft'
+                        ? 'bg-amber-400 animate-pulse'
+                        : 'bg-emerald-500'
+                    }`} />
+                    <span className="font-semibold text-slate-700">
+                      {editingEvent
+                        ? (editingEvent.status === 'Draft' ? 'Editing Draft Event' : 'Editing Published Event')
+                        : formEventStatus === 'Draft' ? 'New Event (Draft Mode)' : 'New Parish Event'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-2.5 w-full sm:w-auto justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsEventModalOpen(false)}
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleSaveEvent(e, true)}
+                      className="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center space-x-1.5 transition shadow-xs cursor-pointer"
+                      title="Save this event as a draft to complete or publish later"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-amber-600" />
+                      <span>{editingEvent && editingEvent.status === 'Draft' ? 'Update Draft' : 'Save as Draft'}</span>
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>{editingEvent && editingEvent.status !== 'Draft' ? 'Update Event & Speakers' : 'Publish Parish Event'}</span>
+                    </button>
+                  </div>
                 </div>
               </form>
 

@@ -79,9 +79,15 @@ public class EventService : IEventService
 
     public async Task<ParishEventDto> CreateEventAsync(CreateParishEventRequestDto dto, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.Venue))
+        bool isDraft = string.Equals(dto.Status, "Draft", StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(dto.Title))
         {
-            throw new ArgumentException("Event Title and Venue are mandatory.");
+            throw new ArgumentException("Event Title is mandatory.");
+        }
+
+        if (!isDraft && string.IsNullOrWhiteSpace(dto.Venue))
+        {
+            throw new ArgumentException("Event Venue is mandatory for published events.");
         }
 
         var newEvent = new ParishEvent
@@ -92,11 +98,11 @@ public class EventService : IEventService
             CoverImageUrl = dto.CoverImageUrl?.Trim() ?? string.Empty,
             EventDate = dto.EventDate == default ? DateTime.UtcNow.AddDays(7) : dto.EventDate,
             TimeString = dto.TimeString?.Trim() ?? string.Empty,
-            Venue = dto.Venue.Trim(),
+            Venue = string.IsNullOrWhiteSpace(dto.Venue) ? (isDraft ? "TBA (Draft)" : "Main Sanctuary Auditorium") : dto.Venue.Trim(),
             Category = string.IsNullOrWhiteSpace(dto.Category) ? "General" : dto.Category.Trim(),
             IsFeatured = dto.IsFeatured,
             RegistrationRequired = dto.RegistrationRequired,
-            Status = string.IsNullOrWhiteSpace(dto.Status) ? "Upcoming" : dto.Status.Trim(),
+            Status = string.IsNullOrWhiteSpace(dto.Status) ? (isDraft ? "Draft" : "Upcoming") : dto.Status.Trim(),
             MaxCapacity = dto.MaxCapacity,
             CreatedAtUtc = DateTime.UtcNow
         };
@@ -137,17 +143,28 @@ public class EventService : IEventService
 
         if (ev == null) return null;
 
+        bool isDraft = string.Equals(dto.Status, "Draft", StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(dto.Title))
+        {
+            throw new ArgumentException("Event Title is mandatory.");
+        }
+
+        if (!isDraft && string.IsNullOrWhiteSpace(dto.Venue))
+        {
+            throw new ArgumentException("Event Venue is mandatory for published events.");
+        }
+
         ev.Title = dto.Title.Trim();
         ev.Theme = dto.Theme?.Trim() ?? string.Empty;
         ev.Description = dto.Description?.Trim() ?? string.Empty;
         ev.CoverImageUrl = dto.CoverImageUrl?.Trim() ?? string.Empty;
         ev.EventDate = dto.EventDate == default ? ev.EventDate : dto.EventDate;
         ev.TimeString = dto.TimeString?.Trim() ?? string.Empty;
-        ev.Venue = dto.Venue.Trim();
+        ev.Venue = string.IsNullOrWhiteSpace(dto.Venue) ? (isDraft ? "TBA (Draft)" : ev.Venue) : dto.Venue.Trim();
         ev.Category = string.IsNullOrWhiteSpace(dto.Category) ? "General" : dto.Category.Trim();
         ev.IsFeatured = dto.IsFeatured;
         ev.RegistrationRequired = dto.RegistrationRequired;
-        ev.Status = string.IsNullOrWhiteSpace(dto.Status) ? "Upcoming" : dto.Status.Trim();
+        ev.Status = string.IsNullOrWhiteSpace(dto.Status) ? (isDraft ? "Draft" : "Upcoming") : dto.Status.Trim();
         ev.MaxCapacity = dto.MaxCapacity;
         ev.UpdatedAtUtc = DateTime.UtcNow;
 
