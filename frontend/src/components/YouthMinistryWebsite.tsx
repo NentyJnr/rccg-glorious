@@ -7,6 +7,7 @@ import {
   ChevronRight,
   BookOpen,
   Calendar,
+  Clock,
   Sparkles,
   Users,
   Video,
@@ -62,6 +63,8 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+  const [activeEventSlide, setActiveEventSlide] = useState(0);
+  const [isEventCarouselPaused, setIsEventCarouselPaused] = useState(false);
   const [activeContentTab, setActiveContentTab] = useState<'modules' | 'curriculum' | 'outlines' | 'articles' | 'quest'>('modules');
   const [selectedLeader, setSelectedLeader] = useState<LeaderPresenter | null>(null);
   const [selectedResource, setSelectedResource] = useState<ContentResource | null>(null);
@@ -126,6 +129,99 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
     }, 6000);
     return () => clearInterval(interval);
   }, [isCarouselPaused, heroSlides.length]);
+
+  // Youth Gatherings & Events Slideshow Data (Text & Typography only - No images)
+  const eventSlides = [
+    {
+      id: 'event-weekly-activity',
+      type: 'weekly' as const,
+      status: 'Active Ongoing Activity',
+      statusBadgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30',
+      title: 'Youth Prayer & Word Fellowship',
+      schedule: 'Every Wednesday • 6:00 PM GMT',
+      durationTag: 'Weekly Mid-Week Discipleship',
+      location: 'Main Youth Chapel & YouTube Live Stream',
+      description:
+        'Our core weekly convergence for adolescent and young adult discipleship. Experience acoustic worship ministration, deep biblical exposition, interactive Q&A on faith and contemporary challenges, and focused prayer.',
+      highlights: [
+        'Acoustic Worship & Holy Spirit Intercession',
+        'Practical Verse-by-Verse Scripture Study',
+        'Youth Small-Group Mentorship Circles'
+      ],
+      actionLabel: 'Attend Next Wednesday',
+      actionType: 'join' as const,
+      isPast: false
+    },
+    {
+      id: 'event-praise-worship-2026',
+      type: 'upcoming' as const,
+      status: 'Next Major Event • 3-Day Program',
+      statusBadgeColor: 'bg-amber-500/20 text-amber-300 border-amber-400/30',
+      title: 'Annual Youth Praise & Worship Program',
+      schedule: 'Friday 16th, Saturday 17th & Sunday 18th of October 2026',
+      durationTag: '3 Full Days of Revival & Prophetic Praise',
+      location: 'Main Church Auditorium & Global Live Broadcast',
+      description:
+        'Our flagship 3-day praise and worship convergence uniting youths across cities. Experience uninterrupted prophetic praise, acoustic worship breakouts, guest ministrations, spiritual impartation, and Holy Spirit revival.',
+      highlights: [
+        'Fri 16th Oct: Explosive Opening Night of Prophetic Praise',
+        'Sat 17th Oct: Worship Breakdown, Youth Choir & Creative Arts',
+        'Sun 18th Oct: Grand Thanksgiving, Prophetic Decrees & Anointing'
+      ],
+      actionLabel: 'Register for 3-Day Program',
+      actionType: 'join' as const,
+      isPast: false
+    },
+    {
+      id: 'event-prayer-walk',
+      type: 'past' as const,
+      status: 'Past Event • Annual Milestone',
+      statusBadgeColor: 'bg-blue-500/20 text-blue-300 border-blue-400/30',
+      title: 'Annual Youth Prayer Walk',
+      schedule: 'Concluded Spiritual Milestone • Annual Tradition',
+      durationTag: 'City & Campus Territorial Intercession',
+      location: 'Parish Metropolis Routes & Campus Corridors',
+      description:
+        'A faith-charged spiritual expedition through the city streets and campus corridors. Lifting holy hands to sanctify neighborhoods, interceding for academic breakthrough, national transformation, and youth revival.',
+      highlights: [
+        'Territorial Intercession Across the Community',
+        'Campus Revival Declarations & Student Altars',
+        'Community Outreach & Compassionate Evangelism'
+      ],
+      actionLabel: 'Relive Highlights / Inquire',
+      actionType: 'info' as const,
+      isPast: true
+    },
+    {
+      id: 'event-ignite-vigil',
+      type: 'monthly' as const,
+      status: 'Monthly All-Night Vigil',
+      statusBadgeColor: 'bg-purple-500/20 text-purple-300 border-purple-400/30',
+      title: 'Ignite Youth Worship Vigil',
+      schedule: 'Monthly • Last Friday Night • 10:00 PM GMT',
+      durationTag: 'All-Night Spiritual Incense',
+      location: 'Main Auditorium, RCCG Glorious Church',
+      description:
+        'A night of supernatural encounter and spiritual intensity. Gathering youths for deep acoustic intimacy, fervent midnight warfare prayer, prophetic utterances, deliverance, and divine impartation until daybreak.',
+      highlights: [
+        'Continuous Midnight Praises & Prophetic Ministration',
+        'Spiritual Breakthrough & Warfare Intercession',
+        'Holy Ghost Deliverance & Career Declarations'
+      ],
+      actionLabel: 'Attend Next Vigil',
+      actionType: 'join' as const,
+      isPast: false
+    }
+  ];
+
+  // Auto-advance Events Slideshow every 7 seconds unless paused
+  useEffect(() => {
+    if (isEventCarouselPaused) return;
+    const interval = setInterval(() => {
+      setActiveEventSlide((prev) => (prev + 1) % eventSlides.length);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, [isEventCarouselPaused, eventSlides.length]);
 
   // Featured Presenters & Youth Mentors
   const leaders: LeaderPresenter[] = [
@@ -1051,56 +1147,238 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
       </section>
 
       {/* ------------------------------------------------------------- */}
-      {/* 9. YOUTH FELLOWSHIP SCHEDULE / EVENTS PREVIEW SECTION         */}
+      {/* 9. YOUTH FELLOWSHIP SCHEDULE / EVENTS SLIDESHOW SECTION       */}
       {/* ------------------------------------------------------------- */}
-      <section id="events" className="py-16 sm:py-20 px-4 sm:px-8 bg-slate-900 text-white">
-        <div className="max-w-7xl mx-auto space-y-10">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+      <section
+        id="events"
+        className="py-16 sm:py-24 px-4 sm:px-8 bg-slate-900 text-white relative overflow-hidden"
+        onMouseEnter={() => setIsEventCarouselPaused(true)}
+        onMouseLeave={() => setIsEventCarouselPaused(false)}
+      >
+        <div className="max-w-7xl mx-auto space-y-10 relative z-10">
+          {/* Section Header with Controls */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-2 border-b border-slate-800">
             <div>
               <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold uppercase tracking-wider border border-emerald-400/30 mb-2">
                 <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Weekly Meetings &amp; Conferences</span>
+                <span>Youth Gatherings &amp; Events Calendar</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                Upcoming Youth Gatherings
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
+                Upcoming Youth Gatherings &amp; Programs
               </h2>
+              <p className="text-slate-400 text-sm sm:text-base max-w-2xl mt-1 font-normal">
+                An interactive slideshow of our weekly discipleship rhythm, flagship 3-day annual revival summit, and milestone youth gatherings.
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsJoinModalOpen(true)}
-              className="px-6 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider transition"
-            >
-              Register for Next Fellowship
-            </button>
+
+            {/* Slideshow Controls & Primary Register Action */}
+            <div className="flex items-center flex-wrap gap-3">
+              <div className="flex items-center space-x-2 bg-slate-800/90 border border-slate-700/80 px-3 py-1.5 rounded-full">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveEventSlide((prev) => (prev === 0 ? eventSlides.length - 1 : prev - 1))
+                  }
+                  className="p-1.5 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                  aria-label="Previous Gathering"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="font-mono text-xs font-bold text-slate-300 px-1">
+                  0{activeEventSlide + 1} / 0{eventSlides.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveEventSlide((prev) => (prev + 1) % eventSlides.length)
+                  }
+                  className="p-1.5 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                  aria-label="Next Gathering"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsJoinModalOpen(true)}
+                className="px-6 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider transition shadow-lg shadow-emerald-500/20"
+              >
+                Register for Next Fellowship
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-3xl bg-slate-800/80 border border-slate-700/80 space-y-4">
-              <div className="text-emerald-400 font-mono text-xs uppercase font-bold">Every Wednesday &bull; 6:00 PM GMT</div>
-              <h3 className="text-xl font-bold text-white">Youth Prayer &amp; Word Fellowship</h3>
-              <p className="text-slate-300 text-xs leading-relaxed">
-                Weekly mid-week discipleship, worship acoustic ministration, and conversational Bible study at the Youth Sanctuary.
-              </p>
-              <div className="text-[11px] text-slate-400 font-medium">Main Youth Chapel &amp; YouTube Live</div>
-            </div>
+          {/* Active Event Slide Card (Spotlight Showcase - Pure Typography & Design, No Images) */}
+          {(() => {
+            const currentEvent = eventSlides[activeEventSlide];
+            return (
+              <div className="relative rounded-3xl bg-gradient-to-br from-slate-800/95 via-slate-800/70 to-slate-900 border border-slate-700/80 p-6 sm:p-10 shadow-2xl transition-all duration-300">
+                {/* Meta Top Line */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-slate-700/60">
+                  <div className="flex items-center space-x-3">
+                    <span className={`px-3.5 py-1 rounded-full text-[11px] font-mono font-bold tracking-wider uppercase border ${currentEvent.statusBadgeColor}`}>
+                      {currentEvent.status}
+                    </span>
+                    {currentEvent.isPast && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-slate-700/90 text-slate-300 text-[10px] font-mono uppercase font-semibold">
+                        Concluded
+                      </span>
+                    )}
+                  </div>
 
-            <div className="p-6 rounded-3xl bg-slate-800/80 border border-slate-700/80 space-y-4">
-              <div className="text-amber-400 font-mono text-xs uppercase font-bold">Monthly &bull; Last Friday Night</div>
-              <h3 className="text-xl font-bold text-white">Ignite Youth Worship Vigil</h3>
-              <p className="text-slate-300 text-xs leading-relaxed">
-                All-night incense of passionate praise, heartfelt intercessory prayer, prophetic declarations, and spiritual breakthroughs.
-              </p>
-              <div className="text-[11px] text-slate-400 font-medium">Main Auditorium, RCCG Glorious Church</div>
-            </div>
+                  <div className="flex items-center space-x-2 text-xs font-mono text-slate-400">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Auto-advancing Slide {activeEventSlide + 1} of {eventSlides.length}</span>
+                  </div>
+                </div>
 
-            <div className="p-6 rounded-3xl bg-slate-800/80 border border-slate-700/80 space-y-4">
-              <div className="text-blue-400 font-mono text-xs uppercase font-bold">Annual Summit &bull; November 2026</div>
-              <h3 className="text-xl font-bold text-white">Kingdom Youth Leadership Summit</h3>
-              <p className="text-slate-300 text-xs leading-relaxed">
-                3 days of intensive career mentoring, tech breakout labs, spiritual empowerment, and executive student networking.
-              </p>
-              <div className="text-[11px] text-slate-400 font-medium">Sanctuary &amp; Virtual Global Broadcast</div>
-            </div>
+                {/* Main Content Info */}
+                <div className="pt-6 space-y-6">
+                  <div className="space-y-1.5">
+                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+                      {currentEvent.title}
+                    </h3>
+                    <p className="text-emerald-400 text-xs sm:text-sm font-mono uppercase font-bold tracking-wider">
+                      {currentEvent.durationTag}
+                    </p>
+                  </div>
+
+                  {/* Schedule & Location Pills */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-700/80 flex items-start space-x-3">
+                      <Calendar className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                          Schedule &amp; Dates
+                        </div>
+                        <div className="text-sm sm:text-base font-bold text-white">
+                          {currentEvent.schedule}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-700/80 flex items-start space-x-3">
+                      <MapPin className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                          Meeting Location / Broadcast
+                        </div>
+                        <div className="text-sm sm:text-base font-bold text-white">
+                          {currentEvent.location}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Narrative Body */}
+                  <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-4xl">
+                    {currentEvent.description}
+                  </p>
+
+                  {/* 3 Key Highlights */}
+                  <div className="space-y-2 pt-1">
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                      Program Highlights &amp; Sessions
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {currentEvent.highlights.map((highlight, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-200 flex items-start space-x-2.5"
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                          <span className="leading-snug">{highlight}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className="pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-slate-700/60">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsJoinModalOpen(true)}
+                        className="px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all"
+                      >
+                        {currentEvent.actionLabel}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const el = document.getElementById('footer');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold uppercase tracking-wider border border-slate-700 transition"
+                      >
+                        Contact Youth Executives
+                      </button>
+                    </div>
+
+                    {/* Interactive Slide Dots */}
+                    <div className="flex items-center space-x-2">
+                      {eventSlides.map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActiveEventSlide(idx)}
+                          className={`h-2.5 rounded-full transition-all duration-300 ${
+                            activeEventSlide === idx
+                              ? 'w-8 bg-emerald-400'
+                              : 'w-2.5 bg-slate-700 hover:bg-slate-600'
+                          }`}
+                          aria-label={`Switch to slide ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Interactive Event Selector Cards (Click any card to jump directly to slide) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+            {eventSlides.map((slide, idx) => {
+              const isActive = activeEventSlide === idx;
+              return (
+                <button
+                  key={slide.id}
+                  type="button"
+                  onClick={() => setActiveEventSlide(idx)}
+                  className={`text-left p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between space-y-3 cursor-pointer ${
+                    isActive
+                      ? 'bg-slate-800 border-emerald-400 shadow-xl shadow-emerald-500/10 -translate-y-1'
+                      : 'bg-slate-800/40 border-slate-800 hover:bg-slate-800/80 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${slide.statusBadgeColor}`}>
+                        {slide.type === 'upcoming'
+                          ? 'Next Event'
+                          : slide.type === 'weekly'
+                          ? 'Weekly'
+                          : slide.type === 'past'
+                          ? 'Past Event'
+                          : 'Monthly'}
+                      </span>
+                      {isActive && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      )}
+                    </div>
+                    <h4 className={`text-sm font-bold leading-snug line-clamp-2 ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                      {slide.title}
+                    </h4>
+                  </div>
+
+                  <div className="text-[11px] font-mono text-slate-400 line-clamp-1 border-t border-slate-700/50 pt-2">
+                    {slide.schedule}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
