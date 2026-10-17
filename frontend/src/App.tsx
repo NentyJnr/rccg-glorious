@@ -56,6 +56,7 @@ import {
 } from 'lucide-react';
 import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
+import { YouthMinistryWebsite } from './components/YouthMinistryWebsite';
 import { PortalComingSoonPage } from './components/PortalComingSoonPage';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { UserAccessGovernance } from './components/UserAccessGovernance';
@@ -458,7 +459,25 @@ const getHodDepartment = (user: User | null): string => {
 };
 
 export default function App() {
-  const [viewMode, setViewMode] = useState<'website' | 'portal'>('website');
+  const [viewMode, setViewMode] = useState<'website' | 'portal' | 'youth'>(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#youth') {
+      return 'youth';
+    }
+    return 'website';
+  });
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#youth') {
+        setViewMode('youth');
+      } else if (window.location.hash === '#portal') {
+        setViewMode('portal');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   const [showDraftLogin, setShowDraftLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'service-report' | 'events' | 'membership' | 'departments' | 'users' | 'fellowship' | 'setup'>('dashboard');
   
@@ -3547,10 +3566,29 @@ export default function App() {
     );
   }
 
+  if (viewMode === 'youth') {
+    return (
+      <YouthMinistryWebsite
+        onReturnToMain={() => {
+          setViewMode('website');
+          if (window.location.hash === '#youth') {
+            window.location.hash = '';
+          }
+        }}
+        onOpenPortal={() => setViewMode('portal')}
+        parishName={org.parishName}
+      />
+    );
+  }
+
   if (viewMode === 'website') {
     return (
       <ChurchWebsite
         onOpenPortal={() => setViewMode('portal')}
+        onOpenYouthMinistry={() => {
+          setViewMode('youth');
+          window.location.hash = 'youth';
+        }}
         parishName={org.parishName}
         customEvents={events}
       />
