@@ -171,16 +171,23 @@ public class EventService : IEventService
 
         if (dto.Speakers != null)
         {
-            _context.EventSpeakers.RemoveRange(ev.Speakers);
-            ev.Speakers.Clear();
+            var existingSpeakers = await _context.EventSpeakers
+                .Where(s => s.ParishEventId == ev.Id)
+                .ToListAsync(ct);
+
+            if (existingSpeakers.Count > 0)
+            {
+                _context.EventSpeakers.RemoveRange(existingSpeakers);
+            }
 
             int order = 1;
             foreach (var spk in dto.Speakers)
             {
                 if (!string.IsNullOrWhiteSpace(spk.FullName))
                 {
-                    ev.Speakers.Add(new EventSpeaker
+                    var speaker = new EventSpeaker
                     {
+                        Id = Guid.NewGuid(),
                         ParishEventId = ev.Id,
                         FullName = spk.FullName.Trim(),
                         EcclesiasticalTitle = string.IsNullOrWhiteSpace(spk.EcclesiasticalTitle) ? "Pastor" : spk.EcclesiasticalTitle.Trim(),
@@ -190,12 +197,17 @@ public class EventService : IEventService
                         ShortBio = spk.ShortBio?.Trim(),
                         DisplayOrder = spk.DisplayOrder > 0 ? spk.DisplayOrder : order++,
                         CreatedAtUtc = DateTime.UtcNow
-                    });
+                    };
+                    _context.EventSpeakers.Add(speaker);
                 }
             }
         }
 
         await _context.SaveChangesAsync(ct);
+        ev.Speakers = await _context.EventSpeakers
+            .Where(s => s.ParishEventId == ev.Id)
+            .OrderBy(s => s.DisplayOrder)
+            .ToListAsync(ct);
         return MapToDto(ev);
     }
 
@@ -247,16 +259,23 @@ public class EventService : IEventService
 
             if (dto.Speakers != null)
             {
-                _context.EventSpeakers.RemoveRange(ev.Speakers);
-                ev.Speakers.Clear();
+                var existingSpeakers = await _context.EventSpeakers
+                    .Where(s => s.ParishEventId == ev.Id)
+                    .ToListAsync(ct);
+
+                if (existingSpeakers.Count > 0)
+                {
+                    _context.EventSpeakers.RemoveRange(existingSpeakers);
+                }
 
                 int order = 1;
                 foreach (var spk in dto.Speakers)
                 {
                     if (!string.IsNullOrWhiteSpace(spk.FullName))
                     {
-                        ev.Speakers.Add(new EventSpeaker
+                        var speaker = new EventSpeaker
                         {
+                            Id = Guid.NewGuid(),
                             ParishEventId = ev.Id,
                             FullName = spk.FullName.Trim(),
                             EcclesiasticalTitle = string.IsNullOrWhiteSpace(spk.EcclesiasticalTitle) ? "Pastor" : spk.EcclesiasticalTitle.Trim(),
@@ -266,12 +285,17 @@ public class EventService : IEventService
                             ShortBio = spk.ShortBio?.Trim(),
                             DisplayOrder = spk.DisplayOrder > 0 ? spk.DisplayOrder : order++,
                             CreatedAtUtc = DateTime.UtcNow
-                        });
+                        };
+                        _context.EventSpeakers.Add(speaker);
                     }
                 }
             }
 
             await _context.SaveChangesAsync(ct);
+            ev.Speakers = await _context.EventSpeakers
+                .Where(s => s.ParishEventId == ev.Id)
+                .OrderBy(s => s.DisplayOrder)
+                .ToListAsync(ct);
             return MapToDto(ev);
         }
         else
