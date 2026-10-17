@@ -335,122 +335,181 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
 
       <main id="top">
         {/* ------------------------------------------------------------- */}
-        {/* 3. HERO SECTION (Refined High-Contrast & Multi-Card Collage)  */}
+        {/* 3. HERO SECTION (Luminous Mint Canvas & Centered 3-Card Mosaic) */}
         {/* ------------------------------------------------------------- */}
-        <section className="relative overflow-hidden bg-[#130E3A] text-white min-h-[85vh] lg:min-h-[720px] flex items-center pt-16 pb-20 lg:py-24">
-          {/* Background Ambient Glows & Radial Mesh */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute top-1/3 right-1/4 w-[32rem] h-[32rem] bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_50%,rgba(34,197,94,0.15),rgba(79,70,229,0.2),transparent_70%)] pointer-events-none" />
+        <section className="relative overflow-hidden bg-gradient-to-b from-[#EBF3EA] via-[#F4F9F3] to-[#e9f2e5] text-[#130E3A] pt-12 pb-20 sm:pt-16 sm:pb-24 lg:pt-20 lg:pb-32">
+          {/* Ambient Lighting & Radial Glows */}
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[720px] h-[360px] bg-gradient-to-tr from-emerald-300/30 via-teal-200/25 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/4 left-6 sm:left-16 w-80 h-80 bg-emerald-400/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/3 right-6 sm:right-16 w-96 h-96 bg-indigo-200/25 rounded-full blur-[90px] pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(#10b981_0.75px,transparent_0.75px)] [background-size:24px_24px] opacity-[0.10] pointer-events-none" />
 
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-            {/* Left Column: Headlines & Action */}
-            <div className="lg:col-span-7 space-y-6">
-              {/* Eyebrow Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-emerald-300 text-xs font-semibold tracking-wider uppercase">
-                <Flame className="w-3.5 h-3.5 text-emerald-400" />
-                <span>A Generation on Fire</span>
-              </div>
-
-              {/* Heading */}
-              <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight leading-[1.1]">
-                Rooted in faith. <br />
-                <span className="text-emerald-400 drop-shadow-[0_0_30px_rgba(52,211,153,0.3)]">
-                  Alive with purpose.
-                </span>
-              </h1>
-
-              {/* Subtitle */}
-              <p className="text-lg text-slate-300 max-w-xl leading-relaxed">
-                A vibrant community of youths discovering Christ, serving boldly, and flourishing in purpose. There is a place prepared for you here.
-              </p>
-
-              {/* CTAs */}
-              <div className="flex flex-wrap items-center gap-4 pt-2">
-                <a
-                  href="#events"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-[#0c0827] font-bold text-sm transition-all duration-200 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
-                >
-                  <span>See what's happening</span>
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-
-                <a
-                  href="#mandate"
-                  className="inline-flex items-center px-7 py-3.5 rounded-full bg-white/5 hover:bg-white/10 text-white font-semibold text-sm border border-white/20 hover:border-white/40 transition-all duration-200"
-                >
-                  Our Divine Mandate
-                </a>
-              </div>
-
-              {/* Social Proof with Real Avatar Silhouettes */}
-              <div className="flex items-center gap-3 pt-4">
-                <div className="flex -space-x-2.5 overflow-hidden">
-                  <img
-                    className="inline-block h-9 w-9 rounded-full ring-2 ring-[#130E3A] object-cover"
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-                    alt="Youth Member"
-                  />
-                  <img
-                    className="inline-block h-9 w-9 rounded-full ring-2 ring-[#130E3A] object-cover"
-                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80"
-                    alt="Youth Member"
-                  />
-                  <img
-                    className="inline-block h-9 w-9 rounded-full ring-2 ring-[#130E3A] object-cover"
-                    src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80"
-                    alt="Youth Member"
-                  />
-                  <img
-                    className="inline-block h-9 w-9 rounded-full ring-2 ring-[#130E3A] object-cover"
-                    src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80"
-                    alt="Youth Member"
-                  />
-                </div>
-                <p className="text-xs text-slate-300 font-medium">
-                  <span className="text-white font-bold">150+ youths</span> gathering weekly
-                </p>
-              </div>
+          {/* Centered Narrative Container */}
+          <div className="max-w-4xl mx-auto px-6 text-center relative z-10 space-y-6">
+            {/* Eyebrow Pill Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100/90 border border-emerald-300/80 text-emerald-800 text-xs font-bold tracking-wider uppercase shadow-sm">
+              <Flame className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
+              <span>A Generation on Fire</span>
             </div>
 
-            {/* Right Column: Arched Image with Glass Badges */}
-            <div className="lg:col-span-5 relative flex justify-center items-center py-6">
-              {/* Subtle Concentric Accent Rings */}
-              <div className="absolute w-[440px] h-[440px] rounded-full border border-white/5 pointer-events-none" />
-              <div className="absolute w-[540px] h-[540px] rounded-full border border-white/5 pointer-events-none" />
+            {/* Bold Display Headline with Hand-Drawn Accent */}
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-[#130E3A] leading-[1.08]">
+              Rooted in Faith. <br className="hidden sm:inline" />
+              <span className="relative inline-block mt-1 sm:mt-0">
+                <span className="text-emerald-600">Alive with Purpose.</span>
+                {/* Expressive hand-drawn squiggly accent underline */}
+                <svg
+                  className="absolute -bottom-2 sm:-bottom-3 left-0 w-full h-3 sm:h-4 text-emerald-500 overflow-visible"
+                  viewBox="0 0 300 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M3 14C55 5 110 18 165 10C215 3 265 14 297 10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </h1>
 
-              {/* Main Arched Photo Container */}
-              <div className="relative w-72 sm:w-80 h-[440px] rounded-t-full rounded-b-[40px] overflow-hidden shadow-2xl shadow-black/60 border border-white/10 group">
+            {/* Centered Subtitle */}
+            <p className="text-base sm:text-lg lg:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed font-medium">
+              A vibrant community of youths discovering Christ, serving boldly, and growing together. There is room for your story here.
+            </p>
+
+            {/* Action CTAs (Centered) */}
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+              <a
+                href="#events"
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base transition-all duration-200 shadow-xl shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:-translate-y-0.5"
+              >
+                <span>See What's Happening</span>
+                <ArrowRight className="w-4 h-4" />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setIsJoinModalOpen(true)}
+                className="inline-flex items-center px-8 py-3.5 rounded-full bg-white hover:bg-slate-50 text-[#130E3A] font-bold text-sm sm:text-base border border-slate-300 shadow-md shadow-slate-200/50 hover:border-emerald-500 transition-all duration-200 hover:-translate-y-0.5"
+              >
+                Join Us
+              </button>
+            </div>
+
+            {/* Social Proof with Real Avatar Silhouettes */}
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <div className="flex -space-x-2.5 overflow-hidden">
                 <img
-                  src="/youth_fellowship_hero.jpg"
-                  alt="RCCG Glorious Youths Fellowship"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                  onError={(e) => {
-                    e.currentTarget.src = galleryImages[1].src;
-                  }}
+                  className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover shadow-sm"
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+                  alt="Youth Member"
                 />
-                {/* Gradient Overlay at base */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                <img
+                  className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover shadow-sm"
+                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80"
+                  alt="Youth Member"
+                />
+                <img
+                  className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover shadow-sm"
+                  src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80"
+                  alt="Youth Member"
+                />
+                <img
+                  className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover shadow-sm"
+                  src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80"
+                  alt="Youth Member"
+                />
               </div>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                <span className="text-[#130E3A] font-bold">150+ youths</span> gathering weekly
+              </p>
+            </div>
+          </div>
 
-              {/* Floating Pill: Next Weekly Meeting */}
-              <div className="absolute -top-3 right-4 sm:right-6 bg-[#1B154C]/90 backdrop-blur-md border border-white/15 px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2.5 z-10">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <div className="text-left">
-                  <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-wider">Weekly Fellowship</p>
-                  <p className="text-xs text-white font-bold">Wednesdays • 6:00 PM</p>
+          {/* ------------------------------------------------------------- */}
+          {/* DYNAMIC MULTI-IMAGE MOSAIC COLLAGE (3-Card Cluster)          */}
+          {/* ------------------------------------------------------------- */}
+          <div className="max-w-6xl mx-auto mt-12 sm:mt-16 px-4 sm:px-6 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              {/* Left Card: Community Fellowship (Tilted -3 deg) */}
+              <div className="md:col-span-3 order-2 md:order-1 relative group">
+                <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-slate-900/10 border-4 border-white transform md:-rotate-3 group-hover:rotate-0 transition-transform duration-500 ease-out h-64 md:h-80 bg-slate-100">
+                  <img
+                    src={galleryImages[2].src}
+                    alt="Youth Community Fellowship"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Community Life</p>
+                    <p className="text-xs font-bold leading-tight">Authentic Fellowship</p>
+                  </div>
+                </div>
+                {/* Floating mini badge on left card */}
+                <div className="hidden lg:flex absolute -bottom-3 -right-2 bg-white/95 backdrop-blur-md border border-slate-200/80 px-3 py-1.5 rounded-full shadow-lg items-center gap-1.5 z-20">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-[11px] font-bold text-slate-800">Chosen Family</span>
                 </div>
               </div>
 
-              {/* Floating Glass Card: Welcome Note */}
-              <div className="absolute -bottom-4 -left-4 sm:left-0 bg-white/10 backdrop-blur-md border border-white/20 p-3.5 rounded-2xl shadow-xl max-w-[210px] z-10">
-                <div className="flex items-center gap-2 text-emerald-300 mb-1">
-                  <Heart className="w-4 h-4 fill-emerald-300/30 text-emerald-400" />
-                  <span className="text-xs font-bold">You Belong Here</span>
+              {/* Center Card: Main Worship Hero Frame (Tall & Dominant) */}
+              <div className="md:col-span-6 order-1 md:order-2 relative z-20">
+                <div className="relative mx-auto max-w-sm sm:max-w-md h-[380px] sm:h-[460px] rounded-t-full rounded-b-[40px] overflow-hidden shadow-2xl shadow-emerald-950/20 border-4 border-white bg-slate-100 group">
+                  <img
+                    src="/youth_fellowship_hero.jpg"
+                    alt="RCCG Glorious Youths Fellowship"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    onError={(e) => {
+                      e.currentTarget.src = galleryImages[1].src;
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                 </div>
-                <p className="text-[11px] text-slate-200 leading-snug">
-                  Every story matters, and there is a family waiting for you.
-                </p>
+
+                {/* Floating Pill: Next Gathering */}
+                <div className="absolute -top-3 right-2 sm:right-6 bg-[#130E3A]/90 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2.5 z-30">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <div className="text-left">
+                    <p className="text-[9px] text-emerald-300 font-semibold uppercase tracking-wider">Weekly Fellowship</p>
+                    <p className="text-xs text-white font-bold">Wednesdays • 6:00 PM</p>
+                  </div>
+                </div>
+
+                {/* Floating Glass Card: Welcome Note */}
+                <div className="absolute -bottom-4 left-2 sm:left-4 bg-white/95 backdrop-blur-md border border-slate-200/80 p-3.5 rounded-2xl shadow-xl max-w-[220px] z-30">
+                  <div className="flex items-center gap-2 text-emerald-600 mb-1">
+                    <Heart className="w-4 h-4 fill-emerald-500/20 text-emerald-600" />
+                    <span className="text-xs font-bold text-[#130E3A]">You Belong Here</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-snug">
+                    Every story matters, and there is a family waiting for you.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Card: Passionate Praise (Tilted +3 deg) */}
+              <div className="md:col-span-3 order-3 relative group">
+                <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-slate-900/10 border-4 border-white transform md:rotate-3 group-hover:rotate-0 transition-transform duration-500 ease-out h-64 md:h-80 bg-slate-100">
+                  <img
+                    src={galleryImages[0].src}
+                    alt="Youth Worship & Praise"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Worship Night</p>
+                    <p className="text-xs font-bold leading-tight">Passion & Praise</p>
+                  </div>
+                </div>
+                {/* Floating mini badge on right card */}
+                <div className="hidden lg:flex absolute -top-3 -left-2 bg-white/95 backdrop-blur-md border border-slate-200/80 px-3 py-1.5 rounded-full shadow-lg items-center gap-1.5 z-20">
+                  <Clock3 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-[11px] font-bold text-slate-800">AWAKE 3.0 Live</span>
+                </div>
               </div>
             </div>
           </div>
