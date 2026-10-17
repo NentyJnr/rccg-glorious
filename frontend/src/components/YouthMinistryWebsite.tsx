@@ -67,37 +67,42 @@ const galleryImages = [
 
 const events = [
   {
+    id: 'awake-3-0',
+    date: '16-18',
+    month: 'OCT',
+    year: '2026',
+    title: 'AWAKE 3.0',
+    badge: 'Awake 3.0 · Flagship 3-Day Program',
+    theme: 'The High Praise of Our God',
+    detail:
+      'RCCG Glorious Church Youths presents AWAKE 3.0 — an explosive 3-day praise, worship, and spiritual revival convergence themed "The High Praise of Our God". Join Pastor Taiwo Adetunji (Host), Minister Christopher Yinka Philip (Youth President / Co-Host), anointed guest psalmists, and Glorious Youth Drama for unbroken prophetic high praise, spiritual warfare, impartation, and deep encounters.',
+    highlights: [
+      'Fri 16th Oct · 10:00 PM: Opening Night of High Praise (Vigil)',
+      'Sat 17th Oct · 4:00 PM: Deep Worship, Word & Glorious Youth Drama',
+      'Sun 18th Oct · 8:00 AM: Grand Thanksgiving Service & Anointing'
+    ],
+    time: 'Fri 16th (10:00 PM), Sat 17th (4:00 PM) & Sun 18th Oct (8:00 AM)',
+    place: 'RCCG Glorious Church Auditorium, KM 36, Eputu B/Stop Beside Danco Filling Station, Lekki Epe Expressway, Lagos',
+    image: '/awake_3_0_flyer.jpg',
+    ministers:
+      'Host: Pastor Taiwo Adetunji • Co-Host: Min. Christopher Yinka Philip (Youth President) • Drama: Glorious Youth Drama • Guest Ministers: Pastor Glory Ughegbe, Min. Ola (Youth Choir Leader), Min. Emmanuel Godspower, Min. Popekeyz, Min. Wale Praiz, Min. Yemisi, Min. Godwin Arthur, Min. Josephine, Min. Samuel Edufacts, Min. Maranatha, Min. Joshua Obioma',
+    isPast: false
+  },
+  {
     id: 'weekly-fellowship',
     date: 'WED',
     month: 'WKLY',
     year: 'Every Week',
     title: 'Youth Prayer & Word Fellowship',
     badge: 'Weekly Discipleship',
+    theme: 'Spiritual Growth, Prayer & Discipleship',
     detail:
       'Our core mid-week fellowship for spiritual growth and community. Experience passionate prayer sessions, transformative biblical messages, and interactive discussions that equip youths for impactful Christian living.',
     highlights: ['Prayer Sessions', 'Message', 'Discussions'],
     time: 'Every Wednesday · 6:00 PM GMT',
     place: 'Main Youth Chapel & YouTube Live Stream',
     image: galleryImages[0].src,
-    isPast: false
-  },
-  {
-    id: 'praise-worship-2026',
-    date: '16-18',
-    month: 'OCT',
-    year: '2026',
-    title: 'Annual Youth Praise & Worship Program',
-    badge: 'Flagship 3-Day Program',
-    detail:
-      'Our premier 3-day spiritual summit bringing together youths from across cities for unbroken prophetic praise, anointed worship ministrations, spiritual warfare, impartation, and transformative encounters in the presence of God.',
-    highlights: [
-      'Fri 16th Oct: Explosive Opening Night of Prophetic Praise',
-      'Sat 17th Oct: Worship Breakdown, Youth Choir & Creative Arts',
-      'Sun 18th Oct: Grand Thanksgiving, Prophetic Decrees & Anointing'
-    ],
-    time: 'Friday 16th, Saturday 17th & Sunday 18th of October 2026',
-    place: 'Main Church Auditorium & Global Live Broadcast',
-    image: galleryImages[1].src,
+    ministers: 'Youth Pastoral Council & Discipleship Leaders',
     isPast: false
   },
   {
@@ -107,6 +112,7 @@ const events = [
     year: 'Milestone',
     title: 'Annual Youth Prayer Walk',
     badge: 'Concluded Milestone',
+    theme: 'City & Campus Intercession',
     detail:
       'A faith-charged spiritual expedition through the city streets and campus corridors. Lifting holy hands to sanctify neighborhoods, interceding for academic breakthrough, national transformation, and youth revival.',
     highlights: [
@@ -117,14 +123,15 @@ const events = [
     time: 'Concluded Spiritual Milestone · Annual Tradition',
     place: 'Parish Metropolis Routes & Campus Corridors',
     image: galleryImages[3].src,
+    ministers: 'Parish Metropolis Corridors & Campus Outreach Vanguard',
     isPast: true
   }
 ];
 
 const executives = [
-  { name: 'Daniel Osei', role: 'Youth President', initials: 'DO', color: 'bg-[#e9d8c9]' },
-  { name: 'Grace Nwosu', role: 'Vice President', initials: 'GN', color: 'bg-[#c8d7c2]' },
-  { name: 'Samuel Addo', role: 'Worship Lead', initials: 'SA', color: 'bg-[#d6cbed]' },
+  { name: 'Min. Christopher Yinka Philip', role: 'Youth President / Co-Host', initials: 'CY', color: 'bg-[#e9d8c9]' },
+  { name: 'Min. Ola', role: 'Youth Choir Leader', initials: 'OL', color: 'bg-[#c8d7c2]' },
+  { name: 'Grace Nwosu', role: 'Vice President', initials: 'GN', color: 'bg-[#d6cbed]' },
   { name: 'Esther Mensah', role: 'Communications', initials: 'EM', color: 'bg-[#f0ddae]' }
 ];
 
@@ -571,23 +578,28 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
 
             {/* Featured Event Card */}
             <div className="grid overflow-hidden rounded-[2rem] bg-[#211566] lg:grid-cols-[1.08fr_0.92fr] shadow-2xl">
-              <div className="relative min-h-[390px] overflow-hidden">
+              <div className="relative min-h-[390px] overflow-hidden bg-black/40">
                 <img
                   src={event.image}
                   alt={event.title}
-                  className="absolute inset-0 h-full w-full object-cover transition-all duration-700"
+                  className="absolute inset-0 h-full w-full object-cover object-top transition-all duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#211566]/95 via-[#211566]/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#211566]/95 via-[#211566]/30 to-transparent" />
                 <div className="absolute bottom-8 left-8 right-8 flex items-end justify-between text-white">
                   <div>
                     <span className="mb-2 inline-block text-xs font-bold uppercase tracking-[0.18em] text-[#8fe09a] bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs">
                       {event.badge}
                     </span>
-                    <h3 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                    <h3 className="text-3xl sm:text-4xl font-black tracking-tight drop-shadow-sm">
                       {event.title}
                     </h3>
+                    {event.theme && (
+                      <p className="mt-1 text-xs sm:text-sm font-bold text-amber-300 tracking-wide uppercase drop-shadow-sm">
+                        Theme: {event.theme}
+                      </p>
+                    )}
                   </div>
-                  <div className="hidden text-center sm:block bg-[#211566]/80 p-3 rounded-2xl border border-white/20 backdrop-blur-md">
+                  <div className="hidden text-center sm:block bg-[#211566]/80 p-3 rounded-2xl border border-white/20 backdrop-blur-md shrink-0 ml-4">
                     <span className="block text-3xl font-black leading-none text-white">
                       {event.date}
                     </span>
@@ -600,13 +612,20 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
 
               <div className="flex flex-col justify-between p-8 text-white sm:p-12 space-y-6">
                 <div>
-                  <div className="mb-6 flex items-center gap-3">
-                    <span className="flex h-12 w-14 items-center justify-center rounded-xl bg-[#4dbb62] font-black text-sm tracking-wider">
-                      {event.date}
-                    </span>
-                    <span className="text-xs font-bold uppercase tracking-widest text-white/70">
-                      {event.month} &bull; {event.year}
-                    </span>
+                  <div className="mb-6 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-12 w-14 items-center justify-center rounded-xl bg-[#4dbb62] font-black text-sm tracking-wider">
+                        {event.date}
+                      </span>
+                      <span className="text-xs font-bold uppercase tracking-widest text-white/70">
+                        {event.month} &bull; {event.year}
+                      </span>
+                    </div>
+                    {event.theme && (
+                      <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-xs font-bold uppercase tracking-wider">
+                        <span>THEME: {event.theme}</span>
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-base sm:text-lg leading-relaxed text-white/80">
@@ -618,15 +637,26 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                     {event.highlights.map((item, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs text-white/90"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-white/90"
                       >
-                        <CheckCircle2 size={13} className="text-[#8fe09a]" />
+                        <CheckCircle2 size={13} className="text-[#8fe09a] shrink-0" />
                         <span>{item}</span>
                       </span>
                     ))}
                   </div>
 
-                  <div className="mt-8 space-y-3 text-sm text-white/80">
+                  {event.ministers && (
+                    <div className="mt-6 p-4 rounded-2xl bg-white/5 border border-white/10 text-xs leading-relaxed space-y-1">
+                      <div className="text-[#8fe09a] font-bold uppercase tracking-wider text-[10px]">
+                        Program Ministers & Hosts
+                      </div>
+                      <p className="text-white/70">
+                        {event.ministers}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="mt-6 space-y-3 text-sm text-white/80">
                     <span className="flex items-center gap-3">
                       <Clock3 size={17} className="text-[#75d283] shrink-0" />
                       <span>{event.time}</span>
