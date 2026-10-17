@@ -34,6 +34,7 @@ import {
   FileText,
   Users
 } from 'lucide-react';
+import { YouthMinistryWebsite } from './YouthMinistryWebsite';
 
 export interface EventSpeakerItem {
   id?: string;
@@ -180,7 +181,7 @@ interface ChurchWebsiteProps {
   customEvents?: ParishEventItem[];
 }
 
-type InfoModalKey = 'history' | 'vision' | 'beliefs' | 'structure' | 'health' | 'missions' | 'redemptionTv' | 'blog' | 'announcements' | 'youth' | null;
+type InfoModalKey = 'history' | 'vision' | 'beliefs' | 'structure' | 'health' | 'missions' | 'redemptionTv' | 'blog' | 'announcements' | null;
 
 export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
   onOpenPortal,
@@ -190,6 +191,8 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
 }) => {
   // Mobile Nav Toggle
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Dedicated Youth Ministry Page View State
+  const [showYouthWebsite, setShowYouthWebsite] = useState(false);
   // Search Modal
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -570,6 +573,32 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
     setInfoModalKey(key);
   };
 
+  const handleOpenYouth = () => {
+    setActiveDropdown(null);
+    setMobileMenuOpen(false);
+    if (onOpenYouthMinistry) {
+      onOpenYouthMinistry();
+    }
+    setShowYouthWebsite(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  if (showYouthWebsite) {
+    return (
+      <YouthMinistryWebsite
+        onReturnToMain={() => {
+          setShowYouthWebsite(false);
+          if (window.location.hash === '#youth') {
+            window.location.hash = '';
+          }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenPortal={onOpenPortal}
+        parishName={parishName}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-slate-800 font-sans selection:bg-emerald-300 selection:text-slate-900">
       
@@ -681,9 +710,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                   <div className="absolute right-0 mt-2 w-56 bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl backdrop-blur-xl py-2 z-50 animate-fadeIn">
                     <button onClick={() => { handleNavClick('blog'); }} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block whitespace-nowrap">BLOG</button>
                     <button onClick={() => { handleNavClick('announcements'); }} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-slate-200 hover:text-emerald-400 hover:bg-slate-800/80 font-bold uppercase block whitespace-nowrap">ANNOUNCEMENTS</button>
-                    {onOpenYouthMinistry && (
-                      <button onClick={() => { setActiveDropdown(null); onOpenYouthMinistry(); }} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-amber-300 hover:text-amber-200 hover:bg-slate-800/80 font-bold uppercase block whitespace-nowrap">YOUTH MINISTRY SITE &rarr;</button>
-                    )}
+                    <button onClick={handleOpenYouth} className="w-full text-left px-4 py-2.5 text-xs sm:text-sm text-amber-300 hover:text-amber-200 hover:bg-slate-800/80 font-bold uppercase block whitespace-nowrap">YOUTH MINISTRY SITE &rarr;</button>
                   </div>
                 )}
               </div>
@@ -746,9 +773,7 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
               <span className="text-xs text-emerald-400 uppercase tracking-wider font-mono">USEFUL LINKS</span>
               <button onClick={() => { handleNavClick('blog'); }} className="w-full text-left block px-3 py-1.5 text-slate-200 hover:text-emerald-400">BLOG</button>
               <button onClick={() => { handleNavClick('announcements'); }} className="w-full text-left block px-3 py-1.5 text-slate-200 hover:text-emerald-400">ANNOUNCEMENTS</button>
-              {onOpenYouthMinistry && (
-                <button onClick={() => { setMobileMenuOpen(false); onOpenYouthMinistry(); }} className="w-full text-left block px-3 py-1.5 text-amber-300 hover:text-amber-200 font-bold">YOUTH MINISTRY WEBSITE &rarr;</button>
-              )}
+              <button onClick={handleOpenYouth} className="w-full text-left block px-3 py-1.5 text-amber-300 hover:text-amber-200 font-bold">YOUTH MINISTRY WEBSITE &rarr;</button>
             </div>
 
           </div>
@@ -1594,11 +1619,11 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
               <h4 className="text-xs font-mono uppercase text-white font-black tracking-wider mb-3">Ministries</h4>
               <div>
                 <button
-                  onClick={() => onOpenYouthMinistry ? onOpenYouthMinistry() : setInfoModalKey('youth')}
-                  className="hover:text-white text-blue-100 font-medium text-left transition flex items-center space-x-1.5"
+                  type="button"
+                  onClick={handleOpenYouth}
+                  className="hover:text-white text-blue-100 font-medium text-left transition"
                 >
-                  <span>Youth Ministry</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-mono">NEW</span>
+                  Youth Ministry
                 </button>
               </div>
             </div>
@@ -1794,41 +1819,6 @@ export const ChurchWebsite: React.FC<ChurchWebsiteProps> = ({
                   <span>Watch Redemption TV Live</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
-              </div>
-            )}
-
-            {/* YOUTH MINISTRY CONTENT */}
-            {infoModalKey === 'youth' && (
-              <div className="space-y-5 text-center py-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-900 shadow-inner">
-                  <Sparkles className="w-8 h-8 animate-pulse text-amber-500" />
-                </div>
-                <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-blue-50 text-blue-900 text-xs font-mono font-bold">
-                  <span>Glorious Youth Ministry</span>
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-slate-900">Glorious Youth Ministry Website</h3>
-                <p className="text-sm text-slate-600 leading-relaxed font-medium max-w-md mx-auto">
-                  Explore our dedicated website for youth discipleship, worship resources, student leadership summits, and career mentorship.
-                </p>
-                <div className="pt-2 flex justify-center gap-3">
-                  {onOpenYouthMinistry && (
-                    <button
-                      onClick={() => {
-                        setInfoModalKey(null);
-                        onOpenYouthMinistry();
-                      }}
-                      className="px-6 py-2.5 rounded-xl bg-[#00356b] hover:bg-[#002244] text-white font-bold text-xs shadow-md transition"
-                    >
-                      Visit Youth Website &rarr;
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setInfoModalKey(null)}
-                    className="px-6 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs transition"
-                  >
-                    Close
-                  </button>
-                </div>
               </div>
             )}
 
