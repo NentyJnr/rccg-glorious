@@ -43,29 +43,29 @@ const logoFallback = '/assets/images/WhatsApp_Image_2026-10-16_at_5.23.05_AM.jpe
 
 const galleryImages = [
   {
-    src: 'https://images.pexels.com/photos/8815046/pexels-photo-8815046.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    title: 'Worship night',
+    src: '/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.16 AM (1).jpeg',
+    title: 'AWAKE 3.0 Ministration',
     tag: 'Faith & worship'
   },
   {
-    src: 'https://images.pexels.com/photos/7849436/pexels-photo-7849436.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    title: 'Serving with joy',
+    src: '/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.43 AM.jpeg',
+    title: 'Awake 3.0 Street Outreach',
     tag: 'Outreach day'
   },
   {
-    src: 'https://images.pexels.com/photos/10353711/pexels-photo-10353711.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    title: 'Chosen family',
-    tag: 'Youth community'
+    src: '/gallery/prayer-walk-2026/WhatsApp Image 2026-10-18 at 8.15.49 AM.jpeg',
+    title: 'Annual Youth Prayer Walk',
+    tag: 'Prayer Walk'
   },
   {
-    src: 'https://images.pexels.com/photos/18751058/pexels-photo-18751058.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    title: 'Growing together',
-    tag: 'Fellowship'
+    src: '/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.18 AM (1).jpeg',
+    title: 'Youth Drama Ministration',
+    tag: 'Creative Arts'
   },
   {
-    src: 'https://images.pexels.com/photos/17026870/pexels-photo-17026870.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    title: 'One body',
-    tag: 'Sunday gathering'
+    src: '/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.44 AM.jpeg',
+    title: 'Community Welfare & Souls',
+    tag: 'Evangelism'
   }
 ];
 
@@ -86,34 +86,38 @@ const events = [
     ],
     time: 'Fri 16th (10:00 PM), Sat 17th (4:00 PM) & Sun 18th Oct (8:00 AM)',
     place: 'RCCG Glorious Church Auditorium, KM 36, Eputu B/Stop Beside Danco Filling Station, Lekki Epe Expressway, Lagos',
-    image: '/awake_3_0_flyer.jpg',
+    image: '/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.16 AM (1).jpeg',
     ministers:
       'Host: Pastor Taiwo Adetunji • Co-Host: Min. Christopher Yinka Philip (Youth President) • Drama: Glorious Youth Drama • Guest Ministers: Pastor Glory Ughegbe, Min. Ola (Youth Choir Leader), Min. Emmanuel Godspower, Min. Popekeyz, Min. Wale Praiz, Min. Yemisi, Min. Godwin Arthur, Min. Josephine, Min. Samuel Edufacts, Min. Maranatha, Min. Joshua Obioma',
     isPast: false
   },
   {
-    id: 'weekly-fellowship',
-    date: 'WED',
-    month: 'WKLY',
-    year: 'Every Week',
-    title: 'Youth Prayer & Word Fellowship',
-    badge: 'Weekly Discipleship',
+    id: 'awake-3-0-outreach',
+    date: '16',
+    month: 'OCT',
+    year: '2026',
+    title: 'Awake 3.0 Outreach',
+    badge: 'Community Evangelism & Welfare',
     detail:
-      'Our core mid-week fellowship for spiritual growth and community. Experience passionate prayer sessions, transformative biblical messages, and interactive discussions that equip youths for impactful Christian living.',
-    highlights: ['Prayer Sessions', 'Message', 'Discussions'],
-    time: 'Every Wednesday · 6:00 PM GMT',
-    place: 'Main Youth Chapel & YouTube Live Stream',
-    image: galleryImages[0].src,
-    ministers: 'Youth Pastoral Council & Discipleship Leaders',
+      'Candid scenes of vibrant youths taking the gospel to the streets, distributing welfare items, praying with commuters and market individuals, and declaring Christ across the Eputu metropolis along Lekki-Epe Expressway.',
+    highlights: [
+      'Street Evangelism along Eputu Corridor',
+      'Compassionate Welfare & Food Distribution',
+      'One-on-One Soul Winning & Kingdom Intercession'
+    ],
+    time: 'Friday 16th Oct 2026 · Morning Outreach Session',
+    place: 'Eputu Junction, Market Environs & Lekki-Epe Expressway Corridors',
+    image: '/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.43 AM.jpeg',
+    ministers: 'Youth Outreach Vanguard & Community Welfare Team',
     isPast: false
   },
   {
-    id: 'prayer-walk',
-    date: 'ANN',
-    month: 'PAST',
-    year: 'Milestone',
+    id: 'prayer-walk-2026',
+    date: '14',
+    month: 'MAR',
+    year: '2026',
     title: 'Annual Youth Prayer Walk',
-    badge: 'Concluded Milestone',
+    badge: 'Concluded Milestone · Annual Tradition',
     detail:
       'A faith-charged spiritual expedition through the city streets and campus corridors. Lifting holy hands to sanctify neighborhoods, interceding for academic breakthrough, national transformation, and youth revival.',
     highlights: [
@@ -123,7 +127,7 @@ const events = [
     ],
     time: 'Concluded Spiritual Milestone · Annual Tradition',
     place: 'Parish Metropolis Routes & Campus Corridors',
-    image: galleryImages[3].src,
+    image: '/gallery/prayer-walk-2026/WhatsApp Image 2026-10-18 at 8.15.49 AM.jpeg',
     ministers: 'Parish Metropolis Corridors & Campus Outreach Vanguard',
     isPast: true
   }
@@ -685,19 +689,38 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
 
             {/* Featured Event Card */}
             <div className="grid overflow-hidden rounded-[2rem] bg-[#211566] lg:grid-cols-[1.08fr_0.92fr] shadow-2xl">
-              <div className="relative min-h-[390px] overflow-hidden bg-black/40">
+              <div
+                className="relative min-h-[390px] overflow-hidden bg-black/40 cursor-pointer group"
+                onClick={() => handleOpenAlbum(event.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleOpenAlbum(event.id);
+                  }
+                }}
+                aria-label={`Open photo gallery for ${event.title}`}
+              >
                 <img
                   src={event.image}
                   alt={event.title}
-                  className="absolute inset-0 h-full w-full object-cover object-top transition-all duration-700"
+                  className="absolute inset-0 h-full w-full object-cover object-top transition-all duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#211566]/95 via-[#211566]/30 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#211566]/95 via-[#211566]/30 to-transparent group-hover:from-[#130E3A]/95 transition duration-500" />
+                
+                {/* Floating Top Pill on Card */}
+                <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold uppercase tracking-wider group-hover:bg-emerald-600 group-hover:border-emerald-400 transition-all duration-300 shadow-sm">
+                  <Play size={11} className="fill-current text-emerald-400 group-hover:text-white" />
+                  <span>View Program Gallery</span>
+                </div>
+
                 <div className="absolute bottom-8 left-8 right-8 flex items-end justify-between text-white">
                   <div>
                     <span className="mb-2 inline-block text-xs font-bold uppercase tracking-[0.18em] text-[#8fe09a] bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs">
                       {event.badge}
                     </span>
-                    <h3 className="text-3xl sm:text-4xl font-black tracking-tight drop-shadow-sm">
+                    <h3 className="text-3xl sm:text-4xl font-black tracking-tight drop-shadow-sm group-hover:text-emerald-300 transition">
                       {event.title}
                     </h3>
                   </div>
@@ -766,9 +789,21 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                 </div>
 
                 <div className="pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-white/10">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-semibold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Free Attendance &bull; All Are Welcome</span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-semibold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Free Attendance &bull; All Are Welcome</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAlbum(event.id)}
+                      className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-[#0b1f13] text-xs font-bold transition-all duration-300 cursor-pointer shadow-md hover:scale-105 active:scale-95"
+                      aria-label={`View photos from ${event.title}`}
+                    >
+                      <Play size={11} className="fill-current" />
+                      <span>View Program Gallery &rarr;</span>
+                    </button>
                   </div>
 
                   <div className="flex items-center gap-1.5">
