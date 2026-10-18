@@ -114,6 +114,7 @@ function getAlbumPhotos(
   return generate50Photos(folderKey, categoryTitle, keywords);
 }
 
+// Active Program Albums currently populated with authentic photo assets
 export const youthAlbums: ProgramAlbum[] = [
   {
     id: 'awake-3-0',
@@ -126,7 +127,7 @@ export const youthAlbums: ProgramAlbum[] = [
       'https://images.pexels.com/photos/8815046/pexels-photo-8815046.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
     ),
     description:
-      '50 curated moments of explosive prophetic praise, deep worship, youth drama, and grand thanksgiving from AWAKE 3.0 at RCCG Glorious Church Auditorium.',
+      'Curated moments of explosive prophetic praise, deep worship, youth drama, and grand thanksgiving from AWAKE 3.0 at RCCG Glorious Church Auditorium.',
     externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-awake-3-0-full-archive',
     photos: getAlbumPhotos('awake-3-0', 'AWAKE 3.0', [
       'Passionate Vigil Praise',
@@ -150,7 +151,7 @@ export const youthAlbums: ProgramAlbum[] = [
       'https://images.pexels.com/photos/7849436/pexels-photo-7849436.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
     ),
     description:
-      '50 candid scenes of vibrant youths taking the gospel to the streets, distributing food, interceding for commuters, and ministering Christ along Lekki-Epe Expressway during AWAKE 3.0.',
+      'Candid scenes of vibrant youths taking the gospel to the streets, distributing food, interceding for commuters, and ministering Christ along Lekki-Epe Expressway during AWAKE 3.0.',
     externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-awake-3-0-outreach-archive',
     photos: getAlbumPhotos('awake-3-0-outreach', 'Awake 3.0 Outreach', [
       'Street Evangelism along Eputu Corridor',
@@ -163,6 +164,34 @@ export const youthAlbums: ProgramAlbum[] = [
       'Joyful Souls Won into the Kingdom'
     ])
   },
+  {
+    id: 'prayer-walk-2026',
+    title: 'Annual Prayer Walk 2026 · Interceding for Our Land',
+    shortTitle: 'Annual Prayer Walk 2026',
+    tag: 'Prayer Walk',
+    date: '14 MAR 2026',
+    coverImage: getAlbumCover(
+      'prayer-walk-2026',
+      'https://images.pexels.com/photos/17026870/pexels-photo-17026870.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
+    ),
+    description:
+      'Dynamic photos of youths walking through the community in prayer, bearing faith placards, speaking peace over Lekki-Epe expressway, and claiming territory for Christ.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-prayer-walk-2026-archive',
+    photos: getAlbumPhotos('prayer-walk-2026', 'Annual Prayer Walk 2026', [
+      'Gathering at Church Gates at Dawn',
+      'Lifting Holy Hands on the Highway',
+      'Praying for Peace and Economic Breakthrough',
+      'Marching Youths with Gospel Banners',
+      'Interceding for Schools and Families',
+      'Spontaneous High Praise along the Route',
+      'Corporate Shouts of Victory',
+      'Return to Altar for Closing Thanksgiving'
+    ])
+  }
+];
+
+// Preserved program album configurations for future activation once photos are uploaded
+export const futureProgramAlbums: ProgramAlbum[] = [
   {
     id: 'awake-2-0',
     title: 'AWAKE 2.0 · Divine Encounter & Praise Altar',
@@ -209,30 +238,6 @@ export const youthAlbums: ProgramAlbum[] = [
       'Lighting the Youth Ministry Torch',
       'Fellowship Banquet & Group Portraits',
       'Thanksgiving to the God of RCCG Glorious'
-    ])
-  },
-  {
-    id: 'prayer-walk-2026',
-    title: 'Annual Prayer Walk 2026 · Interceding for Our Land',
-    shortTitle: 'Annual Prayer Walk 2026',
-    tag: 'Prayer Walk',
-    date: '14 MAR 2026',
-    coverImage: getAlbumCover(
-      'prayer-walk-2026',
-      'https://images.pexels.com/photos/17026870/pexels-photo-17026870.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
-    ),
-    description:
-      '50 dynamic photos of youths walking through the community in prayer, bearing faith placards, speaking peace over Lekki-Epe expressway, and claiming territory for Christ.',
-    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-prayer-walk-2026-archive',
-    photos: getAlbumPhotos('prayer-walk-2026', 'Annual Prayer Walk 2026', [
-      'Gathering at Church Gates at Dawn',
-      'Lifting Holy Hands on the Highway',
-      'Praying for Peace and Economic Breakthrough',
-      'Marching Youths with Gospel Banners',
-      'Interceding for Schools and Families',
-      'Spontaneous High Praise along the Route',
-      'Corporate Shouts of Victory',
-      'Return to Altar for Closing Thanksgiving'
     ])
   },
   {

@@ -822,15 +822,13 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
           </div>
 
           {/* Program Cards Grid matching user requirements */}
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {youthAlbums.map((album, index) => (
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {youthAlbums.map((album) => (
               <button
                 key={album.id}
                 type="button"
                 onClick={() => handleOpenAlbum(album.id)}
-                className={`${
-                  index === 0 ? 'sm:col-span-2 sm:row-span-2' : ''
-                } group relative min-h-[250px] sm:min-h-[280px] overflow-hidden rounded-[1.5rem] shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer text-left focus:outline-none focus:ring-4 focus:ring-emerald-500/50 transform hover:-translate-y-1`}
+                className="group relative min-h-[300px] sm:min-h-[350px] overflow-hidden rounded-[1.5rem] shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer text-left focus:outline-none focus:ring-4 focus:ring-emerald-500/50 transform hover:-translate-y-1.5"
               >
                 <img
                   src={album.coverImage}

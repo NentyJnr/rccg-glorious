@@ -547,13 +547,13 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
               className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-bold shadow-lg shadow-emerald-900/40 transition shrink-0"
             >
               <Download size={16} />
-              <span>Download All 50 Photos from Drive</span>
+              <span>Download Archive from Drive</span>
               <ExternalLink size={14} className="opacity-70" />
             </a>
           </div>
 
           {/* Cards for other programs */}
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
             {youthAlbums.map((album) => {
               const isCurrent = album.id === currentAlbumId;
               return (
@@ -583,7 +583,7 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
                       </span>
                     ) : (
                       <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-black/60 text-emerald-300 border border-emerald-400/30 backdrop-blur-xs">
-                        50 Photos
+                        {album.photos.length} Photos
                       </span>
                     )}
 
