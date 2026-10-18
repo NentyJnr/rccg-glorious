@@ -74,7 +74,6 @@ const events = [
     year: '2026',
     title: 'AWAKE 3.0',
     badge: 'Awake 3.0 · Flagship 3-Day Program',
-    theme: 'The High Praise of Our God',
     detail:
       'RCCG Glorious Church Youths presents AWAKE 3.0 — an explosive 3-day praise, worship, and spiritual revival convergence themed "The High Praise of Our God". Join Pastor Taiwo Adetunji (Host), Minister Christopher Yinka Philip (Youth President / Co-Host), anointed guest psalmists, and Glorious Youth Drama for unbroken prophetic high praise, spiritual warfare, impartation, and deep encounters.',
     highlights: [
@@ -96,7 +95,6 @@ const events = [
     year: 'Every Week',
     title: 'Youth Prayer & Word Fellowship',
     badge: 'Weekly Discipleship',
-    theme: 'Spiritual Growth, Prayer & Discipleship',
     detail:
       'Our core mid-week fellowship for spiritual growth and community. Experience passionate prayer sessions, transformative biblical messages, and interactive discussions that equip youths for impactful Christian living.',
     highlights: ['Prayer Sessions', 'Message', 'Discussions'],
@@ -113,7 +111,6 @@ const events = [
     year: 'Milestone',
     title: 'Annual Youth Prayer Walk',
     badge: 'Concluded Milestone',
-    theme: 'City & Campus Intercession',
     detail:
       'A faith-charged spiritual expedition through the city streets and campus corridors. Lifting holy hands to sanctify neighborhoods, interceding for academic breakthrough, national transformation, and youth revival.',
     highlights: [
@@ -660,11 +657,6 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                     <h3 className="text-3xl sm:text-4xl font-black tracking-tight drop-shadow-sm">
                       {event.title}
                     </h3>
-                    {event.theme && (
-                      <p className="mt-1 text-xs sm:text-sm font-bold text-amber-300 tracking-wide uppercase drop-shadow-sm">
-                        Theme: {event.theme}
-                      </p>
-                    )}
                   </div>
                   <div className="hidden text-center sm:block bg-[#211566]/80 p-3 rounded-2xl border border-white/20 backdrop-blur-md shrink-0 ml-4">
                     <span className="block text-3xl font-black leading-none text-white">
@@ -688,11 +680,6 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                         {event.month} &bull; {event.year}
                       </span>
                     </div>
-                    {event.theme && (
-                      <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-xs font-bold uppercase tracking-wider">
-                        <span>THEME: {event.theme}</span>
-                      </span>
-                    )}
                   </div>
 
                   <p className="text-base sm:text-lg leading-relaxed text-white/80">
