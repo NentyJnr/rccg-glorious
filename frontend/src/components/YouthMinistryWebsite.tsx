@@ -617,7 +617,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
             <div className="mb-12 flex items-end justify-between gap-6">
               <div>
                 <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-[#39994e]">
-                  Save your seat
+                  Gatherings &amp; Programs
                 </p>
                 <h2 className="text-4xl font-extrabold tracking-[-0.03em] text-[#211566] sm:text-5xl">
                   What’s happening
@@ -735,15 +735,11 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                   </div>
                 </div>
 
-                <div className="pt-4 flex items-center justify-between border-t border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setIsJoinModalOpen(true)}
-                    className="rounded-full bg-white px-6 py-3 font-bold text-[#211566] transition hover:bg-[#75d283] hover:text-white shadow-md inline-flex items-center gap-2"
-                  >
-                    <span>{event.isPast ? 'Inquire / Relive Highlights' : 'I’m interested · Register'}</span>
-                    <ArrowRight size={15} />
-                  </button>
+                <div className="pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-white/10">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Free Attendance &bull; All Are Welcome</span>
+                  </div>
 
                   <div className="flex items-center gap-1.5">
                     {events.map((_, idx) => (
