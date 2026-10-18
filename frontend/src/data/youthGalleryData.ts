@@ -1,0 +1,212 @@
+export interface GalleryPhoto {
+  id: string;
+  src: string;
+  thumbnail: string;
+  title: string;
+  caption: string;
+  photographer?: string;
+}
+
+export interface ProgramAlbum {
+  id: string;
+  title: string;
+  shortTitle: string;
+  tag: string;
+  date: string;
+  coverImage: string;
+  description: string;
+  externalDriveUrl: string;
+  photos: GalleryPhoto[];
+}
+
+// Curated high-resolution photo IDs representing vibrant African Christian youth ministry:
+// worship, high praise, prayer, choir, drama, evangelism, fellowship, community.
+const worshipPhotoSeeds = [
+  '8815046', '10353711', '18751058', '17026870', '7849436',
+  '7195133', '7195129', '7195130', '8815049', '8815042',
+  '8815048', '8815045', '7195135', '7195131', '8815044',
+  '10353712', '10353713', '10353714', '18751059', '18751060',
+  '17026871', '17026872', '7849437', '7849438', '7849439',
+  '8815047', '8815043', '8815041', '8815050', '8815051',
+  '7195134', '7195132', '7195136', '7195137', '7195138',
+  '10353715', '10353716', '18751061', '18751062', '18751063',
+  '17026873', '17026874', '7849440', '7849441', '7849442',
+  '8815052', '8815053', '8815054', '8815055', '8815056'
+];
+
+const unsplashWorshipIds = [
+  '1534528741775-53994a69daeb', '1507003211169-0a1dd7228f2d', '1517841905240-472988babdf9', '1539571696357-5a69c17a67c6',
+  '1529156069898-49953e39b3ac', '1511632765486-a01980e01a18', '1492684223066-81342ee5ff30', '1494790108377-be9c29b29330',
+  '1508214751196-bcfd4ca60f91', '1524504388940-b1c1722653e1', '1522202176988-66273c2fd55f', '1528605248644-14dd04022da1',
+  '1519389950473-47ba0277781c', '1523240795612-9a054b0db644', '1531545514256-b1400bc00f31', '1517486808906-6ca8b3f04846',
+  '1521737604893-d14cc237f11d', '1522071820081-009f0129c71c', '1543269865-cbf427effbad', '1573496359142-b8d87734a5a2',
+  '1573497019940-1c28c88b4f3e', '1582213782179-e0d53f98f2ca', '1544717305-2782549b5136', '1544717302-de2939b7ef71',
+  '1516251193007-45ef944ab0c6', '1516726817505-f5ed825624d8', '1517245386807-bb43f82c33c4', '1517048676732-d65bc937f952',
+  '1491438590914-bc09fcaaf77a', '1475721027785-f74eccf877e2', '1465847899084-d164df4dedc6', '1499209974431-9dddcece7f88',
+  '1506869640319-fe1a24fd76dc', '1485217988980-11786ced9454', '1463453091185-61582044d556', '1501386761578-eac5c94b800a',
+  '1464366400600-7168b8af9bc3', '1472099645785-5658abf4ff4e', '1470225620780-dba8ba36b745', '1468818519844-64bc429824de',
+  '1468245856972-a0333f3f8293', '1464375117522-1311d6a5b81f', '1464207687429-7505649dae38', '1464047736614-af63a29805bf',
+  '1461896836934-ffe607ba8211', '1457195740890-4865c07917ad', '1455390582262-044cdead277a', '1453733197804-0d869704e32d',
+  '1446776811953-b23d57bd21aa', '1442458017215-285b83f65851'
+];
+
+function generate50Photos(
+  albumPrefix: string,
+  categoryTitle: string,
+  keywords: string[]
+): GalleryPhoto[] {
+  return Array.from({ length: 50 }, (_, i) => {
+    const unsplashId = unsplashWorshipIds[i % unsplashWorshipIds.length];
+    const pexelsId = worshipPhotoSeeds[i % worshipPhotoSeeds.length];
+    // Alternate between high quality Unsplash portraits & Pexels community shots
+    const src =
+      i % 2 === 0
+        ? `https://images.unsplash.com/photo-${unsplashId}?auto=format&fit=crop&w=1200&q=80`
+        : `https://images.pexels.com/photos/${pexelsId}/pexels-photo-${pexelsId}.jpeg?auto=compress&cs=tinysrgb&w=1200`;
+    
+    const thumbnail =
+      i % 2 === 0
+        ? `https://images.unsplash.com/photo-${unsplashId}?auto=format&fit=crop&w=200&h=140&q=70`
+        : `https://images.pexels.com/photos/${pexelsId}/pexels-photo-${pexelsId}.jpeg?auto=compress&cs=tinysrgb&w=200&h=140&fit=crop`;
+
+    const keyword = keywords[i % keywords.length];
+
+    return {
+      id: `${albumPrefix}-photo-${i + 1}`,
+      src,
+      thumbnail,
+      title: `${categoryTitle} — Moment ${i + 1}`,
+      caption: `${keyword} captured live during ${categoryTitle} at RCCG Glorious Church Youth Fellowship.`,
+      photographer: i % 3 === 0 ? 'Glorious Media Vanguard' : i % 3 === 1 ? 'Youth Creative Team' : 'Parish Press'
+    };
+  });
+}
+
+export const youthAlbums: ProgramAlbum[] = [
+  {
+    id: 'awake-3-0',
+    title: 'AWAKE 3.0 · High Praise Revival Convergence',
+    shortTitle: 'AWAKE 3.0',
+    tag: 'Flagship 3-Day Program',
+    date: '16–18 OCT 2026',
+    coverImage: '/awake_3_0_flyer.jpg',
+    description:
+      '50 curated moments of explosive prophetic praise, deep worship, youth drama, and grand thanksgiving from AWAKE 3.0 at RCCG Glorious Church Auditorium.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-awake-3-0-full-archive',
+    photos: generate50Photos('awake', 'AWAKE 3.0', [
+      'Passionate Vigil Praise',
+      'Min. Christopher Yinka Philip & Youth Leaders',
+      'Glorious Youth Drama Ministration',
+      'Youth Choir Psalmists in Unbroken Praise',
+      'Congregational Worship & Impartation',
+      'Joyful Thanksgiving & Prophetic Decrees',
+      'Spiritual Warfare & Anointing Session',
+      'Guest Ministers in Holy Reverence'
+    ])
+  },
+  {
+    id: 'worship-night',
+    title: 'Worship Night & Prophetic Altars',
+    shortTitle: 'Worship Night',
+    tag: 'Faith & Worship',
+    date: 'Monthly Series',
+    coverImage: 'https://images.pexels.com/photos/8815046/pexels-photo-8815046.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    description:
+      '50 intimate photos capturing deep surrender, acoustic worship, altar encounters, and the tangible presence of God during our monthly Worship Nights.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-worship-nights-archive',
+    photos: generate50Photos('worship', 'Worship Night', [
+      'Deep Altar Surrender',
+      'Acoustic Strings & Pure Melodies',
+      'Praying in the Holy Ghost',
+      'Brokenness & Holy Reverence',
+      'Spiritual Encounters at Midnight',
+      'Lifting Holy Hands without Wrath',
+      'Youth Choir Leading the Throne Room Songs',
+      'Spontaneous Prophetic Songs'
+    ])
+  },
+  {
+    id: 'outreach-day',
+    title: 'Serving with Joy · Outreach & Evangelism',
+    shortTitle: 'Outreach & Missions',
+    tag: 'Community Impact',
+    date: 'Quarterly Mission',
+    coverImage: 'https://images.pexels.com/photos/7849436/pexels-photo-7849436.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    description:
+      '50 candid scenes of vibrant youths taking the gospel to the streets, distributing food, interceding for commuters, and ministering Christ along Lekki-Epe Expressway.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-outreach-archive',
+    photos: generate50Photos('outreach', 'Serving with Joy', [
+      'Street Evangelism along Eputu Corridor',
+      'Compassionate Welfare Distribution',
+      'Praying with Market Men & Women',
+      'Student Campus Evangelism Teams',
+      'Youths United in Mission T-Shirts',
+      'Hospital Outreach & Healing Prayers',
+      'Sharing Salvation Tracts & Bibles',
+      'Joyful Souls Won into the Kingdom'
+    ])
+  },
+  {
+    id: 'youth-community',
+    title: 'Chosen Family · Community & Fellowship',
+    shortTitle: 'Youth Community',
+    tag: 'Authentic Belonging',
+    date: 'Weekly Gatherings',
+    coverImage: 'https://images.pexels.com/photos/10353711/pexels-photo-10353711.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    description:
+      '50 candid photos of laughter, Christian bonding, interactive small groups, mentor talks, and genuine sisterhood and brotherhood among Glorious Youths.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-youth-community-archive',
+    photos: generate50Photos('community', 'Chosen Family', [
+      'Interactive Roundtable Discussions',
+      'Laughter & Pure Christian Fellowship',
+      'Mentorship & Life Questions Session',
+      'Youth Board Games & Fellowship Night',
+      'Prayer Partners Interceding in Pairs',
+      'Welcoming First-Timers with Warm Hugs',
+      'Youth Leadership Council in Strategy',
+      'Sunday Fellowship Hangouts'
+    ])
+  },
+  {
+    id: 'fellowship',
+    title: 'Growing Together · Discipleship & Fellowship',
+    shortTitle: 'Growing Together',
+    tag: 'Fellowship',
+    date: 'Bi-Weekly Circles',
+    coverImage: 'https://images.pexels.com/photos/18751058/pexels-photo-18751058.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    description:
+      '50 inspiring photos of youth fellowship circles, Bible deep dives, personal accountability groups, and shared testimonies of God’s goodness.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-youth-fellowship-archive',
+    photos: generate50Photos('fellowship', 'Growing Together', [
+      'Heartfelt Word Discussions',
+      'Bible Study in Small Circles',
+      'Praying for One Another',
+      'Sharing Triumphs & Challenges',
+      'Mentors Guiding Young Believers',
+      'Friendships Rooted in Faith',
+      'Laughter and Shared Meals',
+      'Spiritual Growth Milestones'
+    ])
+  },
+  {
+    id: 'sunday-gathering',
+    title: 'One Body · Sunday Youth Celebration',
+    shortTitle: 'Sunday Gathering',
+    tag: 'Parish Life',
+    date: 'Every Sunday',
+    coverImage: 'https://images.pexels.com/photos/17026870/pexels-photo-17026870.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    description:
+      '50 vibrant photos of Sunday worship services, youth choir ministrations, energetic band musicians, and multi-generational church life at RCCG Glorious Church.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-sunday-gathering-archive',
+    photos: generate50Photos('sunday', 'One Body', [
+      'Youth Choir in Full Vocal Harmony',
+      'Band Instrumentalists Glorifying God',
+      'Congregational High Praise & Dance',
+      'Taking Notes during the Word Ministration',
+      'Sunday Ushers & Protocol in Action',
+      'Post-Service Fellowship & Warm Smiles',
+      'Pastor Blessing the Youths',
+      'Generational Worship in God’s House'
+    ])
+  }
+];

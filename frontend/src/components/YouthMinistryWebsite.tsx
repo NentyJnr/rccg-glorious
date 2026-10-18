@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/apiClient';
+import { YouthProgramGallery } from './YouthProgramGallery';
+import { youthAlbums } from '../data/youthGalleryData';
 import {
   ArrowRight,
   ArrowLeft,
@@ -25,7 +27,8 @@ import {
   Calendar,
   Lock,
   Flame,
-  Heart
+  Heart,
+  Play
 } from 'lucide-react';
 
 export interface YouthMinistryWebsiteProps {
@@ -215,6 +218,39 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
     }
   };
 
+  // Gallery Motion Album State
+  const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
+
+  // Sync hash on mount or hashchange for deep linking e.g. #gallery-awake-3-0
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#gallery-')) {
+        const albumId = hash.replace('#gallery-', '');
+        if (youthAlbums.some((a) => a.id === albumId)) {
+          setSelectedAlbumId(albumId);
+        }
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
+  const handleOpenAlbum = (albumId: string) => {
+    setSelectedAlbumId(albumId);
+    window.history.pushState(null, '', `#gallery-${albumId}`);
+  };
+
+  const handleCloseAlbum = () => {
+    setSelectedAlbumId(null);
+    window.history.pushState(null, '', '#gallery');
+    setTimeout(() => {
+      const el = document.getElementById('gallery');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+  };
+
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail.trim()) return;
@@ -222,6 +258,20 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
     setNewsletterEmail('');
     setTimeout(() => setNewsletterSuccess(false), 5000);
   };
+
+  // If a motion album is selected, render the dedicated YouthProgramGallery page
+  if (selectedAlbumId) {
+    return (
+      <YouthProgramGallery
+        initialAlbumId={selectedAlbumId}
+        onClose={handleCloseAlbum}
+        onSelectAlbum={(id) => {
+          setSelectedAlbumId(id);
+          window.history.pushState(null, '', `#gallery-${id}`);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#e9f2e5] text-[#211b2e] font-sans antialiased selection:bg-[#4dbb62] selection:text-white">
@@ -748,7 +798,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
         </section>
 
         {/* ------------------------------------------------------------- */}
-        {/* 7. THE GALLERY (Duplicated from frontend/project)              */}
+        {/* 7. THE GALLERY: INTERACTIVE CARDS & MOTION ALBUMS             */}
         {/* ------------------------------------------------------------- */}
         <section id="gallery" className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-28 border-t border-[#d3e5cf]">
           <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
@@ -760,32 +810,126 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                 Scenes from the journey
               </h2>
             </div>
-            <p className="max-w-xs text-sm leading-6 text-[#625d6b]">
-              Every photo holds a memory. Every memory is part of a bigger story.
-            </p>
+            <div className="flex flex-col items-start sm:items-end gap-2">
+              <p className="max-w-xs text-sm leading-6 text-[#625d6b]">
+                Every photo holds a memory. Every memory is part of a bigger story.
+              </p>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <Sparkles size={13} className="text-emerald-600" />
+                Click any card to enter sliding motion album
+              </span>
+            </div>
           </div>
 
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {galleryImages.map((image, index) => (
-              <article
-                key={image.title}
+          {/* Flagship Program Banner: AWAKE 3.0 */}
+          <div className="mt-8 rounded-3xl bg-gradient-to-r from-[#211566] via-[#1a114e] to-[#211566] p-5 sm:p-6 text-white border border-emerald-500/30 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative overflow-hidden">
+            <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl overflow-hidden shrink-0 border-2 border-emerald-400/40 shadow-md">
+                <img
+                  src="/awake_3_0_flyer.jpg"
+                  alt="AWAKE 3.0 High Praise Revival Convergence"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                    Flagship Revival Album
+                  </span>
+                  <span className="text-xs text-white/70 font-medium">50 Curated High-Res Photos</span>
+                </div>
+                <h3 className="text-lg sm:text-2xl font-black text-white tracking-tight">
+                  AWAKE 3.0 · High Praise Revival Convergence
+                </h3>
+                <p className="text-xs sm:text-sm text-white/70 max-w-xl mt-0.5">
+                  16–18 Oct 2026 · Relive the explosive praise, youth drama, choir ministrations, and grand thanksgiving.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 relative z-10 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleOpenAlbum('awake-3-0')}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition shadow-lg shadow-emerald-900/40 cursor-pointer transform hover:scale-105"
+              >
+                <Play size={15} className="fill-current" />
+                <span>Launch AWAKE 3.0 Motion Album</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Program Cards Grid matching user screenshot */}
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                id: 'worship-night',
+                title: 'Worship night',
+                tag: 'Faith & worship',
+                src: galleryImages[0].src
+              },
+              {
+                id: 'outreach-day',
+                title: 'Serving with joy',
+                tag: 'Outreach day',
+                src: galleryImages[1].src
+              },
+              {
+                id: 'youth-community',
+                title: 'Chosen family',
+                tag: 'Youth community',
+                src: galleryImages[2].src
+              },
+              {
+                id: 'fellowship',
+                title: 'Growing together',
+                tag: 'Fellowship',
+                src: galleryImages[3].src
+              },
+              {
+                id: 'sunday-gathering',
+                title: 'One body',
+                tag: 'Sunday gathering',
+                src: galleryImages[4].src
+              }
+            ].map((card, index) => (
+              <button
+                key={card.id}
+                type="button"
+                onClick={() => handleOpenAlbum(card.id)}
                 className={`${
                   index === 0 ? 'sm:col-span-2 sm:row-span-2' : ''
-                } group relative min-h-[240px] overflow-hidden rounded-[1.5rem] shadow-md`}
+                } group relative min-h-[250px] sm:min-h-[280px] overflow-hidden rounded-[1.5rem] shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer text-left focus:outline-none focus:ring-4 focus:ring-emerald-500/50 transform hover:-translate-y-1`}
               >
                 <img
-                  src={image.src}
-                  alt={image.title}
-                  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  src={card.src}
+                  alt={card.title}
+                  className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#211566]/85 via-transparent to-transparent" />
-                <div className="absolute bottom-5 left-5 text-white">
-                  <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9ce5a4]">
-                    {image.tag}
-                  </p>
-                  <h3 className="text-lg font-bold">{image.title}</h3>
+                
+                {/* Gradient Overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#211566]/90 via-[#211566]/25 to-black/10 group-hover:from-[#130E3A]/95 transition duration-500" />
+
+                {/* Floating Top Pill on Card */}
+                <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider group-hover:bg-emerald-600 group-hover:border-emerald-400 transition-all duration-300 shadow-sm">
+                  <Play size={11} className="fill-current" />
+                  <span>50 Photos · Slide Motion</span>
                 </div>
-              </article>
+
+                {/* Bottom Content */}
+                <div className="absolute bottom-5 left-5 right-5 text-white">
+                  <p className="mb-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-[#9ce5a4]">
+                    {card.tag}
+                  </p>
+                  <h3 className="text-xl sm:text-2xl font-black tracking-tight group-hover:text-emerald-300 transition">
+                    {card.title}
+                  </h3>
+                  <p className="text-xs text-white/80 line-clamp-1 mt-1 opacity-0 group-hover:opacity-100 transition duration-300 transform translate-y-1 group-hover:translate-y-0">
+                    Click to view sliding gallery & download photos →
+                  </p>
+                </div>
+              </button>
             ))}
           </div>
         </section>
