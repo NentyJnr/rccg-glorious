@@ -5,6 +5,7 @@ import {
   Calendar, 
   DollarSign, 
   UserPlus, 
+  Shield,
   ShieldCheck, 
   HeartHandshake, 
   MapPin, 
@@ -55,8 +56,11 @@ import {
 } from 'lucide-react';
 import { LoginPage } from './components/LoginPage';
 import { ChurchWebsite } from './components/ChurchWebsite';
+import { YouthMinistryWebsite } from './components/YouthMinistryWebsite';
 import { PortalComingSoonPage } from './components/PortalComingSoonPage';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
+import { UserAccessGovernance } from './components/UserAccessGovernance';
+import { EventGalleryManagerModal } from './components/EventGalleryManagerModal';
 import { api, API_BASE_URL, clearAuthSession } from './services/apiClient';
 import { processSsoCallback } from './services/ssoService';
 
@@ -97,6 +101,7 @@ export interface ParishEventItem {
   isMultiDay?: boolean;
   dailySchedules?: EventDailyScheduleItem[];
   speakers?: EventSpeakerItem[];
+  photoCount?: number;
 }
 
 export const formatMultiDaySummary = (schedules: EventDailyScheduleItem[]): string => {
@@ -434,6 +439,14 @@ interface OfferingCategoryItem {
   isActive: boolean;
 }
 
+export interface LeadershipCouncilMember {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  roleTitle: string;
+}
+
 interface DepartmentItem {
   id: string;
   name: string;
@@ -442,6 +455,8 @@ interface DepartmentItem {
   description?: string;
   meetingSchedule?: string;
   isActive: boolean;
+  leadershipCouncil?: LeadershipCouncilMember[];
+  leadershipCouncilJson?: string;
 }
 
 const getHodDepartment = (user: User | null): string => {
@@ -456,7 +471,25 @@ const getHodDepartment = (user: User | null): string => {
 };
 
 export default function App() {
-  const [viewMode, setViewMode] = useState<'website' | 'portal'>('website');
+  const [viewMode, setViewMode] = useState<'website' | 'portal' | 'youth'>(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#youth') {
+      return 'youth';
+    }
+    return 'website';
+  });
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#youth') {
+        setViewMode('youth');
+      } else if (window.location.hash === '#portal') {
+        setViewMode('portal');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   const [showDraftLogin, setShowDraftLogin] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'service-report' | 'events' | 'membership' | 'departments' | 'users' | 'fellowship' | 'setup'>('dashboard');
   
@@ -1150,7 +1183,20 @@ export default function App() {
     { id: 'd3', name: 'Technical & Media Unit', code: 'TEC-01', headOfDepartment: 'Brother Samuel', meetingSchedule: 'Sunday 07:00 AM', description: 'Sound engineering, live streaming, projection, and media production.', isActive: true },
     { id: 'd4', name: 'Sunday School & Believers Class', code: 'SDS-01', headOfDepartment: 'Pastor Oluwaseun Adeleke', meetingSchedule: 'Sunday 07:45 AM', description: 'Doctrinal teaching, manual distribution, and discipleship classes.', isActive: true },
     { id: 'd5', name: 'Sanctuary Keepers', code: 'SNK-01', headOfDepartment: 'Sister Grace Usang', meetingSchedule: 'Saturday 07:00 AM', description: 'Sanctuary cleanliness, floral arrangement, and environment care.', isActive: true },
-    { id: 'd6', name: 'Welfare & Mercy Unit', code: 'WLF-01', headOfDepartment: 'Deaconess Mary Johnson', meetingSchedule: 'First Sunday 12:00 PM', description: 'Member care, food/clothing support, and benevolent visitation.', isActive: true }
+    { id: 'd6', name: 'Welfare & Mercy Unit', code: 'WLF-01', headOfDepartment: 'Deaconess Mary Johnson', meetingSchedule: 'First Sunday 12:00 PM', description: 'Member care, food/clothing support, and benevolent visitation.', isActive: true },
+    { 
+      id: 'd7', 
+      name: 'Youth Ministry', 
+      code: 'YTH-01', 
+      headOfDepartment: 'Brother Samuel Adebayo', 
+      meetingSchedule: 'Wednesday 06:00 PM', 
+      description: 'Discipleship, spiritual formation, mentorship, and leadership excellence for young adults and teenagers.', 
+      isActive: true,
+      leadershipCouncil: [
+        { id: 'yc-1', name: 'Brother Samuel Adebayo', email: 'samuel.adebayo@rccgglorious.org', phone: '+234 801 234 5678', roleTitle: 'Youth President / HOD' },
+        { id: 'yc-2', name: 'Sister Grace Usang', email: 'grace.usang@rccgglorious.org', phone: '+234 802 345 6789', roleTitle: 'Youth Follow-up & Welfare' }
+      ]
+    }
   ]);
 
   // Modal Visibility States
@@ -1219,6 +1265,9 @@ export default function App() {
   const [editDepartmentSchedule, setEditDepartmentSchedule] = useState('');
   const [editDepartmentDescription, setEditDepartmentDescription] = useState('');
   const [isEditDepartmentModalOpen, setIsEditDepartmentModalOpen] = useState(false);
+  const [editDepartmentLeadershipCouncil, setEditDepartmentLeadershipCouncil] = useState<LeadershipCouncilMember[]>([]);
+  const [newExecPersonName, setNewExecPersonName] = useState('');
+  const [newExecRoleTitle, setNewExecRoleTitle] = useState('Youth Executive');
 
   const [users, setUsers] = useState<User[]>([
     { id: 'u0', fullName: 'Super Administrator', email: 'neotroltd@gmail.com', phone: '+2348000000000', role: 'SuperAdmin', mustChangePassword: false, isActive: true },
@@ -1233,12 +1282,45 @@ export default function App() {
   const [reports, setReports] = useState<ServiceReport[]>([]);
 
   // --- PARISH EVENTS & CONFERENCES STATE ---
-  const [events, setEvents] = useState<ParishEventItem[]>(INITIAL_ADMIN_EVENTS);
+  const [events, setEvents] = useState<ParishEventItem[]>(() => {
+    try {
+      const cached = localStorage.getItem('rccg_parish_events_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return INITIAL_ADMIN_EVENTS;
+  });
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ParishEventItem | null>(null);
   const [eventSearchQuery, setEventSearchQuery] = useState('');
   const [eventCategoryFilter, setEventCategoryFilter] = useState('All');
   const [eventStatusFilter, setEventStatusFilter] = useState('All');
+
+  // Event Gallery Manager Modal State
+  const [galleryModalEvent, setGalleryModalEvent] = useState<ParishEventItem | null>(null);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState<boolean>(false);
+
+  const handleOpenGalleryModal = (ev: ParishEventItem) => {
+    setGalleryModalEvent(ev);
+    setIsGalleryModalOpen(true);
+  };
+
+  const handleCloseGalleryModal = () => {
+    setIsGalleryModalOpen(false);
+    setGalleryModalEvent(null);
+  };
+
+  const handleCoverPhotoUpdated = (newCoverUrl: string) => {
+    if (!galleryModalEvent) return;
+    setEvents((prev) =>
+      prev.map((e) => (e.id === galleryModalEvent.id ? { ...e, coverImageUrl: newCoverUrl } : e))
+    );
+    setGalleryModalEvent((prev) => (prev ? { ...prev, coverImageUrl: newCoverUrl } : null));
+  };
 
   // Event Form State
   const [formEventTitle, setFormEventTitle] = useState('');
@@ -1311,6 +1393,10 @@ export default function App() {
         const res = await api.get<any[]>('/Events');
         if (res.success && Array.isArray(res.data) && res.data.length > 0) {
           setEvents(res.data);
+          try {
+            localStorage.setItem('rccg_parish_events_cache', JSON.stringify(res.data));
+            window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: res.data }));
+          } catch {}
         }
       } catch (err) {
         console.warn('Events API unavailable, using initialized state:', err);
@@ -1685,7 +1771,14 @@ export default function App() {
         ...eventPayload
       } as ParishEventItem;
 
-      setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? updatedEvent : ev));
+      setEvents(prev => {
+        const next = prev.map(ev => ev.id === editingEvent.id ? updatedEvent : ev);
+        try {
+          localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+          window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+        } catch {}
+        return next;
+      });
 
       const successMsg = isDraftAction
         ? `Event draft "${updatedEvent.title}" updated!`
@@ -1697,8 +1790,17 @@ export default function App() {
       setIsEventModalOpen(false);
 
       try {
-        const res = await api.put(`/Events/${editingEvent.id}`, eventPayload);
-        if (res.success) {
+        const res = await api.put<ParishEventItem>(`/Events/${editingEvent.id}`, eventPayload);
+        if (res.success && res.data) {
+          const serverSaved = res.data;
+          setEvents(prev => {
+            const next = prev.map(ev => (ev.id === editingEvent.id || ev.id === serverSaved.id) ? { ...ev, ...serverSaved } : ev);
+            try {
+              localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+              window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+            } catch {}
+            return next;
+          });
           showNotification(isDraftAction ? `Draft saved to central database!` : `Event updated in central database!`, 'success');
         }
       } catch (err) {
@@ -1711,7 +1813,14 @@ export default function App() {
         ...eventPayload
       } as ParishEventItem;
 
-      setEvents(prev => [newEvent, ...prev]);
+      setEvents(prev => {
+        const next = [newEvent, ...prev];
+        try {
+          localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+          window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+        } catch {}
+        return next;
+      });
 
       const successMsg = isDraftAction
         ? `Event "${newEvent.title}" saved as Draft. You can return to complete or publish it anytime!`
@@ -1721,8 +1830,17 @@ export default function App() {
       setIsEventModalOpen(false);
 
       try {
-        const res = await api.post('/Events', eventPayload);
-        if (res.success) {
+        const res = await api.post<ParishEventItem>('/Events', eventPayload);
+        if (res.success && res.data) {
+          const serverSaved = res.data;
+          setEvents(prev => {
+            const next = prev.map(ev => ev.id === newId ? { ...ev, ...serverSaved } : ev);
+            try {
+              localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+              window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+            } catch {}
+            return next;
+          });
           showNotification(isDraftAction ? `Draft event saved to central database!` : `Parish Event saved to central database!`, 'success');
         }
       } catch (err) {
@@ -1743,7 +1861,14 @@ export default function App() {
       status: 'Upcoming'
     };
 
-    setEvents(prev => prev.map(e => e.id === ev.id ? updated : e));
+    setEvents(prev => {
+      const next = prev.map(e => e.id === ev.id ? updated : e);
+      try {
+        localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+        window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+      } catch {}
+      return next;
+    });
     showNotification(`Parish Event "${ev.title}" is now published live to the church portal!`, 'success');
 
     try {
@@ -1760,7 +1885,14 @@ export default function App() {
       confirmText: 'Yes, Delete',
       type: 'danger',
       onConfirm: async () => {
-        setEvents(prev => prev.filter(e => e.id !== id));
+        setEvents(prev => {
+          const next = prev.filter(e => e.id !== id);
+          try {
+            localStorage.setItem('rccg_parish_events_cache', JSON.stringify(next));
+            window.dispatchEvent(new CustomEvent('cms:events_updated', { detail: next }));
+          } catch {}
+          return next;
+        });
         showNotification(`Event "${title}" has been removed.`);
         try {
           await api.delete(`/Events/${id}`);
@@ -2138,7 +2270,60 @@ export default function App() {
     setEditDepartmentHod(dep.headOfDepartment || '');
     setEditDepartmentSchedule(dep.meetingSchedule || '');
     setEditDepartmentDescription(dep.description || '');
+
+    // Parse leadership council if present
+    let council: LeadershipCouncilMember[] = [];
+    if (dep.leadershipCouncil && Array.isArray(dep.leadershipCouncil)) {
+      council = [...dep.leadershipCouncil];
+    } else if (dep.leadershipCouncilJson) {
+      try {
+        council = JSON.parse(dep.leadershipCouncilJson);
+      } catch {}
+    }
+    setEditDepartmentLeadershipCouncil(council);
+    setNewExecPersonName('');
+    setNewExecRoleTitle('Youth Executive');
     setIsEditDepartmentModalOpen(true);
+  };
+
+  const handleAddExecutiveToDepartment = () => {
+    if (!newExecPersonName.trim()) {
+      showNotification('Please select a member or minister to assign.', 'error');
+      return;
+    }
+
+    let email = '';
+    let phone = '';
+    const foundMember = members.find(m => m.fullName === newExecPersonName);
+    if (foundMember) {
+      email = foundMember.email || '';
+      phone = foundMember.whatsappNumber || '';
+    } else {
+      const foundMinister = ministers.find(m => `${m.title} ${m.fullName}` === newExecPersonName || m.fullName === newExecPersonName);
+      if (foundMinister) {
+        email = `${foundMinister.fullName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@rccgglorious.org`;
+      }
+    }
+
+    if (!email) {
+      email = `${newExecPersonName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@rccgglorious.org`;
+    }
+
+    const newExec: LeadershipCouncilMember = {
+      id: Date.now().toString(),
+      name: newExecPersonName.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      roleTitle: newExecRoleTitle.trim() || 'Youth Executive'
+    };
+
+    setEditDepartmentLeadershipCouncil(prev => [...prev.filter(e => e.name !== newExec.name), newExec]);
+    showNotification(`Assigned "${newExec.name}" as ${newExec.roleTitle}!`);
+    setNewExecPersonName('');
+  };
+
+  const handleRemoveExecutiveFromDepartment = (execId: string) => {
+    setEditDepartmentLeadershipCouncil(prev => prev.filter(e => e.id !== execId));
   };
 
   const handleUpdateDepartment = async (e: React.FormEvent) => {
@@ -2150,13 +2335,16 @@ export default function App() {
     }
 
     const updatedCode = editDepartmentCode.trim() || editDepartmentName.trim().slice(0, 3).toUpperCase() + '-01';
+    const councilJson = JSON.stringify(editDepartmentLeadershipCouncil);
     const updatedItem: DepartmentItem = {
       ...editingDepartment,
       name: editDepartmentName.trim(),
       code: updatedCode,
       headOfDepartment: editDepartmentHod.trim() || 'Unassigned',
       meetingSchedule: editDepartmentSchedule.trim() || 'To be scheduled',
-      description: editDepartmentDescription.trim() || 'Parish department unit.'
+      description: editDepartmentDescription.trim() || 'Parish department unit.',
+      leadershipCouncil: editDepartmentLeadershipCouncil,
+      leadershipCouncilJson: councilJson
     };
 
     setDepartments((prev) =>
@@ -2168,7 +2356,15 @@ export default function App() {
     setEditingDepartment(null);
 
     try {
-      await api.put(`/Setup/departments/${editingDepartment.id}`, updatedItem);
+      await api.put(`/Setup/departments/${editingDepartment.id}`, {
+        name: updatedItem.name,
+        code: updatedItem.code,
+        headOfDepartment: updatedItem.headOfDepartment,
+        meetingSchedule: updatedItem.meetingSchedule,
+        description: updatedItem.description,
+        isActive: updatedItem.isActive,
+        leadershipCouncilJson: councilJson
+      });
     } catch {}
   };
 
@@ -3484,11 +3680,31 @@ export default function App() {
     );
   }
 
+  if (viewMode === 'youth') {
+    return (
+      <YouthMinistryWebsite
+        onReturnToMain={() => {
+          setViewMode('website');
+          if (window.location.hash === '#youth') {
+            window.location.hash = '';
+          }
+        }}
+        onOpenPortal={() => setViewMode('portal')}
+        parishName={org.parishName}
+      />
+    );
+  }
+
   if (viewMode === 'website') {
     return (
       <ChurchWebsite
         onOpenPortal={() => setViewMode('portal')}
+        onOpenYouthMinistry={() => {
+          setViewMode('youth');
+          window.location.hash = 'youth';
+        }}
         parishName={org.parishName}
+        customEvents={events}
       />
     );
   }
@@ -3795,19 +4011,6 @@ export default function App() {
               <Globe className="w-3.5 h-3.5 text-blue-600" />
               <span className="hidden sm:inline">Public Website</span>
             </button>
-
-            {/* Live API Health Status Badge */}
-            <div 
-              title={`API Backend: ${API_BASE_URL}`}
-              className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition shadow-xs ${
-                apiOnline 
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                  : 'bg-amber-50 text-amber-700 border-amber-200'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${apiOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-              <span>{apiOnline ? 'MonsterASP API' : 'Offline Mode'}</span>
-            </div>
 
             <div className="hidden sm:flex items-center space-x-2 text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
               <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
@@ -5061,6 +5264,15 @@ export default function App() {
                           <div className="flex items-center space-x-2">
                             <button
                               type="button"
+                              onClick={() => handleOpenGalleryModal(ev)}
+                              className="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs"
+                              title="Upload and manage high-resolution photos for this event gallery"
+                            >
+                              <Camera className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Photos &amp; Gallery</span>
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => handleOpenEditEventModal(ev)}
                               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer ${
                                 ev.status === 'Draft'
@@ -5268,6 +5480,30 @@ export default function App() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                     <div className="sm:col-span-2 space-y-3">
+                      {editingEvent && (
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-amber-100/70 border border-amber-300 shadow-2xs">
+                          <div className="flex items-center space-x-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center border border-amber-400/40 shrink-0">
+                              <Camera className="w-4 h-4 text-amber-700" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-amber-950 block">Multi-Photo Event Gallery</span>
+                              <span className="text-[11px] text-amber-800/80 block">Upload multiple program photos directly to this event album</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsEventModalOpen(false);
+                              handleOpenGalleryModal(editingEvent);
+                            }}
+                            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-xs transition flex items-center space-x-1.5 cursor-pointer shrink-0"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Manage Gallery Photos</span>
+                          </button>
+                        </div>
+                      )}
                       {formEventCoverImageMode === 'upload' ? (
                         <div className="space-y-2">
                           <label className="block text-xs font-bold text-slate-700">
@@ -6007,6 +6243,24 @@ export default function App() {
           </div>
         )}
 
+        {/* EVENT PHOTO GALLERY MANAGER MODAL */}
+        {isGalleryModalOpen && galleryModalEvent && (
+          <EventGalleryManagerModal
+            isOpen={isGalleryModalOpen}
+            eventId={galleryModalEvent.id}
+            eventTitle={galleryModalEvent.title}
+            eventDate={galleryModalEvent.eventDate}
+            initialCoverUrl={galleryModalEvent.coverImageUrl}
+            onClose={handleCloseGalleryModal}
+            onCoverUpdated={handleCoverPhotoUpdated}
+            onPhotosChanged={(count) => {
+              setEvents((prev) =>
+                prev.map((e) => (e.id === galleryModalEvent.id ? { ...e, photoCount: count } : e))
+              );
+            }}
+          />
+        )}
+
         {/* DEDICATED PARISH MEMBERSHIP TAB */}
         {activeTab === 'membership' && (
           <div className="space-y-6">
@@ -6540,8 +6794,8 @@ export default function App() {
                       userSubTab === 'role-assignment' ? 'bg-rccg-blue text-white shadow' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                     }`}
                   >
-                    <Sliders className="w-4 h-4" />
-                    <span>Role & Department Assignment ({members.length})</span>
+                    <Shield className="w-4 h-4" />
+                    <span>User & Access Governance</span>
                   </button>
 
                   <button
@@ -7187,91 +7441,9 @@ export default function App() {
               </div>
             )}
 
-            {/* SUB-PANEL 4: ROLE & DEPARTMENT ASSIGNMENT PAGE */}
+            {/* SUB-PANEL 4: USER & ACCESS GOVERNANCE (ROLE ASSIGNMENT & PERMISSION MATRIX) */}
             {userSubTab === 'role-assignment' && (
-              <div className="space-y-6">
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                      <Sliders className="w-5 h-5 text-rccg-blue" />
-                      <span>Department Allocation & Role Elevation Portal</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Assign members to active departments, convert them to workforce workers, or elevate them to minister roles.</p>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs text-slate-600">
-                      <thead className="bg-slate-50 text-slate-700 uppercase font-bold">
-                        <tr>
-                          <th className="py-3 px-4">Member Name</th>
-                          <th className="py-3 px-4">Whatsapp / Email</th>
-                          <th className="py-3 px-4">Birthday</th>
-                          <th className="py-3 px-4">Current Role</th>
-                          <th className="py-3 px-4">Assigned Department</th>
-                          <th className="py-3 px-4 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {members.map((m) => (
-                          <tr key={m.id} className="hover:bg-slate-50">
-                            <td className="py-4 px-4 font-bold text-slate-900">
-                              <div>{m.surname} {m.firstname}</div>
-                              {m.ecclesiasticalTitle && (
-                                <span className="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">
-                                  {m.ecclesiasticalTitle}
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-4 px-4 font-mono">
-                              <div>{m.whatsappNumber}</div>
-                              <div className="text-[11px] text-slate-400 font-sans">{m.email}</div>
-                            </td>
-                            <td className="py-4 px-4 font-bold text-rccg-blue">
-                              🎂 {m.dobMonth} {m.dobDay}
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                                m.role === 'Minister' 
-                                  ? 'bg-purple-100 text-purple-900' 
-                                  : m.role === 'Workforce' 
-                                  ? 'bg-blue-100 text-rccg-blue' 
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}>
-                                {m.role}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 font-bold text-slate-800">
-                              {m.assignedDepartment ? (
-                                <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                                  {m.assignedDepartment}
-                                </span>
-                              ) : (
-                                <span className="text-slate-400 italic">Unassigned</span>
-                              )}
-                            </td>
-                            <td className="py-4 px-4 text-right">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setRoleAssignModalMember(m);
-                                  setTargetRoleForMember(m.role);
-                                  setSelectedDeptForMember(m.assignedDepartment || 'Ushering & Protocol');
-                                  setSelectedTitleForMinister(m.ecclesiasticalTitle || 'Pastor');
-                                }}
-                                className="px-3.5 py-1.5 rounded-xl bg-rccg-blue text-white text-xs font-bold shadow hover:bg-rccg-navy transition cursor-pointer"
-                              >
-                                Change Role & Dept
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+              <UserAccessGovernance currentUser={currentUser} />
             )}
 
             {/* SUB-PANEL 2: MINISTERS DIRECTORY */}
@@ -10061,6 +10233,103 @@ export default function App() {
                   placeholder="Sanctuary protocol, guest reception, etc."
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
                 />
+              </div>
+
+              {/* EXECUTIVE COUNCIL & NOTIFICATION OFFICIALS */}
+              <div className="pt-3 border-t border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>Executive Council &amp; Notification Recipients</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Officials whose emails receive alerts when new members register.
+                    </p>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-rccg-blue text-[10px] font-bold font-mono">
+                    {editDepartmentLeadershipCouncil.length} Assigned
+                  </span>
+                </div>
+
+                {/* Add Executive Mini-form */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <select
+                      value={newExecPersonName}
+                      onChange={(e) => setNewExecPersonName(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    >
+                      <option value="">-- Pick Member or Minister --</option>
+                      <optgroup label="Ordained Ministers / Pastors">
+                        {ministers.map((m) => (
+                          <option key={m.id} value={`${m.title} ${m.fullName}`}>
+                            {m.title} {m.fullName}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Parish Members">
+                        {members.map((mem) => (
+                          <option key={mem.id} value={mem.fullName}>
+                            {mem.fullName} ({mem.email || 'No email'})
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+
+                    <input
+                      type="text"
+                      value={newExecRoleTitle}
+                      onChange={(e) => setNewExecRoleTitle(e.target.value)}
+                      placeholder="e.g. Youth President, Secretary, Follow-up"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleAddExecutiveToDepartment}
+                      className="px-3 py-1 bg-rccg-blue hover:bg-blue-900 text-white text-[11px] font-bold rounded-lg transition"
+                    >
+                      + Assign Executive
+                    </button>
+                  </div>
+                </div>
+
+                {/* Current Council List */}
+                {editDepartmentLeadershipCouncil.length > 0 ? (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                    {editDepartmentLeadershipCouncil.map((exec) => (
+                      <div
+                        key={exec.id || exec.name}
+                        className="p-2 rounded-xl bg-white border border-slate-200 flex items-center justify-between text-xs"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>{exec.name}</span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                              {exec.roleTitle}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-mono truncate">
+                            ✉ {exec.email} {exec.phone ? `• ☎ ${exec.phone}` : ''}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExecutiveFromDepartment(exec.id)}
+                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition"
+                          title="Remove Executive"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-2 text-center text-[11px] text-slate-400 italic bg-white rounded-xl border border-dashed border-slate-200">
+                    No additional executives assigned yet. Notifications will route to HOD and fallback admin.
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 flex gap-3">

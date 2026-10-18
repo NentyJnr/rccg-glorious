@@ -5480,6 +5480,30 @@ export default function App() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                     <div className="sm:col-span-2 space-y-3">
+                      {editingEvent && (
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-amber-100/70 border border-amber-300 shadow-2xs">
+                          <div className="flex items-center space-x-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center border border-amber-400/40 shrink-0">
+                              <Camera className="w-4 h-4 text-amber-700" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-amber-950 block">Multi-Photo Event Gallery</span>
+                              <span className="text-[11px] text-amber-800/80 block">Upload multiple program photos directly to this event album</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsEventModalOpen(false);
+                              handleOpenGalleryModal(editingEvent);
+                            }}
+                            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-xs transition flex items-center space-x-1.5 cursor-pointer shrink-0"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Manage Gallery Photos</span>
+                          </button>
+                        </div>
+                      )}
                       {formEventCoverImageMode === 'upload' ? (
                         <div className="space-y-2">
                           <label className="block text-xs font-bold text-slate-700">
