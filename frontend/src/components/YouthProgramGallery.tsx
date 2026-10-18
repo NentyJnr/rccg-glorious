@@ -18,7 +18,8 @@ import {
   Sparkles,
   Share2,
   Check,
-  Film
+  Film,
+  Info
 } from 'lucide-react';
 
 export interface YouthProgramGalleryProps {
@@ -38,6 +39,7 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
   const [slideSpeed, setSlideSpeed] = useState<number>(4500); // 4.5 seconds
   const [isMotionZoomActive, setIsMotionZoomActive] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [showCaption, setShowCaption] = useState<boolean>(true);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
 
@@ -313,6 +315,20 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
               <span className="md:hidden">Drive</span>
             </a>
 
+            {/* Toggle Caption Info Bar */}
+            <button
+              onClick={() => setShowCaption((s) => !s)}
+              className={`p-2 rounded-full border transition ${
+                showCaption
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-white/5 text-white/50 border-white/10 hover:text-white'
+              }`}
+              title={showCaption ? 'Hide photo caption bar' : 'Show photo caption bar'}
+              aria-label="Toggle caption bar"
+            >
+              <Info size={16} />
+            </button>
+
             {/* Share */}
             <button
               onClick={handleShare}
@@ -351,7 +367,7 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
       {/* MAIN MOTION STAGE                                             */}
       {/* ------------------------------------------------------------- */}
       <main
-        className="relative flex-1 flex items-center justify-center p-3 sm:p-6 overflow-hidden min-h-[60vh] max-h-[75vh]"
+        className="relative flex-1 flex items-center justify-center p-2 sm:p-6 overflow-hidden min-h-[62vh] max-h-[82vh]"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -362,72 +378,92 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
         />
 
         {/* Ambient Radial Vignette */}
-        <div className="absolute inset-0 bg-radial from-transparent via-[#0d0a1f]/70 to-[#0d0a1f] pointer-events-none" />
+        <div className="absolute inset-0 bg-radial from-transparent via-[#0d0a1f]/75 to-[#0d0a1f] pointer-events-none" />
 
         {/* Previous Chevron */}
         <button
           onClick={handlePrev}
-          className="absolute left-4 sm:left-8 z-30 p-3 rounded-full bg-black/40 hover:bg-emerald-600 text-white/90 hover:text-white backdrop-blur-md border border-white/20 transition transform hover:scale-110 shadow-xl"
+          className="absolute left-2 sm:left-6 z-30 p-2.5 sm:p-3 rounded-full bg-black/50 hover:bg-emerald-600 text-white/90 hover:text-white backdrop-blur-md border border-white/20 transition transform hover:scale-110 shadow-xl"
           aria-label="Previous photo"
         >
-          <ChevronLeft size={28} />
+          <ChevronLeft size={24} className="sm:w-7 sm:h-7" />
         </button>
 
         {/* Next Chevron */}
         <button
           onClick={handleNext}
-          className="absolute right-4 sm:right-8 z-30 p-3 rounded-full bg-black/40 hover:bg-emerald-600 text-white/90 hover:text-white backdrop-blur-md border border-white/20 transition transform hover:scale-110 shadow-xl"
+          className="absolute right-2 sm:right-6 z-30 p-2.5 sm:p-3 rounded-full bg-black/50 hover:bg-emerald-600 text-white/90 hover:text-white backdrop-blur-md border border-white/20 transition transform hover:scale-110 shadow-xl"
           aria-label="Next photo"
         >
-          <ChevronRight size={28} />
+          <ChevronRight size={24} className="sm:w-7 sm:h-7" />
         </button>
 
-        {/* The Motion Image Stage */}
-        <div className="relative z-10 max-w-5xl w-full h-full flex flex-col items-center justify-center">
-          <div className="relative overflow-hidden rounded-2xl shadow-2xl border border-white/15 bg-black/60 max-h-[62vh] aspect-[16/10] sm:aspect-[16/9] w-auto max-w-full flex items-center justify-center">
-            <img
-              key={currentPhoto.id}
-              src={currentPhoto.src}
-              alt={currentPhoto.title}
-              className={`max-h-[62vh] w-auto max-w-full object-contain ${
-                isMotionZoomActive
-                  ? 'animate-kenburns'
-                  : 'transition-opacity duration-700 ease-in-out'
+        {/* The Motion Image Stage - Dynamic uncropped frame supporting portrait, landscape and square */}
+        <div className="relative z-10 max-w-6xl w-full h-full flex flex-col items-center justify-center px-1 sm:px-4">
+          <div className="relative inline-flex flex-col items-center max-w-full rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-black/85 backdrop-blur-md">
+            
+            {/* The Image Container - NEVER crops heads, feet, or edges */}
+            <div
+              className={`relative flex items-center justify-center overflow-hidden max-w-full bg-black/95 ${
+                isFullscreen
+                  ? showCaption ? 'max-h-[70vh] sm:max-h-[76vh]' : 'max-h-[86vh]'
+                  : showCaption ? 'max-h-[54vh] sm:max-h-[62vh]' : 'max-h-[64vh] sm:max-h-[70vh]'
               }`}
-              loading="eager"
-            />
+            >
+              <img
+                key={currentPhoto.id}
+                src={currentPhoto.src}
+                alt={currentPhoto.title}
+                className={`w-auto max-w-full object-contain block select-none ${
+                  isFullscreen
+                    ? showCaption ? 'max-h-[70vh] sm:max-h-[76vh]' : 'max-h-[86vh]'
+                    : showCaption ? 'max-h-[54vh] sm:max-h-[62vh]' : 'max-h-[64vh] sm:max-h-[70vh]'
+                } ${
+                  isMotionZoomActive
+                    ? 'animate-subtle-motion'
+                    : 'transition-opacity duration-700 ease-in-out'
+                }`}
+                loading="eager"
+              />
+            </div>
 
-            {/* Bottom floating caption overlay */}
-            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 sm:p-6 text-white flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-              <div className="max-w-2xl">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/30 text-emerald-300 border border-emerald-400/30">
-                    Photo {currentPhotoIndex + 1} of {photos.length}
-                  </span>
-                  {currentPhoto.photographer && (
-                    <span className="text-[11px] text-white/60">
-                      Captured by {currentPhoto.photographer}
+            {/* Bottom Info & Action Bar - Dedicated space underneath photo, ZERO overlay obstruction */}
+            {showCaption && (
+              <div className="w-full bg-[#130e2e]/95 border-t border-white/10 px-4 py-2.5 sm:px-6 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-white">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/25 text-emerald-300 border border-emerald-400/30">
+                      Photo {currentPhotoIndex + 1} of {photos.length}
                     </span>
+                    {currentPhoto.photographer && (
+                      <span className="text-[11px] text-white/60 truncate">
+                        Captured by {currentPhoto.photographer}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+                    {currentPhoto.title}
+                  </h2>
+                  {currentPhoto.caption && (
+                    <p className="text-xs text-white/75 line-clamp-1 mt-0.5">
+                      {currentPhoto.caption}
+                    </p>
                   )}
                 </div>
-                <h2 className="text-base sm:text-xl font-bold tracking-tight text-white drop-shadow">
-                  {currentPhoto.title}
-                </h2>
-                <p className="text-xs sm:text-sm text-white/80 line-clamp-2 mt-0.5">
-                  {currentPhoto.caption}
-                </p>
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => handleDownload(currentPhoto)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md transition"
-                >
-                  <Download size={14} />
-                  <span>Download</span>
-                </button>
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <button
+                    onClick={() => handleDownload(currentPhoto)}
+                    disabled={isDownloading}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md transition transform hover:scale-105 active:scale-95"
+                    title="Download this photo"
+                  >
+                    <Download size={13} className={isDownloading ? 'animate-bounce' : ''} />
+                    <span>Download</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
@@ -584,19 +620,19 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
           from { width: 0%; }
           to { width: 100%; }
         }
-        @keyframes kenburns-effect {
+        @keyframes subtle-motion-effect {
           0% {
-            transform: scale(1.0) translate(0, 0);
+            transform: scale(1.0);
           }
           50% {
-            transform: scale(1.06) translate(-1%, -1%);
+            transform: scale(1.015);
           }
           100% {
-            transform: scale(1.12) translate(1%, 0.5%);
+            transform: scale(1.0);
           }
         }
-        .animate-kenburns {
-          animation: kenburns-effect 9s ease-out infinite alternate;
+        .animate-subtle-motion {
+          animation: subtle-motion-effect 10s ease-in-out infinite alternate;
         }
       `}</style>
     </div>
