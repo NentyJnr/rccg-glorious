@@ -87,13 +87,13 @@ export const youthAlbums: ProgramAlbum[] = [
     id: 'awake-3-0',
     title: 'AWAKE 3.0 · High Praise Revival Convergence',
     shortTitle: 'AWAKE 3.0',
-    tag: 'Flagship 3-Day Program',
+    tag: 'Faith & Worship',
     date: '16–18 OCT 2026',
-    coverImage: '/awake_3_0_flyer.jpg',
+    coverImage: 'https://images.pexels.com/photos/8815046/pexels-photo-8815046.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     description:
       '50 curated moments of explosive prophetic praise, deep worship, youth drama, and grand thanksgiving from AWAKE 3.0 at RCCG Glorious Church Auditorium.',
     externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-awake-3-0-full-archive',
-    photos: generate50Photos('awake', 'AWAKE 3.0', [
+    photos: generate50Photos('awake3', 'AWAKE 3.0', [
       'Passionate Vigil Praise',
       'Min. Christopher Yinka Philip & Youth Leaders',
       'Glorious Youth Drama Ministration',
@@ -105,37 +105,16 @@ export const youthAlbums: ProgramAlbum[] = [
     ])
   },
   {
-    id: 'worship-night',
-    title: 'Worship Night & Prophetic Altars',
-    shortTitle: 'Worship Night',
-    tag: 'Faith & Worship',
-    date: 'Monthly Series',
-    coverImage: 'https://images.pexels.com/photos/8815046/pexels-photo-8815046.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    id: 'awake-3-0-outreach',
+    title: 'Awake 3.0 Outreach · Street Evangelism & Welfare',
+    shortTitle: 'Awake 3.0 Outreach',
+    tag: 'Outreach Day',
+    date: '16 OCT 2026',
+    coverImage: 'https://images.pexels.com/photos/7849436/pexels-photo-7849436.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
     description:
-      '50 intimate photos capturing deep surrender, acoustic worship, altar encounters, and the tangible presence of God during our monthly Worship Nights.',
-    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-worship-nights-archive',
-    photos: generate50Photos('worship', 'Worship Night', [
-      'Deep Altar Surrender',
-      'Acoustic Strings & Pure Melodies',
-      'Praying in the Holy Ghost',
-      'Brokenness & Holy Reverence',
-      'Spiritual Encounters at Midnight',
-      'Lifting Holy Hands without Wrath',
-      'Youth Choir Leading the Throne Room Songs',
-      'Spontaneous Prophetic Songs'
-    ])
-  },
-  {
-    id: 'outreach-day',
-    title: 'Serving with Joy · Outreach & Evangelism',
-    shortTitle: 'Outreach & Missions',
-    tag: 'Community Impact',
-    date: 'Quarterly Mission',
-    coverImage: 'https://images.pexels.com/photos/7849436/pexels-photo-7849436.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    description:
-      '50 candid scenes of vibrant youths taking the gospel to the streets, distributing food, interceding for commuters, and ministering Christ along Lekki-Epe Expressway.',
-    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-outreach-archive',
-    photos: generate50Photos('outreach', 'Serving with Joy', [
+      '50 candid scenes of vibrant youths taking the gospel to the streets, distributing food, interceding for commuters, and ministering Christ along Lekki-Epe Expressway during AWAKE 3.0.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-awake-3-0-outreach-archive',
+    photos: generate50Photos('awake3outreach', 'Awake 3.0 Outreach', [
       'Street Evangelism along Eputu Corridor',
       'Compassionate Welfare Distribution',
       'Praying with Market Men & Women',
@@ -147,12 +126,96 @@ export const youthAlbums: ProgramAlbum[] = [
     ])
   },
   {
+    id: 'awake-2-0',
+    title: 'AWAKE 2.0 · Divine Encounter & Praise Altar',
+    shortTitle: 'AWAKE 2.0',
+    tag: 'Revival Convergence',
+    date: 'OCT 2025',
+    coverImage: 'https://images.pexels.com/photos/10353711/pexels-photo-10353711.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    description:
+      '50 unforgettable photos of intense praise, prophetic worship, midnight prayer vigils, and life-transforming impartation from AWAKE 2.0.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-awake-2-0-archive',
+    photos: generate50Photos('awake2', 'AWAKE 2.0', [
+      'High Energy Revival Praise',
+      'Prophetic Word Ministration',
+      'Youth Leaders on Bended Knees',
+      'Choir Symphony of Grace',
+      'Miracle Healing Testimonies',
+      'Youth Choir Leading Congregational Anthems',
+      'Anointing & Commissioning of Leaders',
+      'Joyful After-Meeting Fellowship'
+    ])
+  },
+  {
+    id: 'awake-1-0',
+    title: 'AWAKE 1.0 · The Genesis of Revival',
+    shortTitle: 'AWAKE 1.0',
+    tag: 'Revival Convergence',
+    date: 'OCT 2024',
+    coverImage: 'https://images.pexels.com/photos/18751058/pexels-photo-18751058.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    description:
+      '50 pioneering photos capturing the launch, inaugural praise altars, and foundational spiritual encounters of the AWAKE youth movement.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-awake-1-0-archive',
+    photos: generate50Photos('awake1', 'AWAKE 1.0', [
+      'Inaugural AWAKE Worship Session',
+      'Pioneer Youth Team Intercession',
+      'Acoustic Altar Songs',
+      'Congregational Tears of Surrender',
+      'Foundational Prophetic Declarations',
+      'Lighting the Youth Ministry Torch',
+      'Fellowship Banquet & Group Portraits',
+      'Thanksgiving to the God of RCCG Glorious'
+    ])
+  },
+  {
+    id: 'prayer-walk-2026',
+    title: 'Annual Prayer Walk 2026 · Interceding for Our Land',
+    shortTitle: 'Annual Prayer Walk 2026',
+    tag: 'Prayer Walk',
+    date: '14 MAR 2026',
+    coverImage: 'https://images.pexels.com/photos/17026870/pexels-photo-17026870.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    description:
+      '50 dynamic photos of youths walking through the community in prayer, bearing faith placards, speaking peace over Lekki-Epe expressway, and claiming territory for Christ.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-prayer-walk-2026-archive',
+    photos: generate50Photos('prayerwalk', 'Annual Prayer Walk 2026', [
+      'Gathering at Church Gates at Dawn',
+      'Lifting Holy Hands on the Highway',
+      'Praying for Peace and Economic Breakthrough',
+      'Marching Youths with Gospel Banners',
+      'Interceding for Schools and Families',
+      'Spontaneous High Praise along the Route',
+      'Corporate Shouts of Victory',
+      'Return to Altar for Closing Thanksgiving'
+    ])
+  },
+  {
+    id: 'end-of-year-2025',
+    title: '2025 Youth End of the year Gathering · Thanksgiving & Awards Banquet',
+    shortTitle: '2025 Youth End of the year Gathering',
+    tag: 'End of Year',
+    date: '19 DEC 2025',
+    coverImage: 'https://images.pexels.com/photos/7195133/pexels-photo-7195133.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+    description:
+      '50 joyous photos celebrating God’s faithfulness throughout 2025: glamorous red carpet, awards presentation, youth dinner, carols, testimonies, and games.',
+    externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-end-of-year-2025-archive',
+    photos: generate50Photos('eoy2025', '2025 Youth End of the year Gathering', [
+      'Red Carpet Arrivals & Glamorous Smiles',
+      'Youth President Welcome Address',
+      'Excellence & Service Awards Ceremony',
+      'Carols & Acoustic Special Numbers',
+      'Youth Dinner Banquet & Feasting',
+      'Fun Interactive Trivia & Games',
+      'Testimonies of Miracles in 2025',
+      'Closing Anointing & Prophetic Decrees for 2026'
+    ])
+  },
+  {
     id: 'youth-community',
     title: 'Chosen Family · Community & Fellowship',
-    shortTitle: 'Youth Community',
-    tag: 'Authentic Belonging',
+    shortTitle: 'Chosen Family',
+    tag: 'Youth Community',
     date: 'Weekly Gatherings',
-    coverImage: 'https://images.pexels.com/photos/10353711/pexels-photo-10353711.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    coverImage: 'https://images.pexels.com/photos/8815049/pexels-photo-8815049.jpeg?auto=compress&cs=tinysrgb&w=1200',
     description:
       '50 candid photos of laughter, Christian bonding, interactive small groups, mentor talks, and genuine sisterhood and brotherhood among Glorious Youths.',
     externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-youth-community-archive',
@@ -173,7 +236,7 @@ export const youthAlbums: ProgramAlbum[] = [
     shortTitle: 'Growing Together',
     tag: 'Fellowship',
     date: 'Bi-Weekly Circles',
-    coverImage: 'https://images.pexels.com/photos/18751058/pexels-photo-18751058.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    coverImage: 'https://images.pexels.com/photos/8815045/pexels-photo-8815045.jpeg?auto=compress&cs=tinysrgb&w=1200',
     description:
       '50 inspiring photos of youth fellowship circles, Bible deep dives, personal accountability groups, and shared testimonies of God’s goodness.',
     externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-youth-fellowship-archive',
@@ -191,10 +254,10 @@ export const youthAlbums: ProgramAlbum[] = [
   {
     id: 'sunday-gathering',
     title: 'One Body · Sunday Youth Celebration',
-    shortTitle: 'Sunday Gathering',
-    tag: 'Parish Life',
+    shortTitle: 'One Body',
+    tag: 'Sunday Gathering',
     date: 'Every Sunday',
-    coverImage: 'https://images.pexels.com/photos/17026870/pexels-photo-17026870.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    coverImage: 'https://images.pexels.com/photos/8815042/pexels-photo-8815042.jpeg?auto=compress&cs=tinysrgb&w=1200',
     description:
       '50 vibrant photos of Sunday worship services, youth choir ministrations, energetic band musicians, and multi-generational church life at RCCG Glorious Church.',
     externalDriveUrl: 'https://drive.google.com/drive/folders/rccg-glorious-sunday-gathering-archive',

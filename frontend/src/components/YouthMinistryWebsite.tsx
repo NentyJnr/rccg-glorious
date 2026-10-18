@@ -821,77 +821,62 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
             </div>
           </div>
 
-          {/* Flagship Program Banner: AWAKE 3.0 */}
-          <div className="mt-8 rounded-3xl bg-gradient-to-r from-[#211566] via-[#1a114e] to-[#211566] p-5 sm:p-6 text-white border border-emerald-500/30 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative overflow-hidden">
-            <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl overflow-hidden shrink-0 border-2 border-emerald-400/40 shadow-md">
-                <img
-                  src="/awake_3_0_flyer.jpg"
-                  alt="AWAKE 3.0 High Praise Revival Convergence"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                    Flagship Revival Album
-                  </span>
-                  <span className="text-xs text-white/70 font-medium">50 Curated High-Res Photos</span>
-                </div>
-                <h3 className="text-lg sm:text-2xl font-black text-white tracking-tight">
-                  AWAKE 3.0 · High Praise Revival Convergence
-                </h3>
-                <p className="text-xs sm:text-sm text-white/70 max-w-xl mt-0.5">
-                  16–18 Oct 2026 · Relive the explosive praise, youth drama, choir ministrations, and grand thanksgiving.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 relative z-10 shrink-0">
-              <button
-                type="button"
-                onClick={() => handleOpenAlbum('awake-3-0')}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition shadow-lg shadow-emerald-900/40 cursor-pointer transform hover:scale-105"
-              >
-                <Play size={15} className="fill-current" />
-                <span>Launch AWAKE 3.0 Motion Album</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Program Cards Grid matching user screenshot */}
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Program Cards Grid matching user requirements */}
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                id: 'worship-night',
-                title: 'Worship night',
+                id: 'awake-3-0',
+                title: 'AWAKE 3.0',
                 tag: 'Faith & worship',
-                src: galleryImages[0].src
+                src: 'https://images.pexels.com/photos/8815046/pexels-photo-8815046.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
               },
               {
-                id: 'outreach-day',
-                title: 'Serving with joy',
+                id: 'awake-3-0-outreach',
+                title: 'Awake 3.0 Outreach',
                 tag: 'Outreach day',
-                src: galleryImages[1].src
+                src: 'https://images.pexels.com/photos/7849436/pexels-photo-7849436.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
+              },
+              {
+                id: 'awake-2-0',
+                title: 'AWAKE 2.0',
+                tag: 'Revival convergence',
+                src: 'https://images.pexels.com/photos/10353711/pexels-photo-10353711.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
+              },
+              {
+                id: 'awake-1-0',
+                title: 'AWAKE 1.0',
+                tag: 'Revival convergence',
+                src: 'https://images.pexels.com/photos/18751058/pexels-photo-18751058.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
+              },
+              {
+                id: 'prayer-walk-2026',
+                title: 'Annual Prayer Walk 2026',
+                tag: 'Prayer walk',
+                src: 'https://images.pexels.com/photos/17026870/pexels-photo-17026870.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
+              },
+              {
+                id: 'end-of-year-2025',
+                title: '2025 Youth End of the year Gathering',
+                tag: 'Annual celebration',
+                src: 'https://images.pexels.com/photos/7195133/pexels-photo-7195133.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
               },
               {
                 id: 'youth-community',
                 title: 'Chosen family',
                 tag: 'Youth community',
-                src: galleryImages[2].src
+                src: 'https://images.pexels.com/photos/8815049/pexels-photo-8815049.jpeg?auto=compress&cs=tinysrgb&w=1200'
               },
               {
                 id: 'fellowship',
                 title: 'Growing together',
                 tag: 'Fellowship',
-                src: galleryImages[3].src
+                src: 'https://images.pexels.com/photos/8815045/pexels-photo-8815045.jpeg?auto=compress&cs=tinysrgb&w=1200'
               },
               {
                 id: 'sunday-gathering',
                 title: 'One body',
                 tag: 'Sunday gathering',
-                src: galleryImages[4].src
+                src: 'https://images.pexels.com/photos/8815042/pexels-photo-8815042.jpeg?auto=compress&cs=tinysrgb&w=1200'
               }
             ].map((card, index) => (
               <button

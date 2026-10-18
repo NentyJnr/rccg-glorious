@@ -517,7 +517,7 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
           </div>
 
           {/* Cards for other programs */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {youthAlbums.map((album) => {
               const isCurrent = album.id === currentAlbumId;
               return (
