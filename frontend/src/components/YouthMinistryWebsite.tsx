@@ -35,6 +35,7 @@ export interface YouthMinistryWebsiteProps {
 }
 
 const logo = '/youth_logo_transparent.png';
+const youthSymbol = '/youth_symbol.png';
 const logoFallback = '/assets/images/WhatsApp_Image_2026-10-16_at_5.23.05_AM.jpeg';
 
 const galleryImages = [
@@ -347,8 +348,15 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
           {/* Centered Narrative Container */}
           <div className="max-w-4xl mx-auto px-6 text-center relative z-10 space-y-6">
             {/* Eyebrow Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100/90 border border-emerald-300/80 text-emerald-800 text-xs font-bold tracking-wider uppercase shadow-sm">
-              <Flame className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/90 border border-emerald-300/80 text-emerald-800 text-xs font-bold tracking-wider uppercase shadow-sm">
+              <img
+                src={youthSymbol}
+                alt="Glorious Church Youths Symbol"
+                className="h-4 sm:h-4.5 w-auto object-contain shrink-0"
+                onError={(e) => {
+                  e.currentTarget.src = logo;
+                }}
+              />
               <span>A Generation on Fire</span>
             </div>
 
