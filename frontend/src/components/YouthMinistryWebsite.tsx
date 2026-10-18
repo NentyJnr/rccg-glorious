@@ -457,22 +457,22 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
               <div className="flex -space-x-2.5 overflow-hidden">
                 <img
                   className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover shadow-sm"
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+                  src="/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.16 AM.jpeg"
                   alt="Youth Member"
                 />
                 <img
                   className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover shadow-sm"
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80"
+                  src="/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.43 AM.jpeg"
                   alt="Youth Member"
                 />
                 <img
                   className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover shadow-sm"
-                  src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80"
+                  src="/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.17 AM (2).jpeg"
                   alt="Youth Member"
                 />
                 <img
                   className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover shadow-sm"
-                  src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80"
+                  src="/gallery/prayer-walk-2026/WhatsApp Image 2026-10-18 at 8.15.50 AM.jpeg"
                   alt="Youth Member"
                 />
               </div>
@@ -487,39 +487,71 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
           {/* ------------------------------------------------------------- */}
           <div className="max-w-6xl mx-auto mt-12 sm:mt-16 px-4 sm:px-6 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              {/* Left Card: Community Fellowship (Tilted -3 deg) */}
-              <div className="md:col-span-3 order-2 md:order-1 relative group">
+              {/* Left Card: Awake 3.0 Outreach (Tilted -3 deg) */}
+              <div
+                className="md:col-span-3 order-2 md:order-1 relative group cursor-pointer"
+                onClick={() => handleOpenAlbum('awake-3-0-outreach')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleOpenAlbum('awake-3-0-outreach');
+                  }
+                }}
+                aria-label="Open photo gallery for Awake 3.0 Outreach"
+              >
                 <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-slate-900/10 border-4 border-white transform md:-rotate-3 group-hover:rotate-0 transition-transform duration-500 ease-out h-64 md:h-80 bg-slate-100">
                   <img
-                    src={galleryImages[2].src}
-                    alt="Youth Community Fellowship"
+                    src="/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.44 AM (1).jpeg"
+                    alt="Awake 3.0 Outreach · Street Evangelism"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-colors pointer-events-none" />
                   <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Community Life</p>
-                    <p className="text-xs font-bold leading-tight">Authentic Fellowship</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Outreach Day</p>
+                    <p className="text-xs font-bold leading-tight group-hover:text-emerald-300 transition">Awake 3.0 Outreach</p>
                   </div>
                 </div>
                 {/* Floating mini badge on left card */}
-                <div className="hidden lg:flex absolute -bottom-3 -right-2 bg-white/95 backdrop-blur-md border border-slate-200/80 px-3 py-1.5 rounded-full shadow-lg items-center gap-1.5 z-20">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-[11px] font-bold text-slate-800">Chosen Family</span>
+                <div className="hidden lg:flex absolute -bottom-3 -right-2 bg-white/95 backdrop-blur-md border border-slate-200/80 px-3 py-1.5 rounded-full shadow-lg items-center gap-1.5 z-20 group-hover:bg-emerald-600 group-hover:text-white transition">
+                  <Play className="w-3 h-3 text-emerald-600 group-hover:text-white fill-current" />
+                  <span className="text-[11px] font-bold text-slate-800 group-hover:text-white">View Outreach</span>
                 </div>
               </div>
 
-              {/* Center Card: Main Worship Hero Frame (Tall & Dominant) */}
+              {/* Center Card: AWAKE 3.0 Flagship Frame (Tall & Dominant) */}
               <div className="md:col-span-6 order-1 md:order-2 relative z-20">
-                <div className="relative mx-auto max-w-sm sm:max-w-md h-[380px] sm:h-[460px] rounded-t-full rounded-b-[40px] overflow-hidden shadow-2xl shadow-emerald-950/20 border-4 border-white bg-slate-100 group">
+                <div
+                  className="relative mx-auto max-w-sm sm:max-w-md h-[380px] sm:h-[460px] rounded-t-full rounded-b-[40px] overflow-hidden shadow-2xl shadow-emerald-950/20 border-4 border-white bg-slate-100 group cursor-pointer"
+                  onClick={() => handleOpenAlbum('awake-3-0')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleOpenAlbum('awake-3-0');
+                    }
+                  }}
+                  aria-label="Open photo gallery for AWAKE 3.0"
+                >
                   <img
-                    src="/youth_fellowship_hero.jpg"
-                    alt="RCCG Glorious Youths Fellowship"
+                    src="/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.16 AM (1).jpeg"
+                    alt="AWAKE 3.0 · High Praise Revival Convergence"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     onError={(e) => {
-                      e.currentTarget.src = galleryImages[1].src;
+                      e.currentTarget.src = galleryImages[0].src;
                     }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#130E3A]/80 via-transparent to-transparent group-hover:from-[#130E3A]/90 transition-colors pointer-events-none" />
+
+                  {/* Centered Hover Pill on Center Frame */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider shadow-xl transform scale-95 group-hover:scale-100 transition-transform">
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>Explore AWAKE 3.0 Album</span>
+                    </span>
+                  </div>
                 </div>
 
                 {/* Floating Pill: Next Gathering */}
@@ -543,24 +575,36 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                 </div>
               </div>
 
-              {/* Right Card: Passionate Praise (Tilted +3 deg) */}
-              <div className="md:col-span-3 order-3 relative group">
+              {/* Right Card: Annual Prayer Walk 2026 (Tilted +3 deg) */}
+              <div
+                className="md:col-span-3 order-3 relative group cursor-pointer"
+                onClick={() => handleOpenAlbum('prayer-walk-2026')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleOpenAlbum('prayer-walk-2026');
+                  }
+                }}
+                aria-label="Open photo gallery for Annual Youth Prayer Walk"
+              >
                 <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-slate-900/10 border-4 border-white transform md:rotate-3 group-hover:rotate-0 transition-transform duration-500 ease-out h-64 md:h-80 bg-slate-100">
                   <img
-                    src={galleryImages[0].src}
-                    alt="Youth Worship & Praise"
+                    src="/gallery/prayer-walk-2026/WhatsApp Image 2026-10-18 at 8.15.49 AM.jpeg"
+                    alt="Annual Youth Prayer Walk 2026"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-colors pointer-events-none" />
                   <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Worship Night</p>
-                    <p className="text-xs font-bold leading-tight">Passion & Praise</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Prayer Walk</p>
+                    <p className="text-xs font-bold leading-tight group-hover:text-emerald-300 transition">Prayer Walk 2026</p>
                   </div>
                 </div>
                 {/* Floating mini badge on right card */}
-                <div className="hidden lg:flex absolute -top-3 -left-2 bg-white/95 backdrop-blur-md border border-slate-200/80 px-3 py-1.5 rounded-full shadow-lg items-center gap-1.5 z-20">
-                  <Clock3 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-[11px] font-bold text-slate-800">AWAKE 3.0 Live</span>
+                <div className="hidden lg:flex absolute -top-3 -left-2 bg-white/95 backdrop-blur-md border border-slate-200/80 px-3 py-1.5 rounded-full shadow-lg items-center gap-1.5 z-20 group-hover:bg-emerald-600 group-hover:text-white transition">
+                  <Play className="w-3 h-3 text-emerald-600 group-hover:text-white fill-current" />
+                  <span className="text-[11px] font-bold text-slate-800 group-hover:text-white">View Prayer Walk</span>
                 </div>
               </div>
             </div>
