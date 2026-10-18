@@ -4,7 +4,18 @@
 export const localGalleryManifest: Record<string, string[]> = {
   "awake-1-0": [],
   "awake-2-0": [],
-  "awake-3-0": [],
+  "awake-3-0": [
+    "/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.16 AM (1).jpeg",
+    "/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.16 AM.jpeg",
+    "/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.17 AM (1).jpeg",
+    "/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.17 AM (2).jpeg",
+    "/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.17 AM.jpeg",
+    "/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.18 AM (1).jpeg",
+    "/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.18 AM (2).jpeg",
+    "/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.18 AM (3).jpeg",
+    "/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.18 AM.jpeg",
+    "/gallery/awake-3-0/WhatsApp Image 2026-10-18 at 10.05.19 AM.jpeg"
+  ],
   "awake-3-0-outreach": [
     "/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.43 AM (1).jpeg",
     "/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.43 AM.jpeg",
@@ -12,11 +23,19 @@ export const localGalleryManifest: Record<string, string[]> = {
     "/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.44 AM (2).jpeg",
     "/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.44 AM.jpeg",
     "/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.45 AM (1).jpeg",
-    "/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.45 AM.jpeg"
+    "/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.11.45 AM.jpeg",
+    "/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.15.22 AM.jpeg",
+    "/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.15.23 AM (1).jpeg",
+    "/gallery/awake-3-0-outreach/WhatsApp Image 2026-10-18 at 9.15.23 AM.jpeg"
   ],
   "end-of-year-2025": [],
   "fellowship": [],
-  "prayer-walk-2026": [],
+  "prayer-walk-2026": [
+    "/gallery/prayer-walk-2026/WhatsApp Image 2026-10-18 at 8.15.49 AM.jpeg",
+    "/gallery/prayer-walk-2026/WhatsApp Image 2026-10-18 at 8.15.50 AM (1).jpeg",
+    "/gallery/prayer-walk-2026/WhatsApp Image 2026-10-18 at 8.15.50 AM (2).jpeg",
+    "/gallery/prayer-walk-2026/WhatsApp Image 2026-10-18 at 8.15.50 AM.jpeg"
+  ],
   "sunday-gathering": [],
   "youth-community": []
 };
