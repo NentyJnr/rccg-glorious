@@ -988,22 +988,36 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
         {/* 9. MEMBER TESTIMONIAL BANNER                                 */}
         {/* ------------------------------------------------------------- */}
         <section className="py-16 px-6 lg:px-10">
-          <div className="mx-auto max-w-7xl bg-white/90 backdrop-blur-md rounded-[2.5rem] border border-[#cbe0c5] p-8 sm:p-12 shadow-xl grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div className="flex items-start gap-5">
-              <div className="mt-1 hidden rounded-full bg-[#4dbb62] p-3.5 text-white sm:block shadow-md">
-                <Quote size={24} />
+          <div className="mx-auto max-w-7xl bg-white/95 backdrop-blur-md rounded-[2.5rem] border border-[#cbe0c5] p-8 sm:p-12 shadow-xl grid gap-8 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+            {/* Bro. Samuel (EduFacts) Portrait Frame */}
+            <div className="relative shrink-0 flex items-center justify-center">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-emerald-500/20 shadow-lg bg-slate-100 group">
+                <img
+                  src="/bro_samuel_edufacts.jpg"
+                  alt="Bro. Samuel (EduFacts) - RCCG Glorious Youth"
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                />
               </div>
-              <div>
-                <p className="max-w-2xl text-2xl font-medium leading-relaxed text-[#211566] sm:text-3xl">
-                  “I walked in looking for friends. I found a family and a faith that feels like home.”
-                </p>
-                <p className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-[#39994e]">
-                  — Adwoa, youth member
-                </p>
+              {/* Floating Quote Badge over Avatar corner */}
+              <div className="absolute -bottom-2 -right-2 rounded-full bg-[#4dbb62] p-2 text-white shadow-md border-2 border-white">
+                <Quote size={14} className="fill-current" />
               </div>
             </div>
 
-            <div className="flex items-center gap-3 text-sm font-bold text-[#211566] bg-[#e9f2e5] px-6 py-3 rounded-full border border-[#cbe0c5] shadow-xs">
+            {/* Testimonial Quote & Identity */}
+            <div className="space-y-3">
+              <p className="text-xl sm:text-2xl lg:text-3xl font-medium leading-relaxed text-[#211566]">
+                “I walked in looking for friends. I found a family and a faith that feels like home.”
+              </p>
+              <div className="pt-1 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.18em]">
+                <span className="text-[#39994e] font-black">— Bro. Samuel (EduFacts)</span>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-500 font-semibold lowercase tracking-normal text-xs first-letter:uppercase">Youth Member &amp; Instrumentalist</span>
+              </div>
+            </div>
+
+            {/* Action Pill / Badge */}
+            <div className="flex items-center gap-3 text-sm font-bold text-[#211566] bg-[#e9f2e5] px-6 py-3 rounded-full border border-[#cbe0c5] shadow-xs shrink-0 self-start lg:self-center">
               <span className="h-2.5 w-2.5 rounded-full bg-[#4dbb62] animate-pulse" />
               <span>You belong here</span>
             </div>
