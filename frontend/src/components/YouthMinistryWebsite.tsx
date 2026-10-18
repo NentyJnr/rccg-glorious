@@ -823,73 +823,18 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
 
           {/* Program Cards Grid matching user requirements */}
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                id: 'awake-3-0',
-                title: 'AWAKE 3.0',
-                tag: 'Faith & worship',
-                src: 'https://images.pexels.com/photos/8815046/pexels-photo-8815046.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
-              },
-              {
-                id: 'awake-3-0-outreach',
-                title: 'Awake 3.0 Outreach',
-                tag: 'Outreach day',
-                src: 'https://images.pexels.com/photos/7849436/pexels-photo-7849436.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
-              },
-              {
-                id: 'awake-2-0',
-                title: 'AWAKE 2.0',
-                tag: 'Revival convergence',
-                src: 'https://images.pexels.com/photos/10353711/pexels-photo-10353711.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
-              },
-              {
-                id: 'awake-1-0',
-                title: 'AWAKE 1.0',
-                tag: 'Revival convergence',
-                src: 'https://images.pexels.com/photos/18751058/pexels-photo-18751058.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
-              },
-              {
-                id: 'prayer-walk-2026',
-                title: 'Annual Prayer Walk 2026',
-                tag: 'Prayer walk',
-                src: 'https://images.pexels.com/photos/17026870/pexels-photo-17026870.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
-              },
-              {
-                id: 'end-of-year-2025',
-                title: '2025 Youth End of the year Gathering',
-                tag: 'Annual celebration',
-                src: 'https://images.pexels.com/photos/7195133/pexels-photo-7195133.jpeg?auto=compress&cs=tinysrgb&h=650&w=940'
-              },
-              {
-                id: 'youth-community',
-                title: 'Chosen family',
-                tag: 'Youth community',
-                src: 'https://images.pexels.com/photos/8815049/pexels-photo-8815049.jpeg?auto=compress&cs=tinysrgb&w=1200'
-              },
-              {
-                id: 'fellowship',
-                title: 'Growing together',
-                tag: 'Fellowship',
-                src: 'https://images.pexels.com/photos/8815045/pexels-photo-8815045.jpeg?auto=compress&cs=tinysrgb&w=1200'
-              },
-              {
-                id: 'sunday-gathering',
-                title: 'One body',
-                tag: 'Sunday gathering',
-                src: 'https://images.pexels.com/photos/8815042/pexels-photo-8815042.jpeg?auto=compress&cs=tinysrgb&w=1200'
-              }
-            ].map((card, index) => (
+            {youthAlbums.map((album, index) => (
               <button
-                key={card.id}
+                key={album.id}
                 type="button"
-                onClick={() => handleOpenAlbum(card.id)}
+                onClick={() => handleOpenAlbum(album.id)}
                 className={`${
                   index === 0 ? 'sm:col-span-2 sm:row-span-2' : ''
                 } group relative min-h-[250px] sm:min-h-[280px] overflow-hidden rounded-[1.5rem] shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer text-left focus:outline-none focus:ring-4 focus:ring-emerald-500/50 transform hover:-translate-y-1`}
               >
                 <img
-                  src={card.src}
-                  alt={card.title}
+                  src={album.coverImage}
+                  alt={album.title}
                   className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-110"
                 />
                 
@@ -899,16 +844,16 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                 {/* Floating Top Pill on Card */}
                 <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider group-hover:bg-emerald-600 group-hover:border-emerald-400 transition-all duration-300 shadow-sm">
                   <Play size={11} className="fill-current" />
-                  <span>50 Photos · Slide Motion</span>
+                  <span>{album.photos.length} Photos · Slide Motion</span>
                 </div>
 
                 {/* Bottom Content */}
                 <div className="absolute bottom-5 left-5 right-5 text-white">
                   <p className="mb-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-[#9ce5a4]">
-                    {card.tag}
+                    {album.tag}
                   </p>
                   <h3 className="text-xl sm:text-2xl font-black tracking-tight group-hover:text-emerald-300 transition">
-                    {card.title}
+                    {album.shortTitle || album.title}
                   </h3>
                   <p className="text-xs text-white/80 line-clamp-1 mt-1 opacity-0 group-hover:opacity-100 transition duration-300 transform translate-y-1 group-hover:translate-y-0">
                     Click to view sliding gallery & download photos →
