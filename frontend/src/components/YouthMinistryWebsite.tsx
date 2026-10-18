@@ -1032,11 +1032,11 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-12 border-b border-white/10 pb-16 lg:grid-cols-[1.3fr_0.7fr_0.7fr_1fr]">
             <div>
-              <div className="mb-6 inline-block bg-white/10 p-2 rounded-2xl border border-white/20">
+              <div className="mb-6 inline-flex items-center bg-white px-4 py-2.5 rounded-2xl shadow-xl border border-white/90 transition-transform duration-300 hover:scale-[1.02]">
                 <img
                   src={logo}
                   alt="Glorious Church Youths Logo"
-                  className="h-12 w-auto object-contain"
+                  className="h-12 sm:h-13 w-auto object-contain"
                   onError={(e) => {
                     e.currentTarget.src = logoFallback;
                   }}
