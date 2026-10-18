@@ -8,16 +8,19 @@ namespace CMS.Application.Services;
 public class EventService : IEventService
 {
     private readonly ICmsDbContext _context;
+    private readonly IMediaStorageService _mediaStorageService;
 
-    public EventService(ICmsDbContext context)
+    public EventService(ICmsDbContext context, IMediaStorageService mediaStorageService)
     {
         _context = context;
+        _mediaStorageService = mediaStorageService;
     }
 
     public async Task<List<ParishEventDto>> GetEventsAsync(string? status, bool? featuredOnly, CancellationToken ct = default)
     {
         var query = _context.ParishEvents
             .Include(e => e.Speakers.OrderBy(s => s.DisplayOrder))
+            .Include(e => e.Photos.OrderBy(p => p.DisplayOrder).ThenBy(p => p.CreatedAtUtc))
             .AsNoTracking()
             .AsQueryable();
 
@@ -61,7 +64,22 @@ public class EventService : IEventService
                     Organization = s.Organization,
                     ShortBio = s.ShortBio,
                     DisplayOrder = s.DisplayOrder
-                }).ToList()
+                }).ToList(),
+                Photos = e.Photos.OrderBy(p => p.DisplayOrder).ThenBy(p => p.CreatedAtUtc).Select(p => new EventPhotoDto
+                {
+                    Id = p.Id,
+                    ParishEventId = p.ParishEventId,
+                    PhotoUrl = p.PhotoUrl,
+                    ThumbnailUrl = p.ThumbnailUrl,
+                    Caption = p.Caption,
+                    Photographer = p.Photographer,
+                    DisplayOrder = p.DisplayOrder,
+                    IsCover = p.IsCover,
+                    FileSizeBytes = p.FileSizeBytes,
+                    ContentType = p.ContentType,
+                    CreatedAtUtc = p.CreatedAtUtc
+                }).ToList(),
+                PhotoCount = e.Photos.Count
             })
             .ToListAsync(ct);
     }
@@ -70,6 +88,7 @@ public class EventService : IEventService
     {
         var ev = await _context.ParishEvents
             .Include(e => e.Speakers.OrderBy(s => s.DisplayOrder))
+            .Include(e => e.Photos.OrderBy(p => p.DisplayOrder).ThenBy(p => p.CreatedAtUtc))
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == id, ct);
 
@@ -405,7 +424,217 @@ public class EventService : IEventService
                 Organization = s.Organization,
                 ShortBio = s.ShortBio,
                 DisplayOrder = s.DisplayOrder
-            }).ToList()
+            }).ToList(),
+            Photos = ev.Photos.OrderBy(p => p.DisplayOrder).ThenBy(p => p.CreatedAtUtc).Select(p => new EventPhotoDto
+            {
+                Id = p.Id,
+                ParishEventId = p.ParishEventId,
+                PhotoUrl = p.PhotoUrl,
+                ThumbnailUrl = p.ThumbnailUrl,
+                Caption = p.Caption,
+                Photographer = p.Photographer,
+                DisplayOrder = p.DisplayOrder,
+                IsCover = p.IsCover,
+                FileSizeBytes = p.FileSizeBytes,
+                ContentType = p.ContentType,
+                CreatedAtUtc = p.CreatedAtUtc
+            }).ToList(),
+            PhotoCount = ev.Photos.Count
+        };
+    }
+
+    public async Task<List<EventPhotoDto>> GetEventPhotosAsync(Guid eventId, CancellationToken ct = default)
+    {
+        return await _context.EventPhotos
+            .Where(p => p.ParishEventId == eventId)
+            .OrderBy(p => p.DisplayOrder)
+            .ThenBy(p => p.CreatedAtUtc)
+            .AsNoTracking()
+            .Select(p => new EventPhotoDto
+            {
+                Id = p.Id,
+                ParishEventId = p.ParishEventId,
+                PhotoUrl = p.PhotoUrl,
+                ThumbnailUrl = p.ThumbnailUrl,
+                Caption = p.Caption,
+                Photographer = p.Photographer,
+                DisplayOrder = p.DisplayOrder,
+                IsCover = p.IsCover,
+                FileSizeBytes = p.FileSizeBytes,
+                ContentType = p.ContentType,
+                CreatedAtUtc = p.CreatedAtUtc
+            })
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<EventPhotoDto>> UploadEventPhotosAsync(
+        Guid eventId,
+        List<(Stream Stream, string FileName, string ContentType)> files,
+        string? defaultPhotographer,
+        CancellationToken ct = default)
+    {
+        var ev = await _context.ParishEvents
+            .Include(e => e.Photos)
+            .FirstOrDefaultAsync(e => e.Id == eventId, ct);
+
+        if (ev == null)
+        {
+            throw new ArgumentException("Parish event not found.");
+        }
+
+        int currentMaxOrder = ev.Photos.Any() ? ev.Photos.Max(p => p.DisplayOrder) : 0;
+        bool hasExistingCover = ev.Photos.Any(p => p.IsCover) || !string.IsNullOrWhiteSpace(ev.CoverImageUrl);
+        var createdPhotos = new List<EventPhoto>();
+
+        foreach (var file in files)
+        {
+            var uploadResult = await _mediaStorageService.UploadFileAsync(
+                file.Stream,
+                file.FileName,
+                file.ContentType,
+                $"events/{eventId}",
+                ct);
+
+            if (!uploadResult.Success)
+            {
+                continue;
+            }
+
+            currentMaxOrder++;
+            bool shouldBeCover = !hasExistingCover && createdPhotos.Count == 0;
+
+            var photoEntity = new EventPhoto
+            {
+                ParishEventId = eventId,
+                PhotoUrl = uploadResult.Url,
+                ThumbnailUrl = uploadResult.ThumbnailUrl ?? uploadResult.Url,
+                Caption = Path.GetFileNameWithoutExtension(file.FileName),
+                Photographer = defaultPhotographer ?? "Glorious Media",
+                DisplayOrder = currentMaxOrder,
+                IsCover = shouldBeCover,
+                FileSizeBytes = uploadResult.FileSizeBytes,
+                ContentType = uploadResult.ContentType
+            };
+
+            if (shouldBeCover)
+            {
+                ev.CoverImageUrl = uploadResult.Url;
+                hasExistingCover = true;
+            }
+
+            createdPhotos.Add(photoEntity);
+            _context.EventPhotos.Add(photoEntity);
+        }
+
+        await _context.SaveChangesAsync(ct);
+
+        return createdPhotos.Select(p => new EventPhotoDto
+        {
+            Id = p.Id,
+            ParishEventId = p.ParishEventId,
+            PhotoUrl = p.PhotoUrl,
+            ThumbnailUrl = p.ThumbnailUrl,
+            Caption = p.Caption,
+            Photographer = p.Photographer,
+            DisplayOrder = p.DisplayOrder,
+            IsCover = p.IsCover,
+            FileSizeBytes = p.FileSizeBytes,
+            ContentType = p.ContentType,
+            CreatedAtUtc = p.CreatedAtUtc
+        }).ToList();
+    }
+
+    public async Task<bool> DeleteEventPhotoAsync(Guid eventId, Guid photoId, CancellationToken ct = default)
+    {
+        var photo = await _context.EventPhotos
+            .FirstOrDefaultAsync(p => p.Id == photoId && p.ParishEventId == eventId, ct);
+
+        if (photo == null) return false;
+
+        // Attempt physical file cleanup
+        await _mediaStorageService.DeleteFileAsync(photo.PhotoUrl, ct);
+
+        bool wasCover = photo.IsCover;
+        _context.EventPhotos.Remove(photo);
+
+        if (wasCover)
+        {
+            // Pick next photo to become cover, if any
+            var nextPhoto = await _context.EventPhotos
+                .Where(p => p.ParishEventId == eventId && p.Id != photoId)
+                .OrderBy(p => p.DisplayOrder)
+                .FirstOrDefaultAsync(ct);
+
+            var ev = await _context.ParishEvents.FirstOrDefaultAsync(e => e.Id == eventId, ct);
+            if (ev != null)
+            {
+                if (nextPhoto != null)
+                {
+                    nextPhoto.IsCover = true;
+                    ev.CoverImageUrl = nextPhoto.PhotoUrl;
+                }
+                else
+                {
+                    ev.CoverImageUrl = string.Empty;
+                }
+            }
+        }
+
+        await _context.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> SetCoverPhotoAsync(Guid eventId, Guid photoId, CancellationToken ct = default)
+    {
+        var ev = await _context.ParishEvents
+            .Include(e => e.Photos)
+            .FirstOrDefaultAsync(e => e.Id == eventId, ct);
+
+        if (ev == null) return false;
+
+        var targetPhoto = ev.Photos.FirstOrDefault(p => p.Id == photoId);
+        if (targetPhoto == null) return false;
+
+        foreach (var p in ev.Photos)
+        {
+            p.IsCover = (p.Id == photoId);
+        }
+
+        ev.CoverImageUrl = targetPhoto.PhotoUrl;
+        await _context.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<EventPhotoDto?> UpdateEventPhotoAsync(
+        Guid eventId,
+        Guid photoId,
+        UpdateEventPhotoRequestDto dto,
+        CancellationToken ct = default)
+    {
+        var photo = await _context.EventPhotos
+            .FirstOrDefaultAsync(p => p.Id == photoId && p.ParishEventId == eventId, ct);
+
+        if (photo == null) return null;
+
+        if (dto.Caption != null) photo.Caption = dto.Caption.Trim();
+        if (dto.Photographer != null) photo.Photographer = dto.Photographer.Trim();
+        if (dto.DisplayOrder > 0) photo.DisplayOrder = dto.DisplayOrder;
+
+        await _context.SaveChangesAsync(ct);
+
+        return new EventPhotoDto
+        {
+            Id = photo.Id,
+            ParishEventId = photo.ParishEventId,
+            PhotoUrl = photo.PhotoUrl,
+            ThumbnailUrl = photo.ThumbnailUrl,
+            Caption = photo.Caption,
+            Photographer = photo.Photographer,
+            DisplayOrder = photo.DisplayOrder,
+            IsCover = photo.IsCover,
+            FileSizeBytes = photo.FileSizeBytes,
+            ContentType = photo.ContentType,
+            CreatedAtUtc = photo.CreatedAtUtc
         };
     }
 }

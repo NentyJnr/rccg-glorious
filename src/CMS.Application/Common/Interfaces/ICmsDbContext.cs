@@ -18,6 +18,7 @@ public interface ICmsDbContext
     DbSet<Testimony> Testimonies { get; }
     DbSet<ParishEvent> ParishEvents { get; }
     DbSet<EventSpeaker> EventSpeakers { get; }
+    DbSet<EventPhoto> EventPhotos { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -4,6 +4,7 @@ import {
   ProgramAlbum,
   GalleryPhoto
 } from '../data/youthGalleryData';
+import { api, API_BASE_URL } from '../services/apiClient';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -33,6 +34,7 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
   onClose,
   onSelectAlbum
 }) => {
+  const [allAlbums, setAllAlbums] = useState<ProgramAlbum[]>(youthAlbums);
   const [currentAlbumId, setCurrentAlbumId] = useState<string>(initialAlbumId);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -47,9 +49,58 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
   const filmstripRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
 
+  // Fetch dynamic albums from backend API
+  useEffect(() => {
+    let isMounted = true;
+    async function loadDynamicAlbums() {
+      try {
+        const res = await api.get<any[]>('Events');
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const baseHost = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+          const formatUrl = (u: string) => (!u ? '' : (u.startsWith('http://') || u.startsWith('https://') ? u : `${baseHost}${u.startsWith('/') ? '' : '/'}${u}`));
+          const dynamicAlbums: ProgramAlbum[] = [];
+
+          for (const ev of res.data) {
+            if (ev.photos && ev.photos.length > 0) {
+              dynamicAlbums.push({
+                id: ev.id,
+                title: ev.title,
+                shortTitle: ev.title.length > 20 ? ev.title.slice(0, 18) + '...' : ev.title,
+                tag: ev.category || 'Parish Event',
+                date: ev.eventDate ? new Date(ev.eventDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent Gathering',
+                coverImage: formatUrl(ev.coverImageUrl || ev.photos[0].photoUrl),
+                description: ev.description || `High-impact moments and kingdom encounters from ${ev.title}.`,
+                externalDriveUrl: 'https://drive.google.com',
+                photos: ev.photos.map((p: any, idx: number) => ({
+                  id: p.id || `photo-${idx}`,
+                  src: formatUrl(p.photoUrl),
+                  thumbnail: formatUrl(p.thumbnailUrl || p.photoUrl),
+                  title: p.caption || ev.title,
+                  caption: p.caption || ev.title,
+                  photographer: p.photographer || 'RCCG Glorious Media'
+                }))
+              });
+            }
+          }
+
+          if (dynamicAlbums.length > 0 && isMounted) {
+            const existingWithoutDynamic = youthAlbums.filter(
+              (ya) => !dynamicAlbums.some((da) => da.id === ya.id || da.title.toLowerCase() === ya.title.toLowerCase())
+            );
+            setAllAlbums([...dynamicAlbums, ...existingWithoutDynamic]);
+          }
+        }
+      } catch (err) {
+        console.warn('[YouthProgramGallery] Dynamic gallery fetch fallback to seed:', err);
+      }
+    }
+    loadDynamicAlbums();
+    return () => { isMounted = false; };
+  }, []);
+
   // Active album resolution
   const currentAlbum: ProgramAlbum =
-    youthAlbums.find((a) => a.id === currentAlbumId) || youthAlbums[0];
+    allAlbums.find((a) => a.id === currentAlbumId) || allAlbums[0];
   const photos = currentAlbum.photos;
   const currentPhoto: GalleryPhoto = photos[currentPhotoIndex] || photos[0];
 
@@ -554,7 +605,7 @@ export const YouthProgramGallery: React.FC<YouthProgramGalleryProps> = ({
 
           {/* Cards for other programs */}
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {youthAlbums.map((album) => {
+            {allAlbums.map((album) => {
               const isCurrent = album.id === currentAlbumId;
               return (
                 <div

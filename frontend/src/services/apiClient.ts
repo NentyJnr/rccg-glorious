@@ -64,9 +64,9 @@ export function clearAuthSession() {
   }
 }
 
-function buildHeaders(customHeaders?: HeadersInit): Headers {
+function buildHeaders(customHeaders?: HeadersInit, isFormData?: boolean): Headers {
   const headers = new Headers(customHeaders);
-  if (!headers.has('Content-Type')) {
+  if (!isFormData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
   if (!headers.has('Accept')) {
@@ -91,7 +91,8 @@ function resolveUrl(endpoint: string): string {
 
 async function request<T>(endpoint: string, init?: RequestInit): Promise<ApiResponse<T>> {
   const url = resolveUrl(endpoint);
-  const headers = buildHeaders(init?.headers);
+  const isFormData = typeof FormData !== 'undefined' && init?.body instanceof FormData;
+  const headers = buildHeaders(init?.headers, isFormData);
 
   try {
     const res = await fetch(url, {
@@ -145,6 +146,13 @@ export const api = {
       ...init,
       method: 'POST',
       body: body !== undefined ? JSON.stringify(body) : undefined
+    }),
+
+  upload: <T>(endpoint: string, formData: FormData, init?: RequestInit) =>
+    request<T>(endpoint, {
+      ...init,
+      method: 'POST',
+      body: formData
     }),
 
   put: <T>(endpoint: string, body?: any, init?: RequestInit) =>

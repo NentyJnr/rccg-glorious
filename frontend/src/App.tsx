@@ -60,6 +60,7 @@ import { YouthMinistryWebsite } from './components/YouthMinistryWebsite';
 import { PortalComingSoonPage } from './components/PortalComingSoonPage';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { UserAccessGovernance } from './components/UserAccessGovernance';
+import { EventGalleryManagerModal } from './components/EventGalleryManagerModal';
 import { api, API_BASE_URL, clearAuthSession } from './services/apiClient';
 import { processSsoCallback } from './services/ssoService';
 
@@ -100,6 +101,7 @@ export interface ParishEventItem {
   isMultiDay?: boolean;
   dailySchedules?: EventDailyScheduleItem[];
   speakers?: EventSpeakerItem[];
+  photoCount?: number;
 }
 
 export const formatMultiDaySummary = (schedules: EventDailyScheduleItem[]): string => {
@@ -1297,6 +1299,28 @@ export default function App() {
   const [eventSearchQuery, setEventSearchQuery] = useState('');
   const [eventCategoryFilter, setEventCategoryFilter] = useState('All');
   const [eventStatusFilter, setEventStatusFilter] = useState('All');
+
+  // Event Gallery Manager Modal State
+  const [galleryModalEvent, setGalleryModalEvent] = useState<ParishEventItem | null>(null);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState<boolean>(false);
+
+  const handleOpenGalleryModal = (ev: ParishEventItem) => {
+    setGalleryModalEvent(ev);
+    setIsGalleryModalOpen(true);
+  };
+
+  const handleCloseGalleryModal = () => {
+    setIsGalleryModalOpen(false);
+    setGalleryModalEvent(null);
+  };
+
+  const handleCoverPhotoUpdated = (newCoverUrl: string) => {
+    if (!galleryModalEvent) return;
+    setEvents((prev) =>
+      prev.map((e) => (e.id === galleryModalEvent.id ? { ...e, coverImageUrl: newCoverUrl } : e))
+    );
+    setGalleryModalEvent((prev) => (prev ? { ...prev, coverImageUrl: newCoverUrl } : null));
+  };
 
   // Event Form State
   const [formEventTitle, setFormEventTitle] = useState('');
@@ -5240,6 +5264,15 @@ export default function App() {
                           <div className="flex items-center space-x-2">
                             <button
                               type="button"
+                              onClick={() => handleOpenGalleryModal(ev)}
+                              className="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs"
+                              title="Upload and manage high-resolution photos for this event gallery"
+                            >
+                              <Camera className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Photos &amp; Gallery</span>
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => handleOpenEditEventModal(ev)}
                               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer ${
                                 ev.status === 'Draft'
@@ -6184,6 +6217,24 @@ export default function App() {
 
             </div>
           </div>
+        )}
+
+        {/* EVENT PHOTO GALLERY MANAGER MODAL */}
+        {isGalleryModalOpen && galleryModalEvent && (
+          <EventGalleryManagerModal
+            isOpen={isGalleryModalOpen}
+            eventId={galleryModalEvent.id}
+            eventTitle={galleryModalEvent.title}
+            eventDate={galleryModalEvent.eventDate}
+            initialCoverUrl={galleryModalEvent.coverImageUrl}
+            onClose={handleCloseGalleryModal}
+            onCoverUpdated={handleCoverPhotoUpdated}
+            onPhotosChanged={(count) => {
+              setEvents((prev) =>
+                prev.map((e) => (e.id === galleryModalEvent.id ? { ...e, photoCount: count } : e))
+              );
+            }}
+          />
         )}
 
         {/* DEDICATED PARISH MEMBERSHIP TAB */}

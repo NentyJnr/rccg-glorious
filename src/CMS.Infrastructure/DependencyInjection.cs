@@ -35,6 +35,7 @@ public static class DependencyInjection
         services.AddTransient<IEmailNotificationService, EmailNotificationService>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<ISsoTokenValidatorService, SsoTokenValidatorService>();
+        services.AddScoped<IMediaStorageService, LocalStorageService>();
 
         return services;
     }

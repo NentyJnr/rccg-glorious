@@ -23,6 +23,7 @@ public class CmsDbContext : DbContext, ICmsDbContext
     public DbSet<Testimony> Testimonies => Set<Testimony>();
     public DbSet<ParishEvent> ParishEvents => Set<ParishEvent>();
     public DbSet<EventSpeaker> EventSpeakers => Set<EventSpeaker>();
+    public DbSet<EventPhoto> EventPhotos => Set<EventPhoto>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -99,6 +100,22 @@ public class CmsDbContext : DbContext, ICmsDbContext
             entity.Property(s => s.EcclesiasticalTitle).HasMaxLength(50);
             entity.Property(s => s.MinistryRole).HasMaxLength(100);
             entity.Property(s => s.Organization).HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<EventPhoto>(entity =>
+        {
+            entity.Property(p => p.PhotoUrl).IsRequired().HasMaxLength(1000);
+            entity.Property(p => p.ThumbnailUrl).HasMaxLength(1000);
+            entity.Property(p => p.Caption).HasMaxLength(300);
+            entity.Property(p => p.Photographer).HasMaxLength(150);
+            entity.Property(p => p.ContentType).HasMaxLength(100);
+
+            entity.HasOne(p => p.ParishEvent)
+                .WithMany(e => e.Photos)
+                .HasForeignKey(p => p.ParishEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(p => new { p.ParishEventId, p.DisplayOrder });
         });
     }
 

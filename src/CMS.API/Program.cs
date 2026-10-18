@@ -84,6 +84,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseCors("AllowFrontendOrigin");
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

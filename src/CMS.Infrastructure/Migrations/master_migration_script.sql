@@ -492,6 +492,34 @@ BEGIN
 END;
 GO
 
+-- Migration: Add EventPhotos Table for Parish Event Photo Galleries
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'EventPhotos')
+BEGIN
+    CREATE TABLE [dbo].[EventPhotos] (
+        [Id] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+        [ParishEventId] UNIQUEIDENTIFIER NOT NULL,
+        [PhotoUrl] NVARCHAR(1000) NOT NULL,
+        [ThumbnailUrl] NVARCHAR(1000) NULL,
+        [Caption] NVARCHAR(300) NULL,
+        [Photographer] NVARCHAR(150) NULL,
+        [DisplayOrder] INT NOT NULL DEFAULT 0,
+        [IsCover] BIT NOT NULL DEFAULT 0,
+        [FileSizeBytes] BIGINT NOT NULL DEFAULT 0,
+        [ContentType] NVARCHAR(100) NOT NULL DEFAULT 'image/jpeg',
+        [CreatedAtUtc] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [CreatedByUserId] UNIQUEIDENTIFIER NULL,
+        [UpdatedAtUtc] DATETIME2 NULL,
+        [UpdatedByUserId] UNIQUEIDENTIFIER NULL,
+        CONSTRAINT [PK_EventPhotos] PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT [FK_EventPhotos_ParishEvents_ParishEventId] FOREIGN KEY ([ParishEventId]) 
+            REFERENCES [dbo].[ParishEvents] ([Id]) ON DELETE CASCADE
+    );
+
+    CREATE NONCLUSTERED INDEX [IX_EventPhotos_ParishEventId_DisplayOrder] 
+        ON [dbo].[EventPhotos] ([ParishEventId] ASC, [DisplayOrder] ASC);
+END;
+GO
+
 COMMIT TRANSACTION;
 GO
 

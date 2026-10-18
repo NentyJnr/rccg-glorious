@@ -18,4 +18,5 @@ public class ParishEvent : BaseAuditableEntity
     public int? MaxCapacity { get; set; }
 
     public ICollection<EventSpeaker> Speakers { get; set; } = new List<EventSpeaker>();
+    public ICollection<EventPhoto> Photos { get; set; } = new List<EventPhoto>();
 }

@@ -30,6 +30,8 @@ public class ParishEventDto
     public int? MaxCapacity { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public List<EventSpeakerDto> Speakers { get; set; } = new();
+    public List<EventPhotoDto> Photos { get; set; } = new();
+    public int PhotoCount { get; set; } = 0;
 }
 
 public class CreateSpeakerRequestDto
