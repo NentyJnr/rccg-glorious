@@ -348,13 +348,6 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
             >
               Gallery
             </a>
-            <a
-              href="#team"
-              onClick={() => setMenuOpen(false)}
-              className="hover:text-emerald-600 transition"
-            >
-              Leadership
-            </a>
             <div className="flex items-center gap-3 pt-2 lg:pt-0">
               <button
                 type="button"
@@ -863,8 +856,9 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
         </section>
 
         {/* ------------------------------------------------------------- */}
-        {/* 8. MEET THE TEAM / LEADERSHIP (Duplicated from frontend/project)*/}
+        {/* 8. MEET THE TEAM / LEADERSHIP (Temporarily hidden per request) */}
         {/* ------------------------------------------------------------- */}
+        {/*
         <section id="team" className="bg-[#211566] px-6 py-20 text-white lg:px-10 lg:py-28">
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-12 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
@@ -909,6 +903,7 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
             </div>
           </div>
         </section>
+        */}
 
         {/* ------------------------------------------------------------- */}
         {/* 9. MEMBER TESTIMONIAL BANNER                                 */}
@@ -998,9 +993,6 @@ export const YouthMinistryWebsite: React.FC<YouthMinistryWebsiteProps> = ({
                 </a>
                 <a className="block hover:text-white transition" href="#gallery">
                   Gallery
-                </a>
-                <a className="block hover:text-white transition" href="#team">
-                  Our leaders
                 </a>
                 <button
                   type="button"
